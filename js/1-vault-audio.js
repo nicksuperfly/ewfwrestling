@@ -134,7 +134,12 @@ const defaultWrestlers = [
     youtubeUrl: "https://www.youtube.com/watch?v=dFzSXbjV054, https://youtu.be/onNEHdWX3qY?si=CYf6hE8yIJd4idA-", 
     promoUrl: "https://www.youtube.com/watch?v=QtpcMHdOwUE,https://www.youtube.com/watch?v=NzMxsqu78YI", 
     isDefault: true,
-    unlockLevel: 1 
+    unlockLevel: 1,
+    requiresCode: true, // BATCH 7 ITEM 14: signed on Christmas Day with a contract code
+    code: "THEGAME",
+    debutBanner: "🎸 IT'S TIME TO PLAY THE GAME! TRIPLE H HAS ARRIVED! 🎸",
+    bannerBg: "linear-gradient(180deg, #2e7d32 0%, #0b2e0f 100%)",
+    bannerShadow: "0 0 45px #00c853, 0 0 25px #69f0ae" 
   },
   { 
     id: 'default-therock', 
@@ -142,9 +147,14 @@ const defaultWrestlers = [
     image: "therock.png", 
     poseImage: "therock_pose.png", 
     youtubeUrl: "https://www.youtube.com/watch?v=ZcIYOgcCcnM", 
-    promoUrl: "https://youtu.be/jNyerPRUfNo?t=59,https://www.youtube.com/watch?v=I7v7_o2UP10,https://www.youtube.com/watch?v=zdLj_ZOL_YM,https://www.youtube.com/watch?v=WU9yTHjpkJw,https://www.youtube.com/watch?v=nL0MuSunn30,https://youtu.be/OAskS_mdKFU?t=211,https://www.youtube.com/watch?e74wxxtlgI8,https://www.youtube.com/watch?v=LY4YcbyDxJw,https://www.youtube.com/watch?v=wAFSBjXoDMA", 
+    promoUrl: "https://youtu.be/jNyerPRUfNo?t=59,https://www.youtube.com/watch?v=I7v7_o2UP10,https://www.youtube.com/watch?v=zdLj_ZOL_YM,https://www.youtube.com/watch?v=WU9yTHjpkJw,https://www.youtube.com/watch?v=nL0MuSunn30,https://youtu.be/OAskS_mdKFU?t=211,https://www.youtube.com/watch?v=e74wxxtlgI8,https://www.youtube.com/watch?v=LY4YcbyDxJw,https://www.youtube.com/watch?v=wAFSBjXoDMA", 
     isDefault: true,
-    unlockLevel: 1 
+    unlockLevel: 1,
+    requiresCode: true, // BATCH 7 ITEM 14: signed on Christmas Day with a contract code
+    code: "PEOPLESCHAMP",
+    debutBanner: "🤨 FINALLY... THE ROCK HAS COME BACK TO THE EWF! 🤨",
+    bannerBg: "linear-gradient(180deg, #8e24aa 0%, #2a0036 100%)",
+    bannerShadow: "0 0 45px #e040fb, 0 0 25px #ffd700" 
   },
   { 
     id: 'default-stonecold', 
@@ -154,7 +164,12 @@ const defaultWrestlers = [
     youtubeUrl: "https://www.youtube.com/watch?v=MOzjBO2dsmY, https://www.youtube.com/watch?v=cOsqdghHcIk", 
     promoUrl: "https://www.youtube.com/watch?v=nL0MuSunn30,https://youtu.be/OAskS_mdKFU?t=211,https://youtu.be/JFEjVNN5VH8,https://www.youtube.com/watch?v=oPJ37mJi2XE,https://www.youtube.com/watch?v=tjWPoQWdmjg,https://www.youtube.com/watch?v=2kTIuvD_7QU,https://www.youtube.com/watch?v=pgyt7ok7Ojg,https://www.youtube.com/watch?v=sr8Rwf5RAMU,https://www.youtube.com/watch?v=E3eXEd-hmro,https://www.youtube.com/watch?v=_O89Y0VwdPs,https://www.youtube.com/watch?v=eIRVxrNDvJs?t=64", 
     isDefault: true,
-    unlockLevel: 1 
+    unlockLevel: 1,
+    requiresCode: true, // BATCH 7 ITEM 14: signed on Christmas Day with a contract code
+    code: "AUSTIN316",
+    debutBanner: "🍺 GLASS SHATTERS! STONE COLD STEVE AUSTIN IS HERE! 🍺",
+    bannerBg: "linear-gradient(180deg, #424242 0%, #000000 100%)",
+    bannerShadow: "0 0 45px #ffffff, 0 0 25px #ff1744" 
   },
   { 
     id: 'default-mankind', 
@@ -164,7 +179,12 @@ const defaultWrestlers = [
     youtubeUrl: "https://www.youtube.com/watch?v=wiftmVaf0eA", 
     promoUrl: "", 
     isDefault: true,
-    unlockLevel: 1 
+    unlockLevel: 1,
+    requiresCode: true, // BATCH 7 ITEM 14: signed on Christmas Day with a contract code
+    code: "MRSOCKO",
+    debutBanner: "🧦 HAVE A NICE DAY! MANKIND HAS ARRIVED IN THE EWF! 🧦",
+    bannerBg: "linear-gradient(180deg, #5d4037 0%, #1b0f0a 100%)",
+    bannerShadow: "0 0 45px #a1887f, 0 0 25px #ff9100" 
   },
   { 
     id: 'default-theundertaker', 
@@ -231,6 +251,19 @@ const SECRET_TALENT_VAULT = [
 ];
 window.SECRET_TALENT_VAULT = SECRET_TALENT_VAULT;
 
+// BATCH 7 ITEM 14: With an empty roster (before contract codes are entered) matches can't run.
+// Returns true if there are enough superstars; otherwise explains and opens the contract vault.
+function ensureRosterReady(minNeeded = 2) {
+  try {
+    const count = (typeof getUnlockedWrestlers === 'function') ? getUnlockedWrestlers().filter(w => !(typeof getInjuryRecord === 'function' && getInjuryRecord(w.id))).length : 99;
+    if (count >= minNeeded) return true;
+    alert(`✍️ SIGN YOUR SUPERSTARS FIRST!\n\nThe EWF needs at least ${minNeeded} superstars ready to wrestle. Enter a contract code from one of your figures to sign them.`);
+    if (typeof openModal === 'function') openModal(); else { const m = document.getElementById('wrestlerModal'); if (m) m.style.display = 'flex'; }
+    return false;
+  } catch (e) { return true; }
+}
+window.ensureRosterReady = ensureRosterReady;
+
 function getUnlockedVaultIds() {
   try {
     const stored = localStorage.getItem('ewf_unlocked_vault_ids');
@@ -258,7 +291,9 @@ window.redeemVaultCode = function() {
 
   const code = inputEl.value.trim().toUpperCase();
   const unlocked = getUnlockedVaultIds();
-  const found = SECRET_TALENT_VAULT.find(v => v.code === code);
+  // BATCH 7 ITEM 14: core superstars (Triple H, The Rock, Stone Cold, Mankind) are now signed by code too
+  const found = SECRET_TALENT_VAULT.find(v => v.code === code) ||
+                (typeof defaultWrestlers !== 'undefined' ? defaultWrestlers.find(w => w.requiresCode && w.code === code) : null);
 
   if (found) {
     if (unlocked.includes(found.id)) {

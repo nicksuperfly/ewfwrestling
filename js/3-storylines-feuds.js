@@ -558,6 +558,8 @@ function getUnlockedWrestlers() {
     if (w.id === 'default-romanreigns' || w.id === 'vault-romanreigns') {
       return unlockedVaultIds.includes('vault-romanreigns');
     }
+    // BATCH 7 ITEM 14: code-signed superstars only appear once their contract code has been redeemed
+    if (w.requiresCode) return unlockedVaultIds.includes(w.id);
     if (w.id === 'default-theundertaker' && currentLvl < 6) return false;
     if (w.id === 'default-kane' && currentLvl < 10) return false;
     return !w.unlockLevel || w.unlockLevel <= currentLvl;
@@ -706,7 +708,7 @@ function promptResetUniverse() {
       'ewf_ice_overrides', 'ewf_promo_plays', 'ewf_last_career_contract_match',
       'ewf_last_media_scrum_match', 'ewf_last_decree_match', 'ewf_uncrowned_king', 'ewf_acknowledged_levels',
       'ewf_last_summit_match', 'ewf_tag_loss_streaks', 'ewf_scheduled_story_match',
-      'ewf_contender_title_locks', 'ewf_eight_loss_redemption_seen'
+      'ewf_contender_title_locks', 'ewf_eight_loss_redemption_seen', 'ewf_last_mitb_stalk_match'
     ];
     keysToRemove.forEach(k => localStorage.removeItem(k));
 
@@ -839,6 +841,10 @@ function getHeadToHeadRecord(idA, idB) {
   history.forEach(h => {
     if (!h || !h.text) return;
     const t = h.text.toUpperCase();
+    // BATCH 7 ITEM 13: Only count actual match RESULTS ("X def. Y"). Previously bookings, sanctions,
+    // rivalry/storyline wire stories etc. were counted too, so "10 encounters" was really 3 or 4 matches.
+    const isMatchResult = h.type === 'match' && !!h.winnerId && t.includes(' DEF. ');
+    if (!isMatchResult) return;
     const hasBoth = (nameA && nameB && t.includes(nameA) && t.includes(nameB)) ||
                     (h.winnerId === idA && nameB && t.includes(nameB)) ||
                     (h.winnerId === idB && nameA && t.includes(nameA));
@@ -911,7 +917,7 @@ const EWF_BACKUP_KEYS = [
   'ewf_ice_overrides', 'ewf_promo_plays', 'ewf_last_career_contract_match',
   'ewf_last_media_scrum_match', 'ewf_last_decree_match', 'ewf_uncrowned_king', 'ewf_vault_banished',
   'ewf_acknowledged_levels', 'ewf_last_summit_match', 'ewf_tag_loss_streaks', 'ewf_scheduled_story_match',
-  'ewf_contender_title_locks', 'ewf_eight_loss_redemption_seen'
+  'ewf_contender_title_locks', 'ewf_eight_loss_redemption_seen', 'ewf_last_mitb_stalk_match'
 ];
 
 function exportUniverseBackup() {
@@ -1808,18 +1814,25 @@ function proceedBloodFeudToMatch() {
   const { wrestlerA, wrestlerB } = window.activeStagedFeud;
   closeBloodFeudOverlay();
 
-  if (window.activeShowSession) {
-    window.activeShowSession = null;
-    if (typeof setElDisplay === 'function') setElDisplay('bookShowCardModal', 'none');
-  }
-
   const violentStipulations = ['Last Man Standing', 'No Disqualification'];
   const gmLevel = typeof getGMLevel === 'function' ? getGMLevel() : 1;
   if (gmLevel >= 5) violentStipulations.push('Ambulance Match');
 
   const stip = violentStipulations[Math.floor(Math.random() * violentStipulations.length)];
 
+  // BATCH 7 ITEM 16: during a show, add the blowoff to tonight's card instead of wiping the show
+  if (window.activeShowSession && typeof window.queueCutsceneBoutIntoShow === 'function') {
+    const isCareer = !!(activeBookedMatch && activeBookedMatch.isCareerMatch);
+    if (activeBookedMatch) activeBookedMatch.isCareerMatch = false;
+    if (window.queueCutsceneBoutIntoShow({ participants: [wrestlerA, wrestlerB], matchType: stip, isCareerMatch: isCareer, isBloodFeudBlowoff: true,
+          feudStake: isCareer ? '💀 LOSER LEAVES EWF' : '💀 BLOOD FEUD BLOWOFF' })) return;
+  }
+
+  // BATCH 7 ITEM 17: openMatchEngine() resets the booking, which wiped the Loser Leaves flag, so the
+  // loser never actually left. Remember it and put it back.
+  const keepCareerFlag = !!(activeBookedMatch && activeBookedMatch.isCareerMatch);
   if (typeof openMatchEngine === 'function') openMatchEngine();
+  activeBookedMatch.isCareerMatch = keepCareerFlag;
 
   activeBookedMatch.showKey = "raw";
   activeBookedMatch.matchType = stip;
@@ -2337,6 +2350,44 @@ window.confirmHospitalEscapeClearance = function(injuredId, rivalId) {
   if (typeof renderGrid === 'function') renderGrid();
 };
 
+// BATCH 7 ITEM 19: Triggers for the two cutscenes Gemini built but never connected.
+// Called after a quick match, and once after a show is signed off. Returns true if one fired.
+window.checkSpecialAngleTriggers = function() {
+  try {
+    const roster = getUnlockedWrestlers();
+    const inRoster = id => roster.some(w => w.id === id);
+    const isInjured = id => !!getInjuryRecord(id);
+
+    // 🚑 HOSPITAL ESCAPE: a major injury (2+ matches left) with an active rival who's fit. 1 in 4.
+    const majors = getInjuries().filter(i => i && i.severity === 'major' && (i.remaining || 0) >= 2 && inRoster(i.id));
+    for (const inj of majors) {
+      const riv = getRivalries().find(r => r && (r.w1 === inj.id || r.w2 === inj.id));
+      if (!riv) continue;
+      const rivalId = riv.w1 === inj.id ? riv.w2 : riv.w1;
+      if (!inRoster(rivalId) || isInjured(rivalId)) continue;
+      if (Math.random() < 0.25 && typeof window.openHospitalEscapeModal === 'function') {
+        window.openHospitalEscapeModal(getWrestlerById(inj.id), getWrestlerById(rivalId));
+        return true;
+      }
+    }
+
+    // 💼 MITB STALKING: briefcase holder isn't the World champ, both fit, 1 in 5, max once every 5 matches.
+    const holder = getMitbHolder();
+    const champId = (getTitleHolders() || {}).whc;
+    if (holder && holder.id && champId && holder.id !== champId && inRoster(holder.id) && inRoster(champId) && !isInjured(holder.id) && !isInjured(champId)) {
+      const prof = typeof getGMProfile === 'function' ? getGMProfile() : { stats: {} };
+      const played = (prof.stats && prof.stats.matches) || 0;
+      const last = parseInt(localStorage.getItem('ewf_last_mitb_stalk_match') || '-99', 10);
+      if (played - last >= 5 && Math.random() < 0.20 && typeof window.openMitbStalkingModal === 'function') {
+        localStorage.setItem('ewf_last_mitb_stalk_match', played);
+        window.openMitbStalkingModal(getWrestlerById(holder.id) || holder, getWrestlerById(champId));
+        return true;
+      }
+    }
+  } catch (e) { console.warn('Special angle trigger skipped', e); }
+  return false;
+};
+
 // --- CUTSCENE 6: ROYAL RUMBLE ROAD TO WRESTLEMANIA STAREDOWN ---
 let activeManiaCutsceneContext = null;
 
@@ -2394,6 +2445,8 @@ window.resolveManiaCutsceneChoice = function(choice) {
     }
     if (typeof renderGrid === 'function') renderGrid();
   } else if (choice === 'fasttrack') {
+    // BATCH 7 ITEM 16: in a show, add it to tonight's card
+    if (window.activeShowSession && window.queueCutsceneBoutIntoShow({ participants: [champ, rumbleWinner], isTitleMatch: true, titleCode: 'whc', titleName: 'World Heavyweight Championship', titleImg: 'whc.png', storyBypass: true, feudStake: '⚡ FAST-TRACKED TITLE SHOT' })) return;
     if (typeof openMatchEngine === 'function') openMatchEngine();
 
     activeBookedMatch.showKey = "mania";
@@ -2410,6 +2463,7 @@ window.resolveManiaCutsceneChoice = function(choice) {
     quickMatchQueue = [...activeBookedMatch.participants];
     if (typeof navGoToStep === 'function') navGoToStep(6);
     if (typeof updateTitleStakeBtnUI === 'function') updateTitleStakeBtnUI();
+    setElDisplay('qmButtons', 'flex'); // BATCH 7 ITEM 16: show the Start button on the preview
   }
 
   activeManiaCutsceneContext = null;
@@ -2459,6 +2513,8 @@ window.resolveMitbStalkingChoice = function(choice) {
     }
     if (typeof renderGrid === 'function') renderGrid();
   } else if (choice === 'callshot') {
+    // BATCH 7 ITEM 16: in a show, add it to tonight's card
+    if (window.activeShowSession && window.queueCutsceneBoutIntoShow({ participants: [champ, holder], isTitleMatch: true, titleCode: 'whc', titleName: 'World Heavyweight Championship', titleImg: 'whc.png', storyBypass: true, feudStake: '💼 BRIEFCASE HOLDER CALLED THEIR SHOT' })) { activeMitbStalkingContext = null; return; }
     if (typeof openMatchEngine === 'function') openMatchEngine();
 
     activeBookedMatch.showKey = "raw";
@@ -2475,6 +2531,7 @@ window.resolveMitbStalkingChoice = function(choice) {
     quickMatchQueue = [...activeBookedMatch.participants];
     if (typeof navGoToStep === 'function') navGoToStep(6);
     if (typeof updateTitleStakeBtnUI === 'function') updateTitleStakeBtnUI();
+    setElDisplay('qmButtons', 'flex'); // BATCH 7 ITEM 16: show the Start button on the preview
   }
 
   activeMitbStalkingContext = null;
@@ -2690,6 +2747,8 @@ window.resolveCommentaryRedemptionChoice = function(choice) {
       saveHistoryLog(`🎙️ GM ELLIS REDEMPTION SHOT: ${contender.name.toUpperCase()} cashed in their #1 Contender Lock against ${champ.name.toUpperCase()} for the ${titlePack.name}!`, 'booking');
     }
 
+    // BATCH 7 ITEM 16: in a show, add it to tonight's card
+    if (window.activeShowSession && window.queueCutsceneBoutIntoShow({ participants: [champ, contender], isTitleMatch: true, titleCode: titlePack.code, titleName: titlePack.name, titleImg: titlePack.img, storyBypass: true, feudStake: '🎙️ GM ELLIS REDEMPTION SHOT' })) return;
     if (typeof openMatchEngine === 'function') openMatchEngine();
     activeBookedMatch.showKey = "raw";
     activeBookedMatch.matchType = "Normal Match";
@@ -2705,6 +2764,7 @@ window.resolveCommentaryRedemptionChoice = function(choice) {
     quickMatchQueue = [...activeBookedMatch.participants];
     if (typeof navGoToStep === 'function') navGoToStep(6);
     if (typeof updateTitleStakeBtnUI === 'function') updateTitleStakeBtnUI();
+    setElDisplay('qmButtons', 'flex'); // BATCH 7 ITEM 16: show the Start button on the preview
     return;
   }
 
@@ -2957,6 +3017,7 @@ const storylines = [
 ];
 
 function openStorylineModal(forcedA = null, forcedB = null, isBreakingNews = false) {
+  if (!forcedA && typeof ensureRosterReady === 'function' && !ensureRosterReady(2)) return; // BATCH 7 ITEM 14
   if (typeof turnOffOtherModes === 'function') turnOffOtherModes('');
   const gmLevel = typeof getGMLevel === 'function' ? getGMLevel() : 1;
   const allWrestlers = getUnlockedWrestlers().filter(w => !getInjuryRecord(w.id));
@@ -3352,6 +3413,19 @@ function launchStorylineMatch() {
   const wA = activeStoryWrestlerA;
   const wB = activeStoryWrestlerB;
 
+  // BATCH 7 ITEM 16: in a show, the storyline match goes onto tonight's card
+  if (window.activeShowSession && typeof window.queueCutsceneBoutIntoShow === 'function') {
+    const isTitle = !!(story.isTitle || story.type === 'title_vacate' || story.type === 'heist_demand');
+    const fmt = story.formatKey || '1v1';
+    let ps = [wA, wB];
+    if (fmt === 'tag') {
+      const others = getUnlockedWrestlers().filter(w => w && w.id !== wA.id && w.id !== wB.id).sort(() => Math.random() - 0.5);
+      if (others.length >= 2) ps = [wA, others[0], wB, others[1]];
+    }
+    setElDisplay('storylineModal', 'none');
+    if (window.queueCutsceneBoutIntoShow({ participants: ps, matchType: story.matchMatch || 'Normal Match', formatKey: (fmt === 'tag' && ps.length === 4) ? 'tag' : '1v1', isTitleMatch: isTitle, storyBypass: true, feudStake: '🎬 STORYLINE GRUDGE MATCH' })) return;
+  }
+
   closeStorylineModal();
   if (typeof openMatchEngine === 'function') openMatchEngine();
 
@@ -3639,6 +3713,11 @@ function renderGrid() {
     addCard.className = 'card add-card'; 
     addCard.innerHTML = `<div class="add-icon-box">+</div><h3 style="color: #ffffff">ADD NEW</h3>`; 
     addCard.onclick = typeof openModal === 'function' ? openModal : () => setElDisplay('wrestlerModal', 'flex'); 
+    // BATCH 7 ITEM 14: Until 2 superstars are signed, make the sign-up card the star of the screen
+    if (unlockedWrestlers.length < 2) {
+      addCard.style.cssText = 'border: 2px solid #ffd700; box-shadow: 0 0 22px rgba(255,215,0,0.7); animation: pulseMandatory 1.8s infinite;';
+      addCard.innerHTML = `<div class="add-icon-box" style="color:#ffd700;">✍️</div><h3 style="color:#ffd700;">SIGN A SUPERSTAR</h3><div style="font-size:0.7rem; color:#ffffff; margin-top:4px;">${unlockedWrestlers.length === 0 ? 'ENTER YOUR FIRST CONTRACT CODE' : 'SIGN 1 MORE TO START MATCHES'}</div>`;
+    }
     container.appendChild(addCard);
 
     if (!window.isMatchInProgressLooping) {

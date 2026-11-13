@@ -100,6 +100,7 @@ function ensureSkipIntroBtnPosition() {
    1. BOOK A SHOW: GENERATOR & BROADCAST HUB
    -------------------------------------------------------------------------- */
 window.openBookShowModal = function() {
+  if (typeof ensureRosterReady === 'function' && !ensureRosterReady(2)) return; // BATCH 7 ITEM 14
   const modal = document.getElementById('bookShowModal');
   const grid = document.getElementById('bookShowGrid');
   if (!modal || !grid) return;
@@ -172,9 +173,11 @@ window.generateShowCard = function(showKey) {
   let availableMatches = Math.floor(activeW.length / 2);
   let actualMatchCount = Math.min(targetMatchCount, availableMatches);
 
-  if (isKotr && activeW.length < 6) {
+  // BATCH 7 ITEM 9: KOTR unlocks at Level 8 but the roster is only 5 until Kane arrives at Level 10,
+  // so it could never be booked. It now needs 4 (the tournament); the opener is added when there are 6+.
+  if (isKotr && activeW.length < 4) {
     if (!window.activeShowSession) setElDisplay('gmHeaderHomeBtn', 'flex');
-    alert("King of the Ring requires at least 6 active, uninjured superstars (2 for the Opener, 4 for the Tournament). Check the Medical Ward.");
+    alert("King of the Ring requires at least 4 active, uninjured superstars for the tournament. Check the Medical Ward.");
     return;
   }
   
@@ -232,6 +235,11 @@ window.generateShowCard = function(showKey) {
     if (raw) scheduledStory = JSON.parse(raw);
   } catch(e){}
 
+  // BATCH 7 ITEM 9: With fewer than 6 superstars, KOTR and the Rumble skip the opener, so keep any
+  // scheduled storyline contract for the next show instead of using it up here.
+  const skipOpener = (isKotr || isRumble) && activeW.length < 6;
+  if (skipOpener) scheduledStory = null;
+
   if (scheduledStory && scheduledStory.w1 && scheduledStory.w2) {
     const sw1 = activeW.find(w => w.id === scheduledStory.w1.id);
     const sw2 = activeW.find(w => w.id === scheduledStory.w2.id);
@@ -264,7 +272,9 @@ window.generateShowCard = function(showKey) {
   // SPECIAL FORMATTING FOR ROYAL RUMBLE
   if (isRumble) {
     let bout1 = null;
-    if (reservedStoryBout) {
+    if (skipOpener) {
+      bout1 = null;
+    } else if (reservedStoryBout) {
       reservedStoryBout.order = 'OPENER';
       bout1 = reservedStoryBout;
     } else {
@@ -310,17 +320,19 @@ window.generateShowCard = function(showKey) {
       bout1.participants = [p1, p2];
       draftedIds.push(p1.id, p2.id);
     }
-    bouts.push(bout1);
+    if (bout1) bouts.push(bout1);
     
     let pool = activeW.filter(w => !draftedIds.includes(w.id));
     let rumbleBout = { order: 'MAIN EVENT', matchType: 'Royal Rumble Match', formatKey: 'rumble', participants: pool, isTitleMatch: false, status: 'pending', rating: 0 };
     bouts.push(rumbleBout);
-    actualMatchCount = 2;
+    actualMatchCount = bouts.length;
   }
   // SPECIAL FORMATTING FOR KING OF THE RING
   else if (isKotr) {
     let bout1 = null;
-    if (reservedStoryBout) {
+    if (skipOpener) {
+      bout1 = null;
+    } else if (reservedStoryBout) {
       reservedStoryBout.order = 'OPENER';
       bout1 = reservedStoryBout;
     } else {
@@ -342,7 +354,7 @@ window.generateShowCard = function(showKey) {
       }
       draftedIds.push(p1.id, p2.id);
     }
-    bouts.push(bout1);
+    if (bout1) bouts.push(bout1);
     
     let pool = activeW.filter(w => !draftedIds.includes(w.id));
     let shuffled = [...pool].sort(() => Math.random() - 0.5);
@@ -352,16 +364,23 @@ window.generateShowCard = function(showKey) {
     bouts.push({ order: 'SEMI-FINAL', matchType: 'Normal Match', formatKey: '1v1', participants: [sf1P1, sf1P2], isTitleMatch: false, status: 'pending', rating: 0 });
     bouts.push({ order: 'SEMI-FINAL', matchType: 'Normal Match', formatKey: '1v1', participants: [sf2P1, sf2P2], isTitleMatch: false, status: 'pending', rating: 0 });
     bouts.push({ order: 'MAIN EVENT', matchType: 'Normal Match', formatKey: '1v1', participants: [], isTitleMatch: false, feudStake: '👑 KOTR TOURNAMENT FINAL', status: 'pending', rating: 0 });
-    actualMatchCount = 4;
+    actualMatchCount = bouts.length;
   }
   // STANDARD TV / PLE / MITB BOOKING LOOP
   else {
     let titlesToBook = [];
     if (!isTv) {
+      // BATCH 7 ITEM 8: Vacant titles (no champion yet) are now booked too, once championships unlock at GM Level 2,
+      // so a Book a Show career can crown its first champions instead of never having belts on the line.
+      const titlesUnlocked = ((typeof getGMLevel === 'function') ? getGMLevel() : 1) >= 2;
       if (titles.whc) titlesToBook.push({code: 'whc', name: 'World Heavyweight Championship', img: 'whc.png', id: titles.whc, format: '1v1'});
+      else if (titlesUnlocked) titlesToBook.push({code: 'whc', name: 'World Heavyweight Championship', img: 'whc.png', id: null, format: '1v1', vacant: true});
       if (titles.ic) titlesToBook.push({code: 'ic', name: 'Intercontinental Championship', img: 'ic_title.png', id: titles.ic, format: '1v1'});
+      else if (titlesUnlocked) titlesToBook.push({code: 'ic', name: 'Intercontinental Championship', img: 'ic_title.png', id: null, format: '1v1', vacant: true});
       if (titles.hardcore) titlesToBook.push({code: 'hardcore', name: 'Hardcore Championship', img: 'hardcore.png', id: titles.hardcore, format: '1v1'});
+      else if (titlesUnlocked) titlesToBook.push({code: 'hardcore', name: 'Hardcore Championship', img: 'hardcore.png', id: null, format: '1v1', vacant: true});
       if (titles.tag1 && titles.tag2) titlesToBook.push({code: 'tag', name: 'World Tag Team Championship', img: 'tag_title.png', id: [titles.tag1, titles.tag2], format: 'tag'});
+      else if (titlesUnlocked && !titles.tag1 && !titles.tag2) titlesToBook.push({code: 'tag', name: 'World Tag Team Championship', img: 'tag_title.png', id: null, format: 'tag', vacant: true});
     }
 
     const slotArray = new Array(actualMatchCount).fill(null);
@@ -475,6 +494,39 @@ window.generateShowCard = function(showKey) {
       if (!p1 && !p2 && titlesToBook.length > 0) {
         while (titlesToBook.length > 0 && !p1) {
           const nextTitle = titlesToBook.shift();
+          // BATCH 7 ITEM 8: Vacant title, book the two hottest available superstars (or two teams) for it
+          if (nextTitle.vacant) {
+            const notIce = (w) => (typeof getWrestlerMomentum === 'function') ? getWrestlerMomentum(w.id).status !== 'ice' : true;
+            const byMomentum = (a, b) => (typeof calculateMomentum === 'function') ? calculateMomentum(b.id) - calculateMomentum(a.id) : 0;
+            if (nextTitle.format === '1v1' && pool.length >= 2) {
+              let top = pool.filter(notIce).sort(byMomentum).slice(0, 4);
+              if (top.length < 2) top = [...pool].sort(() => Math.random() - 0.5);
+              top = top.sort(() => Math.random() - 0.5);
+              p1 = top[0]; p2 = top[1];
+              bout.isTitleMatch = true;
+              bout.titleCode = nextTitle.code;
+              bout.titleName = nextTitle.name;
+              bout.titleImg = nextTitle.img;
+            } else if (nextTitle.format === 'tag' && pool.length >= 4 && !isMainEvent) {
+              // Prefer real alliances as the teams, then fill with random pairs
+              const inPool = id => pool.some(w => w.id === id);
+              const teams = alliances.filter(al => inPool(al.p1) && inPool(al.p2)).sort(() => Math.random() - 0.5)
+                .map(al => [pool.find(w => w.id === al.p1), pool.find(w => w.id === al.p2)]);
+              const used = new Set();
+              const picked = [];
+              teams.forEach(t => { if (picked.length < 2 && !used.has(t[0].id) && !used.has(t[1].id)) { picked.push(t); used.add(t[0].id); used.add(t[1].id); } });
+              const rest = pool.filter(w => !used.has(w.id)).sort(() => Math.random() - 0.5);
+              while (picked.length < 2 && rest.length >= 2) picked.push([rest.shift(), rest.shift()]);
+              p1 = picked[0][0]; p2 = picked[0][1]; p3 = picked[1][0]; p4 = picked[1][1];
+              bout.formatKey = 'tag';
+              bout.matchType = 'Normal Tag Match';
+              bout.isTitleMatch = true;
+              bout.titleCode = nextTitle.code;
+              bout.titleName = nextTitle.name;
+              bout.titleImg = nextTitle.img;
+            }
+            continue;
+          }
           if (nextTitle.format === '1v1' && pool.some(w => w.id === nextTitle.id)) {
             p1 = pool.find(w => w.id === nextTitle.id);
             const locks = typeof getMandatoryLocks === 'function' ? getMandatoryLocks() : {};
@@ -876,6 +928,9 @@ window.shuffleBout = function(idx) {
     else if (stipRoll > 0.20 && gmLevel >= 4) newStip = 'Tables Match';
   }
   
+  const wasTitleMatch = !!bout.isTitleMatch;
+  const origMatchType = bout.matchType;
+
   bout.matchType = newStip;
   bout.isTitleMatch = false;
   bout.titleCode = null;
@@ -883,6 +938,77 @@ window.shuffleBout = function(idx) {
   bout.titleImg = null;
   bout.feudStake = null;
   bout.referee = null;
+
+  // BATCH 7 ITEM 5: Rerolling keeps title matches as title matches, and can offer other titles.
+  // A title bout rerolls into a title bout (same or another free title). A non-title bout on a
+  // non-TV show has a 35% chance of becoming a title match if a title isn't already on the card.
+  const isSpecialBout = (window.activeShowSession.showKey === 'kotr' || bout.formatKey === 'rumble' || origMatchType === 'Royal Rumble Match' || origMatchType === 'Money in the Bank');
+  if (!isSpecialBout && (wasTitleMatch || (!isTv && Math.random() < 0.35))) {
+    const titles = (typeof getTitleHolders === 'function') ? getTitleHolders() : {};
+    const bookedCodes = window.activeShowSession.bouts
+      .filter((b, i) => i !== idx && b.isTitleMatch && b.titleCode)
+      .map(b => b.titleCode);
+    const inPool = (id) => pool.some(w => w.id === id);
+    const options = [];
+    if (titles.whc && inPool(titles.whc)) options.push({code: 'whc', name: 'World Heavyweight Championship', img: 'whc.png', id: titles.whc, format: '1v1'});
+    if (titles.ic && inPool(titles.ic)) options.push({code: 'ic', name: 'Intercontinental Championship', img: 'ic_title.png', id: titles.ic, format: '1v1'});
+    if (titles.hardcore && inPool(titles.hardcore)) options.push({code: 'hardcore', name: 'Hardcore Championship', img: 'hardcore.png', id: titles.hardcore, format: '1v1'});
+    if (titles.tag1 && titles.tag2 && inPool(titles.tag1) && inPool(titles.tag2) && pool.length >= 4) options.push({code: 'tag', name: 'World Tag Team Championship', img: 'tag_title.png', id: [titles.tag1, titles.tag2], format: 'tag'});
+
+    const freeTitles = options.filter(t => !bookedCodes.includes(t.code));
+    if (freeTitles.length > 0) {
+      const pick = freeTitles[Math.floor(Math.random() * freeTitles.length)];
+      const notIce = (w) => (typeof getWrestlerMomentum === 'function') ? getWrestlerMomentum(w.id).status !== 'ice' : true;
+      const byMomentum = (a, b) => (typeof calculateMomentum === 'function') ? calculateMomentum(b.id) - calculateMomentum(a.id) : 0;
+
+      if (pick.format === '1v1') {
+        const champ = pool.find(w => w.id === pick.id);
+        let contenders = pool.filter(w => w.id !== champ.id && notIce(w)).sort(byMomentum).slice(0, 3);
+        if (contenders.length === 0) contenders = pool.filter(w => w.id !== champ.id);
+        if (contenders.length > 0) {
+          const challenger = contenders[Math.floor(Math.random() * contenders.length)];
+          bout.formatKey = '1v1';
+          bout.participants = [champ, challenger];
+          if (bout.matchType === 'Special Guest Referee') {
+            const refPool = pool.filter(w => w.id !== champ.id && w.id !== challenger.id);
+            if (refPool.length > 0) bout.referee = refPool[Math.floor(Math.random() * refPool.length)];
+            else bout.matchType = 'Normal Match';
+          }
+          bout.isTitleMatch = true;
+          bout.titleCode = pick.code;
+          bout.titleName = pick.name;
+          bout.titleImg = pick.img;
+        }
+      } else {
+        const team1 = [pool.find(w => w.id === pick.id[0]), pool.find(w => w.id === pick.id[1])];
+        let team2 = null;
+        const alliances = typeof getAlliances === 'function' ? getAlliances() : [];
+        const validAl = alliances.filter(al => inPool(al.p1) && inPool(al.p2) && ![al.p1, al.p2].some(id => id === team1[0].id || id === team1[1].id));
+        if (validAl.length > 0) {
+          const al = validAl[Math.floor(Math.random() * validAl.length)];
+          team2 = [pool.find(w => w.id === al.p1), pool.find(w => w.id === al.p2)];
+        } else {
+          const opp = pool.filter(w => w.id !== team1[0].id && w.id !== team1[1].id).sort(() => Math.random() - 0.5);
+          if (opp.length >= 2) team2 = [opp[0], opp[1]];
+        }
+        if (team2) {
+          bout.formatKey = 'tag';
+          bout.matchType = 'Normal Tag Match';
+          bout.participants = [team1[0], team1[1], team2[0], team2[1]];
+          bout.isTitleMatch = true;
+          bout.titleCode = pick.code;
+          bout.titleName = pick.name;
+          bout.titleImg = pick.img;
+        }
+      }
+
+      if (bout.isTitleMatch) {
+        try { const audio = typeof titleClinkSound !== 'undefined' ? titleClinkSound : new Audio('title_clink.mp3'); audio.currentTime = 0; audio.play().catch(() => {}); } catch(e){}
+        renderBookShowCardModal();
+        return;
+      }
+    }
+  }
 
   let newFormat = '1v1';
   let pCount = 2;
@@ -976,6 +1102,9 @@ window.launchActiveShowBout = function(idx) {
   pickedParticipants = [...bout.participants];
   pickedReferee = bout.referee;
   quickMatchQueue = [...bout.participants];
+  // BATCH 7 ITEM 16: cutscene bouts keep their special rules inside a show
+  isBloodFeudBlowoff = !!bout.isBloodFeudBlowoff;
+  storyBypassIds = bout.storyBypass ? bout.participants.map(w => w.id) : [];
 
   setElDisplay('bookShowCardModal', 'none');
 
@@ -985,6 +1114,7 @@ window.launchActiveShowBout = function(idx) {
     rumbleUnenteredQueue = [...rumblePool];
     rumbleInRingList = [];
     rumbleEliminatedList = [];
+    window.rumbleConcluded = false; // BATCH 7 ITEM 6
     rumbleEntrant1 = rumbleUnenteredQueue.shift();
     rumbleEntrant2 = rumbleUnenteredQueue.shift();
 
@@ -1004,6 +1134,42 @@ window.launchActiveShowBout = function(idx) {
   checkAndTriggerContractSigning(() => {
     executeMatchEntrancesSequence();
   });
+};
+
+// BATCH 7 ITEM 16: "Fight right now" from a cutscene during Book a Show used to wipe the whole show
+// (or hijack the next bout's result). Now the cutscene match is slotted in as the NEXT bout of the
+// running show and Ellis is taken back to the show card. Returns true if it handled it.
+window.queueCutsceneBoutIntoShow = function(cfg) {
+  const s = window.activeShowSession;
+  if (!s || !Array.isArray(s.bouts) || !cfg || !Array.isArray(cfg.participants) || cfg.participants.length < 2) return false;
+  const bout = {
+    order: 'BREAKING NEWS',
+    matchType: cfg.matchType || 'Normal Match',
+    formatKey: cfg.formatKey || '1v1',
+    participants: [...cfg.participants],
+    isTitleMatch: !!cfg.isTitleMatch,
+    titleCode: cfg.isTitleMatch ? (cfg.titleCode || 'whc') : null,
+    titleName: cfg.isTitleMatch ? (cfg.titleName || 'World Heavyweight Championship') : null,
+    titleImg: cfg.isTitleMatch ? (cfg.titleImg || 'whc.png') : null,
+    isCareerMatch: !!cfg.isCareerMatch,
+    isBloodFeudBlowoff: !!cfg.isBloodFeudBlowoff,
+    storyBypass: !!cfg.storyBypass,
+    feudStake: cfg.feudStake || '🚨 BREAKING: BOOKED BY GM ELLIS',
+    isSanctionedContract: true,
+    referee: null,
+    status: 'pending',
+    rating: 0
+  };
+  const at = Math.min(s.currentBoutIdx || 0, s.bouts.length);
+  s.bouts.splice(at, 0, bout);
+  if (typeof logShowFalloutEvent === 'function') {
+    logShowFalloutEvent('cutscene', `🚨 BREAKING: ${bout.participants.map(w => w.name.toUpperCase()).join(' vs ')} added to tonight's card!`);
+  }
+  if (typeof closeVideoModal === 'function') { try { closeVideoModal(); } catch (e) {} }
+  setElDisplay('quickMatchBox', 'none');
+  setElDisplay('bookShowCardModal', 'flex');
+  renderBookShowCardModal();
+  return true;
 };
 
 window.abandonActiveShow = function() {
@@ -1027,6 +1193,7 @@ window.abandonActiveShow = function() {
    2. MATCH ENGINE OPEN, RESET & NAVIGATION
    -------------------------------------------------------------------------- */
 function openMatchEngine(isMystery = false) {
+  if (typeof ensureRosterReady === 'function' && !ensureRosterReady(2)) return; // BATCH 7 ITEM 14
   isMysteryMatchMode = isMystery;
   if (typeof turnOffOtherModes === 'function') turnOffOtherModes('');
   openVideoModal();
@@ -1104,6 +1271,7 @@ function resetQuickMatch() {
   rumbleUnenteredQueue = [];
   rumbleInRingList = [];
   rumbleEliminatedList = [];
+  window.rumbleConcluded = false; // BATCH 7 ITEM 6
   window.postMatchEventQueue = [];
   window.isProcessingPostMatchQueue = false;
 
@@ -1791,6 +1959,7 @@ window.selectRumbleEntrantCount = function(count) {
   rumbleUnenteredQueue = [...activeBookedMatch.participants];
   rumbleInRingList = [];
   rumbleEliminatedList = [];
+  window.rumbleConcluded = false; // BATCH 7 ITEM 6
   rumbleEntrant1 = rumbleUnenteredQueue.shift();
   rumbleEntrant2 = rumbleUnenteredQueue.shift();
 
@@ -1986,6 +2155,7 @@ window.confirmHandpickLineup = function() {
    7. MYSTERY MATCH ROULETTE & SPECIAL REFEREE AUTO-DRAFT
    -------------------------------------------------------------------------- */
 window.launchMysteryMatchDirect = function() {
+  if (typeof ensureRosterReady === 'function' && !ensureRosterReady(2)) return; // BATCH 7 ITEM 14
   isMysteryMatchMode = true;
   openMatchEngine(true);
   navGoToStep(7);
@@ -2764,6 +2934,7 @@ function startRumbleMatch() {
 }
 
 window.triggerNextRumbleEntrantNow = function() {
+  if (window.rumbleConcluded) return; // BATCH 7 ITEM 6
   clearInterval(rumbleTimerInterval);
   clearTimeout(rumbleEntrantTimeout);
   clearTimeout(rumbleEntranceDurationTimeout);
@@ -2868,6 +3039,8 @@ function attachBackgroundLoopFallback(iframe, bgVideoId) {
 }
 
 function startRumbleTimer() {
+  // BATCH 7 ITEM 6: Once the Rumble has a winner, nothing may re-open the Rumble HUD
+  if (window.rumbleConcluded) return;
   if (typeof stopEntranceCrowd === 'function') stopEntranceCrowd(true);
   if (typeof enableWakeLock === 'function') enableWakeLock();
   isMatchInProgressLooping = true;
@@ -3021,6 +3194,11 @@ function eliminateFromRumble(wrestler) {
 
   if (rumbleUnenteredQueue.length === 0 && rumbleInRingList.length === 1) {
     const winner = rumbleInRingList[0];
+    // BATCH 7 ITEM 6: Lock the Rumble as finished and kill any pending entrance timers
+    window.rumbleConcluded = true;
+    clearTimeout(rumbleEntrantTimeout);
+    clearTimeout(rumbleEntranceDurationTimeout);
+    setElDisplay('nextEntrantBtn', 'none');
     currentPlayingWrestler = winner;
     isMatchInProgressLooping = false;
     window.isMatchInProgressLooping = false;
@@ -3143,6 +3321,7 @@ function populateMatchTelemetry() {
 
 function showMatchInProgressWinnerScreen() {
   if (activeBookedMatch.formatKey === 'rumble' || activeBookedMatch.matchType === 'Royal Rumble Match' || (activeBookedMatch.matchType && activeBookedMatch.matchType.includes("Rumble"))) {
+    if (window.rumbleConcluded) return; // BATCH 7 ITEM 6: Rumble already won, don't re-open the HUD
     startRumbleTimer();
     return;
   }
@@ -4356,7 +4535,9 @@ window.declareMatchWinner = function(resultData) {
     skipBtn.style.setProperty('left', 'auto', 'important');
     skipBtn.style.setProperty('z-index', '2147483647', 'important');
 
-    if (activeBookedMatch.showKey === 'kotr' || activeBookedMatch.formatKey === 'kotr') {
+    // BATCH 7 ITEM 10: Inside Book a Show, KOTR bouts use the normal summary flow (the show tracks the bracket).
+    // Previously this sent show bouts to the standalone KOTR bracket and the show could never finish.
+    if (!window.activeShowSession && (activeBookedMatch.showKey === 'kotr' || activeBookedMatch.formatKey === 'kotr')) {
       const finalMatchIdx = (typeof kotrMatches !== 'undefined' ? kotrMatches.length : 1) - 1;
       const isFinal = (typeof kotrCurrentMatchIdx !== 'undefined' && kotrCurrentMatchIdx === finalMatchIdx);
       
@@ -4750,6 +4931,12 @@ window.confirmAndLogMatchSummary = function() {
       if (window.checkEightLossRedemptionTrigger(savedLosers)) {
         return;
       }
+    }
+
+    // BATCH 7 ITEM 19: Hospital Escape / MITB Stalking chance after a quick match
+    if (typeof window.checkSpecialAngleTriggers === 'function') {
+      if (typeof closeVideoModal === 'function') closeVideoModal();
+      if (window.checkSpecialAngleTriggers()) return;
     }
 
     if (Math.random() < 0.30) {
@@ -5155,6 +5342,11 @@ window.finishAndArchiveShowToHistory = function() {
       return;
     }
 
+    // BATCH 7 ITEM 19: Hospital Escape / MITB Stalking after a show signs off
+    if (typeof window.checkSpecialAngleTriggers === 'function' && window.checkSpecialAngleTriggers()) {
+      return;
+    }
+
     if (typeof window.checkMidnightSyndicateTrigger === 'function' && window.checkMidnightSyndicateTrigger()) {
       return;
     }
@@ -5201,8 +5393,18 @@ window.finishAndArchiveShowToHistory = function() {
       });
     }
 
+    // BATCH 7 ITEM 12: The post-show storyline used to keep waiting in the background and could fire in the
+    // middle of the NEXT show (or over its grade screen). Now it's dropped if a new show has started, and it
+    // stops waiting on a stuck event queue after ~12 seconds.
+    let fallbackTries = 0;
     const waitForPopupsAndFire = () => {
-      if (isAchievementShowing || (window.postMatchEventQueue && window.postMatchEventQueue.length > 0)) {
+      if (window.activeShowSession) return;
+      // ...and dropped if Ellis has already moved on into a quick match or the Book a Show menu
+      const busy = ['videoModal', 'bookShowModal', 'bookShowCardModal'].some(id => { const el = document.getElementById(id); return el && getComputedStyle(el).display !== 'none'; });
+      if (busy) return;
+      fallbackTries++;
+      const queueBusy = window.postMatchEventQueue && window.postMatchEventQueue.length > 0;
+      if (isAchievementShowing || (queueBusy && fallbackTries < 30)) {
         setTimeout(waitForPopupsAndFire, 400);
       } else {
         triggerPostShowFalloutAngle();
@@ -5781,7 +5983,7 @@ function initEwfApp() {
       ...(typeof formatLogos !== 'undefined' ? formatLogos : []),
       'ambulance.png', 'whc.png', 'ic_title.png', 'hardcore.png', 'tag_title.png', 'mitb_briefcase.png',
       'kotr_crown.png', 'kotr_crown_roster.png', 'kotr_logo.png', 'kotr_bg.png', 'rumble_bg.png', 'mitb_bg.png', 'show_bg.png',
-      'survivor_logo.png', 'brethart.png', 'corbin.png', 'ellis.png', 'commentary_desk_bg.png',
+      'survivor_logo.png', 'brethart.png', 'corbin.png', 'ellis_avatar.png', 'commentary_desk_bg.png',
       'mankind_pose.png', 'stonecold_pose.png', 'tripleh_pose.png', 'therock_pose.png', 'theundertaker_pose.png', 'romanreigns_pose.png', 'kane_pose.png',
       'cmpunk.png', 'cmpunk_pose.png',
       'contract_bg.png', 'contract_table.png', 'table_broken.png', 'hof_bg.png', 'hof_plaque.png', 'hof_crest.png',

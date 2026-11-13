@@ -55,7 +55,8 @@ function saveHistoryLog(eventText, type = 'match', winnerId = null, rating = nul
     const timestamp = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
     const parsedRating = rating ? parseInt(rating, 10) : null;
     history.unshift({ text: eventText, time: timestamp, type: type, winnerId: winnerId, rating: parsedRating });
-    if (history.length > 100) history.pop();
+    // BATCH 7 ITEM 13: keep 500 entries (was 100) so head-to-head records last long enough to reach 10 matches
+    while (history.length > 500) history.pop();
     localStorage.setItem('main_event_history', JSON.stringify(history));
   } catch (e) {}
 }
@@ -741,10 +742,14 @@ function showRumbleCoronationOverlay(winner) {
         const activeBout = window.activeShowSession.bouts[curIdx];
         if (activeBout && !activeBout.completed) {
           activeBout.completed = true;
+          activeBout.status = 'completed'; // BATCH 7 ITEM 7: match the normal bout format so highlights/archives read it
           activeBout.winnerName = winner.name;
           activeBout.winnerId = winner.id;
+          activeBout.winnerObj = winner;
           activeBout.loserName = 'Royal Rumble Field';
           activeBout.rating = activeBout.rating || 5;
+          window.activeShowSession.cumulativeStars = (window.activeShowSession.cumulativeStars || 0) + activeBout.rating;
+          window.activeShowSession.completedBouts = (window.activeShowSession.completedBouts || 0) + 1;
           window.activeShowSession.currentBoutIdx = curIdx + 1;
         }
         if (typeof logShowFalloutEvent === 'function') {
@@ -757,7 +762,9 @@ function showRumbleCoronationOverlay(winner) {
   const getActiveHost = () => {
     return document.fullscreenElement ||
            document.webkitFullscreenElement ||
-           document.getElementById('videoModal') ||
+           // BATCH 7 ITEM 11: only use the video modal when it's actually open, otherwise the overlay
+           // gets parked inside a hidden modal and pops up at the start of the next match
+           ((() => { const vm = document.getElementById('videoModal'); return (vm && getComputedStyle(vm).display !== 'none') ? vm : null; })()) ||
            document.body;
   };
 
@@ -778,6 +785,12 @@ function showRumbleCoronationOverlay(winner) {
       </div>
     `;
   }
+
+  // BATCH 7 ITEM 7: Label the overlay's exit button correctly when the Rumble is part of a show
+  try {
+    const staticExit = overlay.querySelector('button[onclick*="closeRumbleCoronationOverlay"]');
+    if (staticExit) staticExit.innerText = window.activeShowSession ? 'CONTINUE SHOW ➔' : 'CONTINUE TO ROSTER ➔';
+  } catch (e) {}
 
   const victoryThemeBtn = document.getElementById('rumblePlayVictoryThemeBtn');
   if (victoryThemeBtn) {
@@ -867,8 +880,10 @@ function closeRumbleCoronationOverlay() {
   if (window.activeShowSession && Array.isArray(window.activeShowSession.bouts)) {
     const allDone = window.activeShowSession.currentBoutIdx >= window.activeShowSession.bouts.length ||
                     window.activeShowSession.bouts.every(b => b && b.completed);
-    if (allDone && typeof window.openShowFalloutSummaryModal === 'function') {
-      window.openShowFalloutSummaryModal();
+    // BATCH 7 ITEM 7: openShowFalloutSummaryModal never existed, so a Rumble main event dumped you on the
+    // home screen with the show still open. Route to Event Highlights like every other final bout.
+    if (allDone && typeof openEventHighlightsModal === 'function') {
+      openEventHighlightsModal();
       return;
     } else if (typeof renderBookShowCardModal === 'function') {
       const cardModal = document.getElementById('bookShowCardModal');
@@ -920,7 +935,9 @@ function showMitbCoronationOverlay(winner) {
   const getActiveHost = () => {
     return document.fullscreenElement ||
            document.webkitFullscreenElement ||
-           document.getElementById('videoModal') ||
+           // BATCH 7 ITEM 11: only use the video modal when it's actually open, otherwise the overlay
+           // gets parked inside a hidden modal and pops up at the start of the next match
+           ((() => { const vm = document.getElementById('videoModal'); return (vm && getComputedStyle(vm).display !== 'none') ? vm : null; })()) ||
            document.body;
   };
 
@@ -1018,6 +1035,8 @@ function closeMitbCoronationOverlay() {
   if (typeof renderRoster === 'function') renderRoster();
   if (typeof renderRosterGrid === 'function') renderRosterGrid();
   if (typeof resumeBGM === 'function') resumeBGM();
+  // BATCH 7 ITEM 11: let any queued post-match events carry on once the briefcase screen closes
+  if (typeof processNextPostMatchEvent === 'function') processNextPostMatchEvent();
 }
 
 /* --------------------------------------------------------------------------
@@ -1030,7 +1049,7 @@ function getGmEllisAvatarSrc() {
       return widgetImg.getAttribute('src');
     }
   } catch (e) {}
-  return 'ellis.png';
+  return 'ellis_avatar.png';
 }
 
 function getMilestones() {
@@ -1208,7 +1227,7 @@ function attachGmTrophyBadge(cardEl, trophyLabel) {
     cardEl.appendChild(badge);
   }
   badge.innerHTML = `
-    <img src="${gmSrc}" alt="General Manager Ellis" style="width:20px; height:20px; border-radius:50%; object-fit:cover; border:1px solid #ffd700;" onerror="this.src='ellis.png'">
+    <img src="${gmSrc}" alt="General Manager Ellis" style="width:20px; height:20px; border-radius:50%; object-fit:cover; border:1px solid #ffd700;" onerror="this.onerror=null;this.src='ellis_avatar.png'">
     <span>GM ELLIS • HOF CEREMONY ➔</span>
   `;
   badge.onclick = (e) => {
@@ -1297,7 +1316,7 @@ function renderTrophyCabinetUI() {
       const promoterAward = (m.five_star_general?.unlocked && fiveStars >= 10) ? 'FIVE-STAR GENERAL' : 'TAG TEAM KINGS';
       chipsHtml += `
         <button class="hof-induct-chip-btn" onclick="launchHofCeremony('gm-ellis', '${promoterAward}')" style="display:inline-flex; align-items:center; gap:8px;">
-          <img src="${gmSrc}" alt="General Manager Ellis" style="width:22px; height:22px; border-radius:50%; object-fit:cover; border:1px solid #ffd700;" onerror="this.src='ellis.png'">
+          <img src="${gmSrc}" alt="General Manager Ellis" style="width:22px; height:22px; border-radius:50%; object-fit:cover; border:1px solid #ffd700;" onerror="this.onerror=null;this.src='ellis_avatar.png'">
           <span>🏛️ INDUCT GENERAL MANAGER ELLIS (${promoterAward})</span>
         </button>
       `;
@@ -1369,7 +1388,7 @@ function openHofTestPicker() {
   gmCard.style.borderColor = '#ffd700';
   const gmSrc = getGmEllisAvatarSrc();
   gmCard.innerHTML = `
-    <img src="${gmSrc}" alt="General Manager Ellis" onerror="this.src='ellis.png'">
+    <img src="${gmSrc}" alt="General Manager Ellis" onerror="this.onerror=null;this.src='ellis_avatar.png'">
     <div style="font-family:'Russo One', sans-serif; font-size:0.85rem; color:#ffd700; margin-top:4px;">GENERAL MANAGER ELLIS</div>
   `;
   gmCard.onclick = () => {
@@ -1430,7 +1449,7 @@ function launchHofCeremony(wrestlerId, trophyTitle = null) {
   if (img) {
     img.src = displayImg;
     img.onerror = isPromoterTrophy
-      ? () => { img.src = 'ellis.png'; }
+      ? () => { img.onerror = null; img.src = 'ellis_avatar.png'; }
       : () => { if (typeof handleImgError === 'function') handleImgError(img, inductee.id); };
   }
   if (name) name.innerText = displayName;

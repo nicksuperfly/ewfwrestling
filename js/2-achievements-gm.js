@@ -836,6 +836,15 @@ function showUnlockShowcase(tier, wrestler = null, onClaimCallback = null) {
   }
 
   showcase.style.display = 'flex';
+
+  // BATCH 7 ITEM 4: Play the achievement sound when the unlock showcase appears
+  try {
+    if (typeof achievementUnlockSound !== 'undefined') {
+      achievementUnlockSound.currentTime = 0;
+      achievementUnlockSound.volume = 0.85;
+      achievementUnlockSound.play().catch(() => {});
+    }
+  } catch (e) {}
 }
 
 function closeUnlockShowcase() {
@@ -1087,17 +1096,29 @@ function closeGMRoadmapModal() {
 }
 
 function devCheatLevelUp() {
-  const profile = getGMProfile();
-  const currentLvl = parseInt(profile.level, 10) || 1;
-  const nextTier = LEVEL_LADDER.find(l => l.level === currentLvl + 1);
+  // BATCH 7 ITEM 15: DEV button now unlocks EVERYTHING in one go (max level, all shows/matches/titles,
+  // every superstar including code-signed and vault ones) with no level-up popups. Use Reset Universe
+  // in EWF Universe to go back to a fresh Christmas-morning save.
+  if (!confirm("⚡ DEV: UNLOCK EVERYTHING?\n\nJumps to Level 20 and signs every superstar. Use 'Reset Universe' afterwards to go back to a fresh start.")) return;
 
-  if (nextTier) {
-    const needed = (nextTier.xpReq - profile.xp) + 5;
-    addXP(needed, "Developer Override");
-    openGMOffice();
-  } else {
-    alert("Ellis is already at the maximum rank (Level 20)!");
-  }
+  const top = LEVEL_LADDER[LEVEL_LADDER.length - 1];
+  const profile = getGMProfile();
+  profile.xp = Math.max(profile.xp || 0, top.xpReq);
+  profile.level = top.level;
+  saveGMProfile(profile);
+  localStorage.setItem('ewf_acknowledged_levels', JSON.stringify(LEVEL_LADDER.map(l => l.level)));
+  window.queuedLevelUps = [];
+
+  const toSign = [
+    ...(typeof defaultWrestlers !== 'undefined' ? defaultWrestlers.filter(w => w.requiresCode) : []),
+    ...(typeof SECRET_TALENT_VAULT !== 'undefined' ? SECRET_TALENT_VAULT : [])
+  ];
+  toSign.forEach(w => { if (typeof saveUnlockedVaultId === 'function') saveUnlockedVaultId(w.id); });
+
+  if (typeof updateGMHeaderWidget === 'function') updateGMHeaderWidget();
+  if (typeof renderGrid === 'function') renderGrid();
+  if (typeof closeGMOffice === 'function') closeGMOffice();
+  alert(`✅ DEV UNLOCK COMPLETE\n\nLevel ${top.level}, every show and match type unlocked, and ${getUnlockedWrestlers().length} superstars on the roster.`);
 }
 
 /* --------------------------------------------------------------------------
