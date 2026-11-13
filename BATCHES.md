@@ -10,6 +10,40 @@ How we work:
 
 ---
 
+## Batch 9 - Walkthroughs, Sim Match, TV titles, run-in fix (13 Nov 2026)
+
+| # | What Nicko saw | File | Fix | Status |
+|---|----------------|------|-----|--------|
+| 1 | History, GM Office and Book a Show need proper prompts showing HOW to use each part, not just one tip | js/6-tutorial.js | Replace the single first-visit tips with Bret spotlight walkthroughs inside each screen (same dim + highlight + NEXT style as the home tour). Book a Show: brand tiles and locked shows; then on the first show card: the bouts, START BOUT, REROLL, live star rating, XP at stake, Abandon; then Sign Off and the show grade. GM Office: rank and XP bar, next unlock and roadmap, commentator intros, achievements, Save/Restore backup, Replay Tutorial. History: All, Titles, Classics, Victories (total wins / current run), Record Book, Trophy Cabinet. | Done |
+| 2 | Same for EWF Universe | js/6-tutorial.js | Walkthrough of the 4 tabs: Titles (pick champions), Alliances, Feuds, Injuries/Medical Ward. | Done |
+| 3 | Story Line and Promo Mode missing from the home tour | js/6-tutorial.js | Add 2 stops to the home tour, then a short walkthrough the first time each is used. | Done |
+| 4 | Surprise cutscenes appear with no explanation | js/6-tutorial.js | First time any surprise cutscene appears (storyline after a match, Blood Feud, Loser Leaves, Media Scrum, Boardroom, Limo, Staredown, Commentary Desk, Hospital Escape, MITB Stalking), Bret cuts in once explaining the choices. | Done |
+| 5 | Sim a match in Book a Show: skip a bout (e.g. a WrestleMania opener) but still get a winner | js/5-match-engine.js (+ js/6-tutorial.js tip) | ⚡ SIM MATCH button next to START BOUT. Choice of PICK THE WINNER (instant result) or LET FATE DECIDE (weighted by momentum, champion status and streaks, with upsets possible). Quick result card with a dramatic headline, then it counts like a real match: History, title changes, rivalries, star rating and momentum. Simmed bouts give less show XP than played ones so playing stays the best option. | Done |
+| 6 | Raw and SmackDown never have title matches | js/5-match-engine.js (generateShowCard, shuffleBout) | TV shows get the occasional title defence: about 1 in 3 Raw/SmackDown cards includes one, usually the Intercontinental, Hardcore or Tag titles, with the World title kept mostly for big PLEs (small chance on TV for a shock). Vacant titles can be crowned on TV too. Reroll follows the same rule. | Done |
+| 7 | Random run-in at 2:00 shows an error pop-up ("No outside superstars available for an ambush!") when everyone signed is already in the match, e.g. Christmas morning with just 2 superstars | js/5-match-engine.js (checkUnpromptedAmbush) | Automatic run-ins quietly skip when nobody's free; the alert only stays for the manual RUN-IN button. | Done |
+| 8 | (found while testing) Title defences were logged as "NEW CHAMPION ... captured" even when the champion kept the belt; tag title changes were logged as "retained" | js/5-match-engine.js (declareMatchWinner) | Only a real change of hands counts as a new champion now, for singles and tag titles. | Done |
+
+Suggested commit message: `Batch 8 + 9: tutorial, walkthroughs, Sim Match, TV titles, fixes, new sounds`
+
+Notes: Sim Match isn't offered on the main event (show always ends with a played match). TV title defences land on roughly 1 in 3 Raw/SmackDown cards (tested 300 cards: about 38%, mostly IC, Hardcore and Tag, World title rare). Walkthroughs: GM Office 6 steps, History 6, Universe 4, Book a Show menu/card/highlights 1+6+1 (locked-shows step only appears while shows are locked), home tour now 10 stops. Surprise cutscene tips appear at the top of the screen so they never cover the choice buttons. Tested: full tutorial run, every walkthrough, Sim Match (fate and pick, singles and tag, title changes), shows with simmed bouts archived, cutscenes mid-show, quick/show/quick back to back. No errors.
+
+---
+
+## Batch 8 - Broadcast team, Bret Hart tutorial, Mystery Match sound (13 Nov 2026)
+
+| # | What Nicko saw | File | Fix | Status |
+|---|----------------|------|-----|--------|
+| 1 | Once 2 superstars are signed, introduce the commentators so Ellis can set their figures up by the ring before his first match | js/2-achievements-gm.js (+ reset list in js/3-storylines-feuds.js) | One-time "MEET YOUR BROADCAST TEAM" cutscene on the commentary desk background, straight after the 2nd superstar's welcome screen. Bret Hart and Happy Corbin cards, each with a PLAY INTRO button (their existing intro videos), then "COMMENTARY TEAM IN POSITION ➔" to finish. Shows once per universe (Reset Universe brings it back). | Done |
+| 2 | Mystery Match: exiting before the reels stop spinning leaves the spin sounds playing in the background | js/5-match-engine.js | Stop the spin/lock sounds (and any pending reel timers) whenever the match screen is closed or cancelled | Done |
+| 3 | First play-through tutorial: pointers for each section, like a computer game | js/6-tutorial.js (new), hooks in js/2, js/3 (reset list), index.html | Hosted by Bret Hart, straight after Meet Your Broadcast Team. (a) Home tour, ~6 stops: dimmed screen, one button lit up, speech bubble, big NEXT, small Skip. (b) Guided first match through Choose Your Match, with a clear "tap the winner when the ring match ends" step. (c) One-off Bret tip the first time each other section is opened (Book a Show, GM Office, EWF Universe, Story Line, Promo Mode, MITB/KOTR/Rumble when unlocked). (d) Replay Tutorial button in GM Office. Wording for an 8-year-old wrestling fan: short punchy lines, wrestling talk welcome (Attitude Era to now). Reset Universe brings it back. | Done |
+
+Suggested commit message: `Batch 8: broadcast team intro, Bret Hart tutorial, Mystery Match sound fix`
+
+Testing notes: played a fresh Christmas-morning run headless: signed 2 codes, broadcast team appeared, intro video closed back to it, 8-stop home tour, then the guided first match showed all 9 tips in order through to the "YOU'RE A NATURAL" sign-off. First-visit tips show once only. Mystery Match: leaving mid-spin now stops all reel sounds and timers; a full spin still works. Regression: quick match, WrestleMania show, quick match all fine, no errors.
+Replay: GM Office > REPLAY TUTORIAL. Reset Universe also resets the tutorial.
+
+---
+
 ## Batch 7 - Quick fixes (13 Nov 2026)
 
 | # | File | Change | Status |

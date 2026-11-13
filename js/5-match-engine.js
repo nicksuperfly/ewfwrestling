@@ -369,6 +369,18 @@ window.generateShowCard = function(showKey) {
   // STANDARD TV / PLE / MITB BOOKING LOOP
   else {
     let titlesToBook = [];
+    // BATCH 9 ITEM 6: about 1 in 3 Raw/SmackDown cards get a title defence, mostly midcard/tag gold,
+    // with a small chance of the World title for a TV shock. Vacant titles can be crowned on TV too.
+    if (isTv && ((typeof getGMLevel === 'function') ? getGMLevel() : 1) >= 2 && Math.random() < 0.34) {
+      const tvPool = [];
+      const tvTitle = (code, name, img, holderId) => holderId ? { code, name, img, id: holderId, format: '1v1' } : { code, name, img, id: null, format: '1v1', vacant: true };
+      tvPool.push(tvTitle('ic', 'Intercontinental Championship', 'ic_title.png', titles.ic));
+      tvPool.push(tvTitle('hardcore', 'Hardcore Championship', 'hardcore.png', titles.hardcore));
+      if (titles.tag1 && titles.tag2) tvPool.push({ code: 'tag', name: 'World Tag Team Championship', img: 'tag_title.png', id: [titles.tag1, titles.tag2], format: 'tag' });
+      else if (!titles.tag1 && !titles.tag2) tvPool.push({ code: 'tag', name: 'World Tag Team Championship', img: 'tag_title.png', id: null, format: 'tag', vacant: true });
+      if (Math.random() < 0.12) tvPool.push(tvTitle('whc', 'World Heavyweight Championship', 'whc.png', titles.whc));
+      titlesToBook.push(tvPool[Math.floor(Math.random() * tvPool.length)]);
+    }
     if (!isTv) {
       // BATCH 7 ITEM 8: Vacant titles (no champion yet) are now booked too, once championships unlock at GM Level 2,
       // so a Book a Show career can crown its first champions instead of never having belts on the line.
@@ -507,7 +519,7 @@ window.generateShowCard = function(showKey) {
               bout.titleCode = nextTitle.code;
               bout.titleName = nextTitle.name;
               bout.titleImg = nextTitle.img;
-            } else if (nextTitle.format === 'tag' && pool.length >= 4 && !isMainEvent) {
+            } else if (nextTitle.format === 'tag' && pool.length >= 4 && (!isMainEvent || isTv)) {
               // Prefer real alliances as the teams, then fill with random pairs
               const inPool = id => pool.some(w => w.id === id);
               const teams = alliances.filter(al => inPool(al.p1) && inPool(al.p2)).sort(() => Math.random() - 0.5)
@@ -797,6 +809,7 @@ window.renderBookShowCardModal = function() {
     } else if (isActive) {
       actionHtml = `
         <button class="action-btn btn-gold" style="font-size:0.8rem; padding:8px 12px; margin-bottom:4px;" onclick="window.launchActiveShowBout(${idx})">▶ START BOUT ➔</button>
+        ${(idx < session.bouts.length - 1 && bout.formatKey !== 'rumble' && bout.participants.filter(Boolean).length >= 2) ? `<button class="action-btn btn-red" style="font-size:0.68rem; padding:6px 10px; margin-bottom:4px;" onclick="window.openSimMatchChoice(${idx})">⚡ SIM MATCH</button>` : ''}
         ${bout.isSanctionedContract ? `<div style="font-size:0.65rem; color:#ffd700; margin-top:4px;">🔒 CONTRACT LOCKED</div>` : `<button class="action-btn btn-blue" style="font-size:0.68rem; padding:6px 10px;" onclick="window.shuffleBout(${idx})">🎲 REROLL BOUT</button>`}
       `;
     } else {
@@ -943,7 +956,7 @@ window.shuffleBout = function(idx) {
   // A title bout rerolls into a title bout (same or another free title). A non-title bout on a
   // non-TV show has a 35% chance of becoming a title match if a title isn't already on the card.
   const isSpecialBout = (window.activeShowSession.showKey === 'kotr' || bout.formatKey === 'rumble' || origMatchType === 'Royal Rumble Match' || origMatchType === 'Money in the Bank');
-  if (!isSpecialBout && (wasTitleMatch || (!isTv && Math.random() < 0.35))) {
+  if (!isSpecialBout && (wasTitleMatch || Math.random() < (isTv ? 0.15 : 0.35))) { // BATCH 9 ITEM 6: TV rerolls can offer a title now too
     const titles = (typeof getTitleHolders === 'function') ? getTitleHolders() : {};
     const bookedCodes = window.activeShowSession.bouts
       .filter((b, i) => i !== idx && b.isTitleMatch && b.titleCode)
@@ -955,7 +968,9 @@ window.shuffleBout = function(idx) {
     if (titles.hardcore && inPool(titles.hardcore)) options.push({code: 'hardcore', name: 'Hardcore Championship', img: 'hardcore.png', id: titles.hardcore, format: '1v1'});
     if (titles.tag1 && titles.tag2 && inPool(titles.tag1) && inPool(titles.tag2) && pool.length >= 4) options.push({code: 'tag', name: 'World Tag Team Championship', img: 'tag_title.png', id: [titles.tag1, titles.tag2], format: 'tag'});
 
-    const freeTitles = options.filter(t => !bookedCodes.includes(t.code));
+    let freeTitles = options.filter(t => !bookedCodes.includes(t.code));
+    // BATCH 9 ITEM 6: on TV the World title is rare
+    if (isTv && !wasTitleMatch && Math.random() > 0.12) freeTitles = freeTitles.filter(t => t.code !== 'whc');
     if (freeTitles.length > 0) {
       const pick = freeTitles[Math.floor(Math.random() * freeTitles.length)];
       const notIce = (w) => (typeof getWrestlerMomentum === 'function') ? getWrestlerMomentum(w.id).status !== 'ice' : true;
@@ -1067,6 +1082,144 @@ window.shuffleBout = function(idx) {
   try { const audio = typeof titleClinkSound !== 'undefined' ? titleClinkSound : new Audio('title_clink.mp3'); audio.currentTime = 0; audio.play().catch(() => {}); } catch(e){}
   renderBookShowCardModal();
 };
+
+/* --------------------------------------------------------------------------
+   BATCH 9 ITEM 5: SIM MATCH (Book a Show). Skip acting out a bout but still get a result.
+   PICK THE WINNER or LET FATE DECIDE (weighted by form, titles and contender locks; upsets
+   possible). The result then runs through the normal results pipeline so History, titles,
+   rivalries and momentum all update. Simmed bouts get 2-3 stars, so playing stays best.
+   -------------------------------------------------------------------------- */
+function simWeight(w) {
+  if (!w) return 1;
+  let wt = 1;
+  try {
+    const st = (typeof getWrestlerMomentum === 'function') ? getWrestlerMomentum(w.id).status : 'normal';
+    wt = st === 'fire' ? 2.2 : st === 'ice' ? 0.55 : 1;
+    const t = (typeof getTitleHolders === 'function') ? getTitleHolders() : {};
+    if (Object.values(t || {}).includes(w.id)) wt *= 1.35;
+    const locks = (typeof getContenderTitleShotLocks === 'function') ? getContenderTitleShotLocks() : [];
+    if (locks.includes(w.id)) wt *= 1.25;
+  } catch (e) {}
+  return wt;
+}
+
+function simSides(bout) {
+  const p = bout.participants.filter(Boolean);
+  if (bout.formatKey === 'tag' && p.length === 4) {
+    return [
+      { members: [p[0], p[1]], label: `${p[0].name} & ${p[1].name}`, result: { isTagTeam: true, teamIndex: 1, winners: [p[0], p[1]], losers: [p[2], p[3]], teamName: `${p[0].name} & ${p[1].name}` } },
+      { members: [p[2], p[3]], label: `${p[2].name} & ${p[3].name}`, result: { isTagTeam: true, teamIndex: 2, winners: [p[2], p[3]], losers: [p[0], p[1]], teamName: `${p[2].name} & ${p[3].name}` } }
+    ];
+  }
+  return p.map(w => ({ members: [w], label: w.name, result: { isTagTeam: false, winner: w, losers: p.filter(x => x.id !== w.id) } }));
+}
+
+function ensureSimModal() {
+  let m = document.getElementById('simMatchModal');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'simMatchModal';
+    m.style.cssText = 'position:fixed; inset:0; z-index:2147483000; background:rgba(5,5,10,0.94); display:none; flex-direction:column; align-items:center; justify-content:center; padding:24px; box-sizing:border-box; text-align:center;';
+    (document.fullscreenElement || document.body).appendChild(m);
+  }
+  return m;
+}
+
+window.openSimMatchChoice = function(idx) {
+  const session = window.activeShowSession; if (!session) return;
+  const bout = session.bouts[idx]; if (!bout) return;
+  const sides = simSides(bout);
+  const m = ensureSimModal();
+  const title = bout.isTitleMatch ? `<div style="color:#ffd700; font-family:'Russo One'; margin-bottom:6px;">🏆 ${bout.titleName} ON THE LINE</div>` : '';
+  m.innerHTML = `
+    <div style="font-family:'Russo One'; color:#ff3333; font-size:clamp(1.6rem,4vw,2.4rem); letter-spacing:2px; margin-bottom:6px;">⚡ SIM MATCH</div>
+    ${title}
+    <div style="color:#ccc; margin-bottom:22px;">${bout.matchType}: ${sides.map(x => x.label).join(' vs ')}</div>
+    <div id="simStage" style="display:flex; flex-direction:column; gap:12px; align-items:center;">
+      <button class="action-btn btn-gold" style="flex:none; width:auto; min-width:300px;" onclick="window.showSimPicker(${idx})">👆 PICK THE WINNER</button>
+      <button class="action-btn btn-blue" style="flex:none; width:auto; min-width:300px;" onclick="window.runSimMatch(${idx}, null)">🎲 LET FATE DECIDE</button>
+      <button class="btn-cancel" style="margin-top:10px;" onclick="document.getElementById('simMatchModal').style.display='none'">Cancel</button>
+    </div>`;
+  m.style.display = 'flex';
+};
+
+window.showSimPicker = function(idx) {
+  const bout = window.activeShowSession && window.activeShowSession.bouts[idx]; if (!bout) return;
+  const sides = simSides(bout);
+  const stage = document.getElementById('simStage'); if (!stage) return;
+  stage.innerHTML = `<div style="color:#ffd700; font-family:'Russo One'; margin-bottom:6px;">WHO WINS?</div>
+    <div style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center;">
+      ${sides.map((sd, i) => `<div class="vs-wrestler" style="cursor:pointer; border:2px solid #ffd700; padding:10px; background:rgba(20,20,30,0.9);" onclick="window.runSimMatch(${idx}, ${i})">
+        <div style="display:flex; gap:6px; justify-content:center;">${sd.members.map(w => `<img src="${w.image}" style="width:80px; height:80px; object-fit:cover;" onerror="handleImgError(this, '${w.id}')">`).join('')}</div>
+        <div style="margin-top:6px;">${sd.label}</div></div>`).join('')}
+    </div>
+    <button class="btn-cancel" style="margin-top:14px;" onclick="document.getElementById('simMatchModal').style.display='none'">Cancel</button>`;
+};
+
+window.runSimMatch = function(idx, pickedIdx) {
+  const session = window.activeShowSession; if (!session) return;
+  const bout = session.bouts[idx]; if (!bout) return;
+  const sides = simSides(bout);
+  let winIdx = pickedIdx;
+  let upset = false;
+  if (winIdx === null || winIdx === undefined) {
+    const weights = sides.map(sd => sd.members.reduce((a, w) => a + simWeight(w), 0));
+    const total = weights.reduce((a, b) => a + b, 0);
+    let r = Math.random() * total;
+    winIdx = 0;
+    for (let i = 0; i < weights.length; i++) { r -= weights[i]; if (r <= 0) { winIdx = i; break; } }
+    const best = Math.max(...weights);
+    upset = weights[winIdx] < best * 0.7;
+  }
+  const winner = sides[winIdx];
+  const losers = sides.filter((_, i) => i !== winIdx).map(x => x.label).join(' & ');
+  const rating = 2 + Math.floor(Math.random() * 2);
+
+  const m = ensureSimModal();
+  const titleLine = bout.isTitleMatch ? `<div style="color:#ffd700; margin-top:8px;">🏆 ${bout.titleName}</div>` : '';
+  m.innerHTML = `
+    <div style="font-family:'Russo One'; color:${upset ? '#ff3333' : '#ffd700'}; font-size:clamp(1.4rem,4vw,2.2rem); letter-spacing:2px;">${upset ? '😱 UPSET!' : '⚡ SIMULATED RESULT'}</div>
+    <div style="display:flex; gap:8px; justify-content:center; margin:16px 0;">${winner.members.map(w => `<img src="${w.image}" style="width:120px; height:120px; object-fit:cover; border:3px solid #ffd700;" onerror="handleImgError(this, '${w.id}')">`).join('')}</div>
+    <div style="font-family:'Russo One'; color:#fff; font-size:clamp(1.1rem,3vw,1.6rem); text-transform:uppercase;">${winner.label} ${upset ? (winner.members.length > 1 ? 'STUN' : 'STUNS') : (winner.members.length > 1 ? 'defeat' : 'defeats')} ${losers}!</div>
+    ${titleLine}
+    <div style="color:#ffd700; margin-top:8px; font-size:1.3rem;">${'★'.repeat(rating)}${'☆'.repeat(5 - rating)}</div>
+    <button class="action-btn btn-gold" style="flex:none; width:auto; min-width:280px; margin-top:22px;" id="simContinueBtn">CONTINUE SHOW ➔</button>`;
+  m.style.display = 'flex';
+  try { const a = typeof bellSound !== 'undefined' ? bellSound : new Audio('bell.mp3'); a.currentTime = 0; a.play().catch(() => {}); } catch (e) {}
+
+  document.getElementById('simContinueBtn').onclick = () => {
+    m.style.display = 'none';
+    commitSimResult(idx, winner.result, rating, upset);
+  };
+};
+
+function commitSimResult(idx, resultData, rating, upset) {
+  const session = window.activeShowSession; if (!session) return;
+  const bout = session.bouts[idx];
+  // Same booking setup as a played bout, then run the normal results pipeline without the videos
+  activeBookedMatch = {
+    showKey: session.showKey, matchType: bout.matchType, formatKey: bout.formatKey, formatCount: bout.participants.length,
+    participants: [...bout.participants], referee: bout.referee, refereeId: bout.referee ? bout.referee.id : null,
+    isTitleMatch: bout.isTitleMatch, titleCode: bout.titleCode, titleName: bout.titleName, titleImg: bout.titleImg,
+    isCareerMatch: bout.isCareerMatch || false
+  };
+  pickedParticipants = [...bout.participants];
+  pickedReferee = bout.referee;
+  quickMatchQueue = [...bout.participants];
+  isBloodFeudBlowoff = !!bout.isBloodFeudBlowoff;
+  storyBypassIds = bout.storyBypass ? bout.participants.map(w => w.id) : [];
+  currentMatchSummary = { rating: 0, interference: upset ? '🎲 Simulated result (upset!)' : '🎲 Simulated result', titleChange: false, winner: null, losers: [] };
+  bout.simulated = true;
+
+  setElDisplay('bookShowCardModal', 'none');
+  if (typeof openVideoModal === 'function') openVideoModal();
+  setElDisplay('quickMatchBox', 'none');
+  liveMatchElapsedSeconds = 240 + Math.floor(Math.random() * 600);
+  window.declareMatchWinner(resultData);
+  if (typeof window.skipToMatchSummary === 'function') window.skipToMatchSummary();
+  window.selectSummaryRating(rating);
+  if (typeof window.confirmAndLogMatchSummary === 'function') window.confirmAndLogMatchSummary();
+}
 
 window.launchActiveShowBout = function(idx) {
   if (!window.activeShowSession) return;
@@ -1245,6 +1398,7 @@ function openMatchEngine(isMystery = false) {
 window.openMatchEngine = openMatchEngine;
 
 function resetQuickMatch() {
+  if (typeof window.stopMysteryRoulette === 'function') window.stopMysteryRoulette(); // BATCH 8 ITEM 2
   clearTimeout(qmSpinTimeout);
   clearTimeout(runInAutoTimeout);
   clearTimeout(victoryTimeout);
@@ -2188,7 +2342,21 @@ function triggerChassisShake() {
   }
 }
 
+// BATCH 8 ITEM 2: stop the Mystery Match reels, timers and spin/lock sounds
+window.mysteryRouletteTimers = [];
+window.stopMysteryRoulette = function() {
+  try { (window.mysteryRouletteTimers || []).forEach(id => clearTimeout(id)); } catch (e) {}
+  window.mysteryRouletteTimers = [];
+  try { if (typeof rouletteInterval !== 'undefined') clearInterval(rouletteInterval); } catch (e) {}
+  try { if (typeof slotSpinSound !== 'undefined') { slotSpinSound.pause(); slotSpinSound.currentTime = 0; } } catch (e) {}
+  try { if (typeof slotLockSound !== 'undefined') { slotLockSound.pause(); slotLockSound.currentTime = 0; } } catch (e) {}
+  try { if (typeof isSlotSpinning !== 'undefined') isSlotSpinning = false; } catch (e) {}
+};
+
 function spinMysteryRouletteStaged() {
+  // BATCH 8 ITEM 2: track every reel timer so leaving early stops the reels and their sounds
+  if (typeof window.stopMysteryRoulette === 'function') window.stopMysteryRoulette();
+  const T = (fn, ms) => { const id = setTimeout(fn, ms); window.mysteryRouletteTimers.push(id); return id; };
   const gmLevel = (typeof getGMLevel === 'function') ? getGMLevel() : 1;
   const allWrestlers = typeof getUnlockedWrestlers === 'function' ? getUnlockedWrestlers().filter(w => typeof getInjuryRecord === 'function' && !getInjuryRecord(w.id)) : defaultWrestlers;
   if (allWrestlers.length < 2) { alert("Add at least 2 active, uninjured wrestlers!"); window.closeVideoModal(); return; }
@@ -2239,7 +2407,7 @@ function spinMysteryRouletteStaged() {
     }
   }, 70);
 
-  setTimeout(() => {
+  T(() => {
     const randomShow = eligibleShows[Math.floor(Math.random() * eligibleShows.length)];
     activeBookedMatch.showKey = randomShow;
     if (reelShow) reelShow.className = `roulette-reel locked-blue`;
@@ -2248,7 +2416,7 @@ function spinMysteryRouletteStaged() {
     try { if(typeof slotLockSound !== 'undefined') { slotLockSound.currentTime = 0; slotLockSound.play().catch(() => {}); } } catch (e) {}
   }, 5000);
 
-  setTimeout(() => {
+  T(() => {
     const possibleFormats = [2, 3, 4];
     const randomCount = possibleFormats[Math.floor(Math.random() * possibleFormats.length)];
     activeBookedMatch.formatCount = randomCount;
@@ -2260,7 +2428,7 @@ function spinMysteryRouletteStaged() {
     try { if(typeof slotLockSound !== 'undefined') { slotLockSound.currentTime = 0; slotLockSound.play().catch(() => {}); } } catch (e) {}
   }, 10000);
 
-  setTimeout(() => {
+  T(() => {
     const randomType = eligibleTypes[Math.floor(Math.random() * eligibleTypes.length)];
     activeBookedMatch.matchType = randomType;
     if (reelType) reelType.className = `roulette-reel locked-blue`;
@@ -2279,7 +2447,7 @@ function spinMysteryRouletteStaged() {
     clearInterval(rouletteInterval);
   }, 15000);
 
-  setTimeout(() => {
+  T(() => {
     if (typeof triggerCameraFlash === 'function') triggerCameraFlash();
     const shuffled = [...allWrestlers].sort(() => Math.random() - 0.5);
     activeBookedMatch.participants = shuffled.slice(0, activeBookedMatch.formatCount);
@@ -2315,7 +2483,7 @@ function spinMysteryRouletteStaged() {
         card.innerHTML = `<img src="${w.image}" alt="${w.name}" onerror="handleImgError(this, '${w.id}')"><div>${w.name}</div>`;
         listContainer.appendChild(card);
         
-        setTimeout(() => {
+        T(() => {
           try {
             const slam = typeof matchCardSlamSound !== 'undefined' ? matchCardSlamSound : new Audio('match_card_slam.mp3');
             slam.currentTime = 0; slam.volume = 0.75; slam.play().catch(() => {});
@@ -2330,7 +2498,7 @@ function spinMysteryRouletteStaged() {
         refCard.innerHTML = `<div style="font-size:1.6rem;">👔</div><div style="color:#00ff66; font-size:0.72rem;">REF: ${pickedReferee.name}</div>`;
         listContainer.appendChild(refCard);
         
-        setTimeout(() => {
+        T(() => {
           try {
             const slam = typeof matchCardSlamSound !== 'undefined' ? matchCardSlamSound : new Audio('match_card_slam.mp3');
             slam.currentTime = 0; slam.volume = 0.75; slam.play().catch(() => {});
@@ -3406,6 +3574,13 @@ function showMatchInProgressWinnerScreen() {
 
 function checkUnpromptedAmbush() {
   if (!isMatchInProgressLooping || isRunInActive) return;
+  // BATCH 9 ITEM 7: automatic run-ins quietly skip when every fit superstar is already in the match
+  try {
+    const inMatch = (activeBookedMatch.participants || []).map(w => w && w.id);
+    const free = (typeof getUnlockedWrestlers === 'function' ? getUnlockedWrestlers() : [])
+      .filter(w => !(typeof getInjuryRecord === 'function' && getInjuryRecord(w.id)) && !inMatch.includes(w.id));
+    if (free.length === 0) return;
+  } catch (e) {}
   if (Math.random() <= 0.30 && (activeBookedMatch.participants || []).length >= 2) {
     window.triggerManualLightsOutAmbush();
   }
@@ -4241,6 +4416,7 @@ window.declareMatchWinner = function(resultData) {
   let primaryWinnerImg = "";
   let primaryWinnerName = "";
   let primaryWinnerObj = null;
+  let titleChangedHands = false; // BATCH 9 ITEM 8
 
   const mins = Math.floor(liveMatchElapsedSeconds / 60);
   const secs = liveMatchElapsedSeconds % 60;
@@ -4263,6 +4439,7 @@ window.declareMatchWinner = function(resultData) {
 
     if (activeBookedMatch.isTitleMatch && activeBookedMatch.titleCode === 'tag') {
       const holders = typeof getTitleHolders === 'function' ? getTitleHolders() : {};
+      titleChangedHands = !([w1.id, w2.id].includes(holders.tag1) && [w1.id, w2.id].includes(holders.tag2));
       holders.tag1 = w1.id;
       holders.tag2 = w2.id;
       if (typeof setTitleHolders === 'function') setTitleHolders(holders);
@@ -4311,6 +4488,7 @@ window.declareMatchWinner = function(resultData) {
         if (typeof incrementTitleDefense === 'function') finalDefenseCount = incrementTitleDefense(titleCode);
       }
 
+      titleChangedHands = titleWon;
       holders[activeBookedMatch.titleCode] = primaryWinnerObj.id;
       if (typeof setTitleHolders === 'function') setTitleHolders(holders);
       if (typeof resetTitleDefense === 'function' && titleWon) resetTitleDefense(activeBookedMatch.titleCode);
@@ -4515,8 +4693,9 @@ window.declareMatchWinner = function(resultData) {
     defenseCount: 0 
   };
   
-  if (!resultData.isTagTeam && activeBookedMatch.isTitleMatch) {
-    currentMatchSummary.titleWon = true;
+  // BATCH 9 ITEM 8: only a real title change counts as a NEW champion (defences were logged as "captured")
+  if (activeBookedMatch.isTitleMatch) {
+    currentMatchSummary.titleWon = titleChangedHands;
   }
 
   window.selectSummaryRating(0);
@@ -5691,6 +5870,7 @@ window.checkAndShowBeltOverlay = function(wrestler) {
 };
 
 window.closeVideoModal = function() {
+  if (typeof window.stopMysteryRoulette === 'function') window.stopMysteryRoulette(); // BATCH 8 ITEM 2
   if (typeof disableWakeLock === 'function') disableWakeLock();
   isMatchInProgressLooping = false;
   isRunInActive = false;

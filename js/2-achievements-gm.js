@@ -425,6 +425,8 @@ function confirmSuperstarInduction() {
     if (typeof resumeBGM === 'function') resumeBGM();
     checkNextQueuedLevelUp();
   }
+  // BATCH 8 ITEM 1: after the 2nd superstar is signed, introduce the broadcast team
+  if (typeof window.ewfTutorialAfterSigning === 'function') window.ewfTutorialAfterSigning();
 }
 
 /* --------------------------------------------------------------------------

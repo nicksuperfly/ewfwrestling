@@ -708,7 +708,7 @@ function promptResetUniverse() {
       'ewf_ice_overrides', 'ewf_promo_plays', 'ewf_last_career_contract_match',
       'ewf_last_media_scrum_match', 'ewf_last_decree_match', 'ewf_uncrowned_king', 'ewf_acknowledged_levels',
       'ewf_last_summit_match', 'ewf_tag_loss_streaks', 'ewf_scheduled_story_match',
-      'ewf_contender_title_locks', 'ewf_eight_loss_redemption_seen', 'ewf_last_mitb_stalk_match'
+      'ewf_contender_title_locks', 'ewf_eight_loss_redemption_seen', 'ewf_last_mitb_stalk_match', 'ewf_tutorial_state'
     ];
     keysToRemove.forEach(k => localStorage.removeItem(k));
 
@@ -917,7 +917,7 @@ const EWF_BACKUP_KEYS = [
   'ewf_ice_overrides', 'ewf_promo_plays', 'ewf_last_career_contract_match',
   'ewf_last_media_scrum_match', 'ewf_last_decree_match', 'ewf_uncrowned_king', 'ewf_vault_banished',
   'ewf_acknowledged_levels', 'ewf_last_summit_match', 'ewf_tag_loss_streaks', 'ewf_scheduled_story_match',
-  'ewf_contender_title_locks', 'ewf_eight_loss_redemption_seen', 'ewf_last_mitb_stalk_match'
+  'ewf_contender_title_locks', 'ewf_eight_loss_redemption_seen', 'ewf_last_mitb_stalk_match', 'ewf_tutorial_state'
 ];
 
 function exportUniverseBackup() {
