@@ -10,6 +10,28 @@ How we work:
 
 ---
 
+## Batch 10 - Characters come alive (planned 14 Nov 2026)
+
+| # | Item | Status |
+|---|------|--------|
+| 1 | "OH MY GOD!" (ohmygod.mp3) plays over superstar arrival banners (code signings and level-up debuts) | ✅ Done |
+| 2 | App icon fix: manifest.json pointed at the wide logo (bullet-shaped icon). Use square icon-192/512 + padded maskable icons; index.html favicon line | Logged (zip sent, apply in batch) |
+| 3 | Good Guys and Bad Guys: everyone starts Good Guy; turns earned through stories (bad/good deed tally from Nicko's 79 stories, which stay unchanged), losing runs, betrayals, title losses; "EWF needs a bad guy" nudge (max ~1/3 bad guys); bad guys cheat, attack after the bell, crowd boos; red name + 😈 on cards (Option B); casting leans bad guys into villain roles in stories; MAKE GOOD GUY / BAD GUY in Universe. Assets: crowd_boo.mp3, bad_guy_turn_bg.png, good_guy_turn_bg.png | ✅ Done |
+| 4 | Compress all images (same names, same look, 60-80% smaller); check samples with Nicko first | ⏳ Ready, waiting for Nicko to OK the samples |
+| 5 | Superstars remember each other: hidden relationships per pair: 🤝 MATES, 💢 BAD BLOOD, 😒 JEALOUS OF, 🫡 RESPECT, built from tag wins, saves, betrayals, run-ins, title changes, 5-star matches. Lead to alliance offers, betrayals, revenge, rematches. New SUPERSTARS tab in EWF Universe (profile: good/bad, form, mood, relationships with reasons, GM buttons MAKE THEM MATES / START BAD BLOOD / SQUASH IT, "Hottest in the EWF"). Tapping cards still plays intros. Asset: relationships_bg.png | ✅ Done |
+| 6 | Moods and callouts: mood badge bottom right of cards (👑 COCKY gold, 💪 HUNGRY green, 🥱 FED UP grey, 😒 JEALOUS purple, 😡 FURIOUS red); 🔥/❄️ stay top right for form. Callouts max every 5 matches: I WANT MY SHOT, SAT IN CATERING, BIG MATCH OR I'M WALKING, ANYONE ANY TIME (open challenge), I WANT THE GUY WHO PUT ME OUT. Choices feed moods, relationships, turns. Assets: gm_office_bg.png, open_challenge_bg.png, door_slam.mp3, microphone.png | ✅ Done |
+| 7 | Backstage segments in Book a Show (~40% between bouts, never after another cutscene, SKIP button, Bret/Corbin commentary): loser storms off, winner interview call-out, car park ambush, locker room row, mates celebrate, mystery attacker + security footage reveal. Assets: backstage_corridor_bg, interview_bg, car_park_bg, locker_room_bg, catering_bg, crime_scene_bg, security_office_bg; steel_chair, trash_bin, security_guards, cameraman, briefcase_shadow; bin_crash, car_alarm, locker_slam, mic_feedback, cctv_static, locker_cheer | ✅ Done |
+| 8 | More lights-out / music-hit surprises: (1) random run-in timing anywhere 1:30-5:00, higher chance in main events and big shows; (2) THE SAVE: post-match beatdown interrupted by the victim's mate (good guy turn trigger); (3) post-match beatdowns by bad guys / FURIOUS superstars, bad blood jumping the winner's celebration; (5) champion's celebration interrupted by a challenger, sets up next big match; (6) evening the odds: good guy's mate counters a bad guy's run-in; (7) return from exile: banished superstar can shock-return vs the one who sent them away (Ellis says yes/no); (8) rare fake-out lights out. NOT doing surprise debuts: new superstars keep their own debut moment. No new assets needed. | ✅ Done |
+| 9 | Bret Hart tutorial covers the new features: home tour locker-room stop explains the badges (🔥/❄️ form top right, mood bottom right, red name + 😈 = Bad Guy); EWF Universe walkthrough gets a SUPERSTARS tab step (profiles, Mates/Bad Blood/Jealous/Respect, GM buttons); one-time Bret cut-ins the first time each happens: a Bad Guy turn, a Good Guy turn, each callout type, the first backstage segment, the save, a post-match beatdown, a celebration interruption, a return from exile, and a fake-out ("Ha! Mind games, GM!"); first mood badge appearing on a card gets a quick explainer. Replay Tutorial / Reset Universe reset these too. | ✅ Done |
+
+**Batch 10 build notes (14 Nov):** new file js/7-personality.js runs the whole personality system (save key ewf_personality, wiped by Reset Universe and included in backups). Storyline good/bad deed classification is the draft in that file (STORY table) and can be tweaked any time. Bonus fix: Sim Match could leave a hidden screen stuck in fullscreen on a tablet (black screen); fixed, plus a safety net. Image compression: 485 MB down to 139 MB, compressed copies waiting in "Claude outputs/compressed", swapped in once approved.
+
+All assets delivered by Nicko 14 Nov (12 backgrounds, 6 moving objects, 8 sounds). Wording rule: wrestling-style language throughout (Good Guy/Bad Guy, Mates, Bad Blood).
+
+Suggested commit message: "Batch 10: Good Guys/Bad Guys, relationships, moods and callouts, backstage segments, more run-ins, Superstars tab, icon fix"
+
+---
+
 ## Batch 9 - Walkthroughs, Sim Match, TV titles, run-in fix (13 Nov 2026)
 
 | # | What Nicko saw | File | Fix | Status |

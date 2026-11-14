@@ -839,19 +839,30 @@ window.playSlambulanceAudio = function() {
   }
 };
 
+// Batch 10: OH MY GOD! sting, boosted through Web Audio so it cuts through the entrance video
+window._omgBuffer = null;
 window.playOhMyGodSting = function() {
+  const fallback = () => {
+    try { ohMyGodSound.volume = 1.0; ohMyGodSound.currentTime = 0; ohMyGodSound.play().catch(() => {}); } catch (e) {}
+  };
   try {
-    ohMyGodSound.volume = 1.0;
-    ohMyGodSound.currentTime = 0;
-    ohMyGodSound.play().catch(() => {});
-    setTimeout(() => {
-      let vol = ohMyGodSound.volume;
-      const fadeOut = setInterval(() => {
-        if (vol > 0.1) { vol -= 0.1; ohMyGodSound.volume = vol; }
-        else { clearInterval(fadeOut); ohMyGodSound.pause(); }
-      }, 100);
-    }, 1800);
-  } catch (e) {}
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return fallback();
+    if (!window._omgCtx) window._omgCtx = new AC();
+    const ctx = window._omgCtx;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    const fire = (buf) => {
+      const src = ctx.createBufferSource(); src.buffer = buf;
+      const gain = ctx.createGain(); gain.gain.value = 2.6;
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -10; comp.ratio.value = 6;
+      src.connect(gain); gain.connect(comp); comp.connect(ctx.destination);
+      src.start();
+    };
+    if (window._omgBuffer) return fire(window._omgBuffer);
+    fetch('ohmygod.mp3').then(r => r.arrayBuffer()).then(a => new Promise((res, rej) => { const pr = ctx.decodeAudioData(a, res, rej); if (pr && pr.catch) pr.catch(() => {}); }))
+      .then(buf => { window._omgBuffer = buf; fire(buf); }).catch(fallback);
+  } catch (e) { fallback(); }
 };
 
 const maxEntranceCrowdVolume = 0.12; 

@@ -70,7 +70,10 @@
   }
 
   // Fullscreen mode only shows what's inside the fullscreen element, so mount there when it's active
-  const host = () => document.fullscreenElement || document.webkitFullscreenElement || document.body;
+  const host = () => {
+    const fs = document.fullscreenElement || document.webkitFullscreenElement;
+    return (fs && getComputedStyle(fs).display !== 'none') ? fs : document.body;
+  };
 
   function showBubble({ text, target = null, nextLabel = 'NEXT ➔', onNext, onSkip, stepText = '', dim = true, tipMode = false }) {
     ensureStyles();
@@ -210,6 +213,7 @@
   const TOUR = [
     { target: null, text: `Welcome to the EWF, <b>GM Ellis</b>! I'm Bret "The Hitman" Hart, the best there is, the best there was and the best there ever will be. Let me show you how to run the hottest promotion on the planet!` },
     { target: () => document.getElementById('wrestler-grid'), text: `This is your <b>locker room</b>. Every figure you sign shows up here. Got a new figure? Tap the <b>+</b> card and enter its contract code to bring them into the EWF!` },
+    { target: () => document.getElementById('wrestler-grid'), text: `Watch the <b>badges</b> on each card! <b>🔥 or ❄️</b> in the top corner means they're on fire or ice cold. The badge in the <b>bottom corner</b> is their <b>mood</b>. And a <b style="color:#ff1744;">red name with a 😈</b> means they're a <b>BAD GUY</b>!` },
     { target: () => btnByText('CHOOSE YOUR MATCH'), text: `<b>CHOOSE YOUR MATCH</b>: pick the show, the superstars and the rules. Then watch the entrances and act out the match with your figures in the ring!` },
     { target: () => btnByText('MYSTERY MATCH'), text: `Can't decide? <b>MYSTERY MATCH</b> spins the reels and picks the show, the match type AND the superstars for you. Anything can happen!` },
     { target: () => btnByText('BOOK A SHOW'), text: `<b>BOOK A SHOW</b>: build a whole night of action, from Raw to WrestleMania! Title matches, feuds and a main event, all graded at the end of the night.` },
@@ -398,7 +402,8 @@
       { target: () => $('#tabBtnTitles'), text: `Welcome to the <b>EWF UNIVERSE</b>, where you're the boss! <b>TITLES</b> lets you choose who holds each championship.` },
       { target: () => $('#tabBtnAlliances'), text: `<b>ALLIANCES</b>: team two superstars up as a tag team with their own name and colour.` },
       { target: () => $('#tabBtnFeuds'), text: `<b>FEUDS</b>: start a rivalry! The hotter it gets, the closer they get to a Blood Feud.` },
-      { target: () => $('#tabBtnInjuries'), text: `<b>INJURIES</b> is the Medical Ward: see who's hurt and how many matches until they're back.` }
+      { target: () => $('#tabBtnInjuries'), text: `<b>INJURIES</b> is the Medical Ward: see who's hurt and how many matches until they're back.` },
+      { target: () => $('#tabBtnSuperstars'), text: `<b>SUPERSTARS</b> is where your figures come alive! Tap anyone to see if they're a good guy or a bad guy, their form, their <b>mood</b> and why, and who their <b>MATES</b>, <b>BAD BLOOD</b>, <b>JEALOUS</b> and <b>RESPECT</b> are. You can even make them mates, start bad blood, squash it, or turn them good or bad!` }
     ]
   };
 
@@ -471,6 +476,19 @@
   wrapCut('openCommentaryRedemptionModal', 'commentary');
   wrapCut('openHospitalEscapeModal', 'hospital');
   wrapCut('openMitbStalkingModal', 'mitbStalk');
+
+  /* ---------- 8. Batch 10: Bret cuts in the first time each new thing happens ---------- */
+  window.ewfBretCut = function (key, html, delay) {
+    const st = getState();
+    if (!st.tourDone) return;
+    st.cutSeen = st.cutSeen || {};
+    if (st.cutSeen[key]) return;
+    st.cutSeen[key] = true; saveState(st);
+    setTimeout(() => {
+      if (document.querySelector('.ewf-tut-bubble')) return;
+      showBubble({ text: html, nextLabel: 'GOT IT ➔', tipMode: true });
+    }, delay === undefined ? 1400 : delay);
+  };
 
   /* ---------- 5. Replay ---------- */
   window.ewfReplayTutorial = function () {

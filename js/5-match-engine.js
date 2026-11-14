@@ -1212,7 +1212,8 @@ function commitSimResult(idx, resultData, rating, upset) {
   bout.simulated = true;
 
   setElDisplay('bookShowCardModal', 'none');
-  if (typeof openVideoModal === 'function') openVideoModal();
+  // BATCH 10 FIX: no fullscreen request for a sim (it finished after the modal closed and left a hidden screen fullscreen)
+  setElDisplay('videoModal', 'flex');
   setElDisplay('quickMatchBox', 'none');
   liveMatchElapsedSeconds = 240 + Math.floor(Math.random() * 600);
   window.declareMatchWinner(resultData);
@@ -3403,14 +3404,13 @@ function startLiveMatchStopwatch(reset = false) {
   liveMatchTimerInterval = setInterval(() => {
     liveMatchElapsedSeconds++;
     updateLiveMatchClockUI();
-    // BATCH 6 ITEM 9: Give armed injury comeback priority over random ambushes at 02:00 (120s)
-    if (liveMatchElapsedSeconds === 120) {
-      if (window.armedAmbushWrestler && !ambushTriggeredThisMatch) {
-        executePendingReturnAmbushIfArmed();
-      } else {
-        checkUnpromptedAmbush();
-      }
-    } else if (liveMatchElapsedSeconds === 180) {
+    // BATCH 6 ITEM 9: Give armed injury comeback priority at 02:00 (120s)
+    if (liveMatchElapsedSeconds === 120 && window.armedAmbushWrestler && !ambushTriggeredThisMatch) {
+      executePendingReturnAmbushIfArmed();
+    } else if (window.EWFP && typeof EWFP.tick === 'function') {
+      // BATCH 10: random run-in time between 1:30 and 5:00, evening the odds, fake-outs, bad guy cheating
+      EWFP.tick(liveMatchElapsedSeconds);
+    } else if (liveMatchElapsedSeconds === 120 || liveMatchElapsedSeconds === 180) {
       checkUnpromptedAmbush();
     }
   }, 1000);
@@ -3737,11 +3737,18 @@ window.triggerManualLightsOutAmbush = function() {
     }
   }
 
-  const attacker = targetRival || freeWrestlers[Math.floor(Math.random() * freeWrestlers.length)];
+  let attacker = targetRival || freeWrestlers[Math.floor(Math.random() * freeWrestlers.length)];
+  // BATCH 10: bad guys, furious superstars and bad blood rivals are the likeliest to run in
+  let victimId = null;
+  if (window.EWFP && typeof EWFP.pickRunIn === 'function') {
+    const p = EWFP.pickRunIn(freeWrestlers, activeBookedMatch.participants || []);
+    if (p && p.attacker) { attacker = (targetRival && Math.random() < 0.5) ? targetRival : p.attacker; victimId = p.victimId; }
+  }
+  if (window.EWFP && typeof EWFP.onRunIn === 'function') { try { EWFP.onRunIn(attacker, victimId); } catch (e) {} }
   executeLightsOutAmbush(attacker, false);
 };
 
-function executeLightsOutAmbush(attacker, isReturn = false) {
+function executeLightsOutAmbush(attacker, isReturn = false, customMsg = null) {
   if (!attacker) return;
   if (typeof stopMatchCrowd === 'function') stopMatchCrowd();
   if (typeof stopEntranceCrowd === 'function') stopEntranceCrowd();
@@ -3814,6 +3821,10 @@ function executeLightsOutAmbush(attacker, isReturn = false) {
             msgText = `🚨 ${attacker.name.toUpperCase()} IS BACK! 🚨`;
             banner.style.background = 'linear-gradient(180deg, #ffd700 0%, #d32f2f 100%)';
             banner.style.boxShadow = '0 0 35px #ffd700, 0 0 20px #ff0000';
+          } else if (customMsg) {
+            msgText = customMsg;
+            banner.style.background = 'linear-gradient(180deg, #1565c0, #0d2a5c)';
+            banner.style.boxShadow = '0 0 30px #2196f3';
           } else {
             msgText = `🚨 RINGSIDE CHAOS: ${attacker.name.toUpperCase()} CRASHED THE BOUT! 🚨`;
             banner.style.background = 'linear-gradient(180deg, #d32f2f, #990000)';
@@ -4932,6 +4943,7 @@ window.confirmAndLogMatchSummary = function() {
   try {
     const s = currentMatchSummary;
     if (!s) return;
+    try { if (window.EWFP) EWFP.onMatchResult(s, activeBookedMatch); } catch (e) {} // BATCH 10
 
     const finalDefenseCount = (activeBookedMatch.isTitleMatch && typeof getTitleDefenseCount === 'function') ? getTitleDefenseCount(activeBookedMatch.titleCode) : 0;
     const savedLosers = Array.isArray(s.losers) ? [...s.losers] : [];
@@ -5069,10 +5081,16 @@ window.confirmAndLogMatchSummary = function() {
         return;
       }
 
+      // BATCH 10: turns, post-match angles and callouts between bouts
+      if (window.EWFP && EWFP.afterBout({ inShow: true, ongoing: isShowOngoing, isMain: !isShowOngoing, winner: rollWinner, losers: savedLosers, summary: s, match: activeBookedMatch, done: proceedBackToShowHub })) return;
+
       if (isShowOngoing && Math.random() < 0.30 && rollWinner && rollLoser && typeof openStorylineModal === 'function') {
         setTimeout(() => { openStorylineModal(rollWinner, rollLoser, true); }, 350);
         return;
       }
+
+      // BATCH 10: backstage segments (never straight after another cutscene)
+      if (isShowOngoing && window.EWFP && EWFP.maybeBackstage(rollWinner, rollLoser, proceedBackToShowHub)) return;
 
       proceedBackToShowHub();
       return;
@@ -5116,6 +5134,12 @@ window.confirmAndLogMatchSummary = function() {
     if (typeof window.checkSpecialAngleTriggers === 'function') {
       if (typeof closeVideoModal === 'function') closeVideoModal();
       if (window.checkSpecialAngleTriggers()) return;
+    }
+
+    // BATCH 10: turns, post-match angles, return from exile and callouts after a quick match
+    if (window.EWFP && s.winner) {
+      if (typeof closeVideoModal === 'function') closeVideoModal();
+      if (EWFP.afterBout({ inShow: false, ongoing: true, isMain: false, winner: s.winner, losers: savedLosers, summary: s, match: activeBookedMatch, done: () => {} })) return;
     }
 
     if (Math.random() < 0.30) {

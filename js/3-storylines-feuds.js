@@ -708,7 +708,7 @@ function promptResetUniverse() {
       'ewf_ice_overrides', 'ewf_promo_plays', 'ewf_last_career_contract_match',
       'ewf_last_media_scrum_match', 'ewf_last_decree_match', 'ewf_uncrowned_king', 'ewf_acknowledged_levels',
       'ewf_last_summit_match', 'ewf_tag_loss_streaks', 'ewf_scheduled_story_match',
-      'ewf_contender_title_locks', 'ewf_eight_loss_redemption_seen', 'ewf_last_mitb_stalk_match', 'ewf_tutorial_state'
+      'ewf_contender_title_locks', 'ewf_eight_loss_redemption_seen', 'ewf_last_mitb_stalk_match', 'ewf_tutorial_state', 'ewf_personality'
     ];
     keysToRemove.forEach(k => localStorage.removeItem(k));
 
@@ -917,7 +917,7 @@ const EWF_BACKUP_KEYS = [
   'ewf_ice_overrides', 'ewf_promo_plays', 'ewf_last_career_contract_match',
   'ewf_last_media_scrum_match', 'ewf_last_decree_match', 'ewf_uncrowned_king', 'ewf_vault_banished',
   'ewf_acknowledged_levels', 'ewf_last_summit_match', 'ewf_tag_loss_streaks', 'ewf_scheduled_story_match',
-  'ewf_contender_title_locks', 'ewf_eight_loss_redemption_seen', 'ewf_last_mitb_stalk_match', 'ewf_tutorial_state'
+  'ewf_contender_title_locks', 'ewf_eight_loss_redemption_seen', 'ewf_last_mitb_stalk_match', 'ewf_tutorial_state', 'ewf_personality'
 ];
 
 function exportUniverseBackup() {
@@ -3123,6 +3123,12 @@ function openStorylineModal(forcedA = null, forcedB = null, isBreakingNews = fal
     }
   }
 
+  // BATCH 10: bad guys lean into the villain roles (story text and consequences unchanged)
+  if (window.EWFP && typeof EWFP.castStory === 'function') {
+    const cast = EWFP.castStory(activeStoryline, activeStoryWrestlerA, activeStoryWrestlerB, !!(forcedA && forcedB), allWrestlers);
+    if (cast && cast[0] && cast[1] && cast[0].id !== cast[1].id) { activeStoryWrestlerA = cast[0]; activeStoryWrestlerB = cast[1]; }
+  }
+
   setElDisplay('storylineModal', 'flex');
   setElDisplay('storyScreen1', 'flex');
   setElDisplay('storyScreen2', 'none');
@@ -3172,6 +3178,8 @@ function openStorylineModal(forcedA = null, forcedB = null, isBreakingNews = fal
   if (typeof logShowFalloutEvent === 'function') {
     logShowFalloutEvent('cutscene', `🎬 STORYLINE WIRE: ${logToSave}`);
   }
+
+  if (window.EWFP && typeof EWFP.applyStory === 'function') EWFP.applyStory(activeStoryline, activeStoryWrestlerA, activeStoryWrestlerB); // BATCH 10
 
   if (activeStoryline.type === 'injury_feud') {
     const result = inflictInjury(activeStoryWrestlerB.id);
