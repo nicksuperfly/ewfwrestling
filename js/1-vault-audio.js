@@ -308,7 +308,7 @@ window.redeemVaultCode = function() {
     if (typeof window.closeModal === 'function') window.closeModal();
     
     if (typeof window.executeSuperstarBlackoutDebut === 'function') {
-      window.executeSuperstarBlackoutDebut({ level: 1, unlockName: found.name, unlockType: 'wrestler' }, found);
+      window.executeSuperstarBlackoutDebut({ level: 1, unlockName: found.name, unlockType: 'wrestler', fromCode: true }, found);
     } else if (typeof window.openWelcomeInductionModal === 'function') {
       window.openWelcomeInductionModal(found, true);
     }
@@ -326,21 +326,34 @@ window.redeemVaultCode = function() {
 /* --------------------------------------------------------------------------
    4. SHOW CATALOGS, FORMATS & STIPULATIONS
    -------------------------------------------------------------------------- */
-const showKeys = ['raw', 'smackdown', 'summerslam', 'survivor', 'backlash', 'rumble', 'mania', 'kotr', 'mitb'];
+const showKeys = ['raw', 'smackdown', 'summerslam', 'survivor', 'backlash', 'rumble', 'mania', 'kotr', 'mitb', 'badblood', 'judgmentday', 'nomercy'];
 var currentShowIdx = 0;
 
 const showIntros = {
   signature: "https://www.youtube.com/watch?v=3fzP4sdJBJ4",
-  raw: "https://www.youtube.com/watch?v=16go7SQ_zGc",
-  smackdown: "https://www.youtube.com/watch?v=cNK88vDbqeU",
-  summerslam: "https://youtu.be/8N3ib3LpCFk?is=3jfRFIe4XVaJTbXm",
+  raw: "https://www.youtube.com/watch?v=16go7SQ_zGc, https://www.youtube.com/watch?v=ISMTPxCLmfg, https://www.youtube.com/watch?v=pBeMEWdxYrE, https://www.youtube.com/watch?v=7aZ_wPwWZ2g",
+  smackdown: "https://www.youtube.com/watch?v=cNK88vDbqeU, https://www.youtube.com/watch?v=O3XhQ5jUt-0, https://www.youtube.com/watch?v=gqveO__zwkU, https://www.youtube.com/watch?v=x3XCKTWjoPw",
+  summerslam: "https://youtu.be/8N3ib3LpCFk?is=3jfRFIe4XVaJTbXm, https://www.youtube.com/watch?v=-lsRwglgdRM",
   survivor: "https://youtu.be/DKi7dI2M4a4?is=rjpo3cqGmolvPc6_",
   rumble: "https://www.youtube.com/watch?v=TDyvu2W7Nqk",
-  mania: "https://www.youtube.com/watch?v=Lhmi1C4JYi4",
+  mania: "https://www.youtube.com/watch?v=Lhmi1C4JYi4, https://www.youtube.com/watch?v=A9guQd7F3XY",
   kotr: "https://www.youtube.com/watch?v=erO6UYBnihA",
   backlash: "https://youtu.be/Hxw9pKj1A10",
-  mitb: "https://www.youtube.com/watch?v=frNdS-Bu3vc"
+  mitb: "https://www.youtube.com/watch?v=frNdS-Bu3vc",
+  // BATCH 11: the three new shows
+  badblood: "https://www.youtube.com/watch?v=c3nTRxCBKxA",
+  judgmentday: "https://www.youtube.com/watch?v=RNQmQ7_8dFI",
+  nomercy: "https://www.youtube.com/watch?v=orDYmg0Q8n0"
+  // Shows with several links (comma separated) pick one at random each time
 };
+
+// BATCH 11: proper display names for every show
+const SHOW_NAMES = {
+  raw: 'RAW', smackdown: 'SMACKDOWN', summerslam: 'SUMMERSLAM', survivor: 'SURVIVOR SERIES', backlash: 'BACKLASH',
+  rumble: 'ROYAL RUMBLE', mania: 'WRESTLEMANIA', kotr: 'KING OF THE RING', mitb: 'MONEY IN THE BANK',
+  badblood: 'BAD BLOOD', judgmentday: 'JUDGMENT DAY', nomercy: 'NO MERCY'
+};
+window.getShowName = function(key) { return SHOW_NAMES[key] || String(key || 'RAW').toUpperCase(); };
 
 function getShowLogo(key) {
   if (key === 'mania') return 'wrestlemania_logo.png';

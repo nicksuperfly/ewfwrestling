@@ -9,7 +9,7 @@
    -------------------------------------------------------------------------- */
 const LEVEL_LADDER = [
   { level: 1,  xpReq: 0,     title: "Rookie Booker",             unlockType: "none",     unlockKey: "none",                  unlockName: "5-Man Core Roster & Standard Matches", unlockImg: "logo_notext.png" },
-  { level: 2,  xpReq: 500,   title: "TV Coordinator",              unlockType: "titles",   unlockKey: "titles",                unlockName: "Physical Championship Sanctioning",    unlockImg: "whc.png" },
+  { level: 2,  xpReq: 500,   title: "TV Coordinator",              unlockType: "titles",   unlockKey: "titles",                unlockName: "Championship Belts",    unlockImg: "whc.png" },
   { level: 3,  xpReq: 1100,  title: "Chief Medical Officer",     unlockType: "injuries", unlockKey: "injuries",              unlockName: "Medical Ward & Injuries",              unlockImg: "story_26.png" },
   { level: 4,  xpReq: 1800,  title: "Hardcore Coordinator",        unlockType: "match",    unlockKey: "TLC Match",             unlockName: "TLC (Tables, Ladders & Chairs) Match", unlockImg: "tlc.png" },
   { level: 5,  xpReq: 2600,  title: "Emergency Dispatcher",        unlockType: "match",    unlockKey: "Ambulance Match",       unlockName: "Slambulance Match & Evacuation",       unlockImg: "ambulance.png" },
@@ -18,15 +18,15 @@ const LEVEL_LADDER = [
   { level: 8,  xpReq: 5600,  title: "Tournament Director",         unlockType: "show",     unlockKey: "kotr",                  unlockName: "King of the Ring Tournament",          unlockImg: "kotr_crown.png" },
   { level: 9,  xpReq: 6800,  title: "Main Event Chairman",         unlockType: "show",     unlockKey: "rumble",                unlockName: "The 30-Man Royal Rumble Match",        unlockImg: "rumble_logo.png" },
   { level: 10, xpReq: 8200,  title: "Director of Chaos",          unlockType: "wrestler", unlockKey: "default-kane",         unlockName: "Kane",                                 unlockImg: "kane_pose.png" },
-  { level: 11, xpReq: 9800,  title: "Senior Vice President",       unlockType: "none",     unlockKey: "none",                  unlockName: "Executive Citation Lvl 11",            unlockImg: "logo_notext.png" },
-  { level: 12, xpReq: 11600, title: "Executive Producer",          unlockType: "none",     unlockKey: "none",                  unlockName: "Executive Citation Lvl 12",            unlockImg: "logo_notext.png" },
-  { level: 13, xpReq: 13600, title: "Managing Director",          unlockType: "none",     unlockKey: "none",                  unlockName: "Executive Citation Lvl 13",            unlockImg: "logo_notext.png" },
-  { level: 14, xpReq: 15800, title: "Head of Creative",            unlockType: "none",     unlockKey: "none",                  unlockName: "Executive Citation Lvl 14",            unlockImg: "logo_notext.png" },
-  { level: 15, xpReq: 18200, title: "Corporate Titan",             unlockType: "none",     unlockKey: "none",                  unlockName: "Executive Citation Lvl 15",            unlockImg: "logo_notext.png" },
-  { level: 16, xpReq: 20800, title: "Franchise Architect",         unlockType: "none",     unlockKey: "none",                  unlockName: "Executive Citation Lvl 16",            unlockImg: "logo_notext.png" },
-  { level: 17, xpReq: 23600, title: "Industry Icon",               unlockType: "none",     unlockKey: "none",                  unlockName: "Executive Citation Lvl 17",            unlockImg: "logo_notext.png" },
-  { level: 18, xpReq: 26600, title: "Living Legend",               unlockType: "none",     unlockKey: "none",                  unlockName: "Executive Citation Lvl 18",            unlockImg: "logo_notext.png" },
-  { level: 19, xpReq: 29800, title: "Board of Directors",          unlockType: "none",     unlockKey: "none",                  unlockName: "Executive Citation Lvl 19",            unlockImg: "logo_notext.png" },
+  { level: 11, xpReq: 9800,  title: "Senior Vice President",       unlockType: "show",     unlockKey: "badblood",              unlockName: "Bad Blood: Grudge Night",              unlockImg: "badblood_logo.png" },
+  { level: 12, xpReq: 11600, title: "Executive Producer",          unlockType: "show",     unlockKey: "custom",                unlockName: "Create Your Own Show",                 unlockImg: "logo_notext.png" },
+  { level: 13, xpReq: 13600, title: "Managing Director",          unlockType: "show",     unlockKey: "judgmentday",           unlockName: "Judgment Day: Good vs Bad",            unlockImg: "judgmentday_logo.png" },
+  { level: 14, xpReq: 15800, title: "Head of Creative",            unlockType: "none",     unlockKey: "none",                  unlockName: "Bragging Rights: Level 14 GM",            unlockImg: "logo_notext.png" },
+  { level: 15, xpReq: 18200, title: "Corporate Titan",             unlockType: "show",     unlockKey: "nomercy",               unlockName: "No Mercy: Anything Goes",              unlockImg: "nomercy_logo.png" },
+  { level: 16, xpReq: 20800, title: "Franchise Architect",         unlockType: "none",     unlockKey: "none",                  unlockName: "Bragging Rights: Level 16 GM",            unlockImg: "logo_notext.png" },
+  { level: 17, xpReq: 23600, title: "Industry Icon",               unlockType: "none",     unlockKey: "none",                  unlockName: "Bragging Rights: Level 17 GM",            unlockImg: "logo_notext.png" },
+  { level: 18, xpReq: 26600, title: "Living Legend",               unlockType: "none",     unlockKey: "none",                  unlockName: "Bragging Rights: Level 18 GM",            unlockImg: "logo_notext.png" },
+  { level: 19, xpReq: 29800, title: "Board of Directors",          unlockType: "none",     unlockKey: "none",                  unlockName: "Bragging Rights: Level 19 GM",            unlockImg: "logo_notext.png" },
   { level: 20, xpReq: 33200, title: "Ultimate Federation Mogul", unlockType: "none",     unlockKey: "none",                  unlockName: "Permanent Hall of Fame Executive",     unlockImg: "logo_notext.png" }
 ];
 
@@ -51,7 +51,7 @@ const SECRET_ACHIEVEMENTS = [
   // 🎙️ BRONZE: FRONT OFFICE & PRODUCTION
   { id: 'front_office',        tier: 'tier-bronze',  icon: '📋', title: "Front Office",       xp: 50,  desc: "Open the EWF Universe Hub to inspect titles, teams, or feuds." },
   { id: 'soundcheck',          tier: 'tier-bronze',  icon: '🎙️', title: "Soundcheck",         xp: 50,  desc: "Preview an entrance theme or promo video from the roster grid." },
-  { id: 'dotted_line',         tier: 'tier-bronze',  icon: '✍️', title: "Dotted Line",        xp: 150, desc: "Complete a Championship Contract Signing cutscene at the dais." },
+  { id: 'dotted_line',         tier: 'tier-bronze',  icon: '✍️', title: "Dotted Line",        xp: 150, desc: "Complete a championship contract signing." },
   { id: 'medical_ward',        tier: 'tier-bronze',  icon: '🏥', title: "Medical Ward",       xp: 100, desc: "Clear an injured superstar from the hospital wing in Universe Hub." },
   { id: 'workhorse_promoter',  tier: 'tier-bronze',  icon: '📅', title: "Workhorse Promoter", xp: 150, desc: "Successfully complete 5 total matches in your career." },
   { id: 'television_mogul',    tier: 'tier-bronze',  icon: '📺', title: "Television Mogul",   xp: 250, desc: "Complete 10 total matches across any show." },
@@ -787,6 +787,7 @@ function showUnlockShowcase(tier, wrestler = null, onClaimCallback = null) {
     img.onerror = () => {
       if (wrestler) img.src = wrestler.image;
       else if (tier.unlockType === 'injuries') img.src = 'story_1.png';
+      else if (tier.unlockType === 'show') img.src = 'logo_notext.png';
       else img.src = 'whc.png';
     };
   }
@@ -799,7 +800,8 @@ function showUnlockShowcase(tier, wrestler = null, onClaimCallback = null) {
     name.parentElement.insertBefore(dadGiftEl, name.nextSibling);
   }
 
-  const isDadGift = (
+  // BATCH 11 ITEM 5: superstars signed with a contract code are already in Ellis's hands
+  const isDadGift = !tier.fromCode && (
     tier.level === 2 ||
     tier.level === 3 ||
     tier.level === 6 ||
@@ -914,7 +916,7 @@ function openGMOffice() {
       const pct = Math.min(100, Math.max(0, Math.round(((profile.xp || 0) / nextTier.xpReq) * 100)));
       if (xpFill) xpFill.style.width = `${pct}%`;
       if (xpText) xpText.innerText = `${profile.xp || 0} / ${nextTier.xpReq} XP`;
-      if (nextUnlock) nextUnlock.innerText = `Next Rank (Lvl ${nextTier.level}): ${nextTier.title} (Reward: 🔒 CLASSIFIED)`;
+      if (nextUnlock) nextUnlock.innerText = `Next Rank (Lvl ${nextTier.level}): ??? (Reward: 🔒 TOP SECRET)`;
     } else {
       if (xpFill) xpFill.style.width = '100%';
       if (xpText) xpText.innerText = `${profile.xp || 0} XP (MAX TIER)`;
@@ -1069,13 +1071,13 @@ function openGMRoadmapModal() {
 
     const rewardText = isUnlocked
       ? `<span style="color:#ffd700;">${tier.unlockName}</span>`
-      : `<span style="color:#64748b; font-style:italic;">🔒 TOP SECRET CLEARANCE (UNLOCKED AT LVL ${tier.level})</span>`;
+      : `<span style="color:#64748b; font-style:italic;">🔒 TOP SECRET (UNLOCKS AT LEVEL ${tier.level})</span>`;
 
     item.innerHTML = `
       <div style="flex: 1;">
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
           <span style="font-family:'Russo One', sans-serif; color:${isCurrent ? '#ffd700' : '#fff'}; font-size:0.95rem;">
-            LEVEL ${tier.level}: ${tier.title.toUpperCase()}
+            LEVEL ${tier.level}: ${isUnlocked ? tier.title.toUpperCase() : '???'}
           </span>
           <span style="font-family:'Russo One', sans-serif; color:#aaa; font-size:0.75rem;">(${tier.xpReq.toLocaleString()} XP)</span>
         </div>

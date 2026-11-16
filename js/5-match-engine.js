@@ -118,16 +118,27 @@ window.openBookShowModal = function() {
     
     let tierText = '';
     if (key === 'raw' || key === 'smackdown') tierText = '📺 TV SPECIAL (2 BOUTS)';
-    else if (key === 'summerslam' || key === 'mania') tierText = '🔥 MAJOR PLE (4 BOUTS)';
+    else if (key === 'summerslam' || key === 'mania') tierText = '🔥 HUGE EVENT (4 BOUTS)';
     else if (key === 'kotr') tierText = '👑 KOTR TOURNAMENT (4 BOUTS)';
     else if (key === 'rumble') tierText = '🥊 ROYAL RUMBLE (2 BOUTS)';
-    else tierText = '🌐 PLE (3 BOUTS)';
+    else if (key === 'badblood') tierText = '💢 GRUDGE NIGHT (3 BOUTS)';
+    else if (key === 'judgmentday') tierText = '⚖️ GOOD VS BAD (3 BOUTS)';
+    else if (key === 'nomercy') tierText = '🚫 NO DQ NIGHT (3 BOUTS)';
+    else tierText = '🌐 BIG EVENT (3 BOUTS)';
 
-    tile.innerHTML = `
-      <img src="${(typeof getShowLogo === 'function') ? getShowLogo(key) : key + '_logo.png'}" alt="${key}">
+    const showLabel = (typeof getShowName === 'function') ? getShowName(key) : key;
+    // BATCH 11 ITEM 3: locked shows are a mystery - no name, no logo
+    tile.innerHTML = lock.locked ? `
+      <div style="height:70px; display:flex; align-items:center; justify-content:center; font-family:'Russo One', sans-serif; font-size:2.6rem; color:#ffd700; text-shadow:0 0 18px rgba(255,215,0,0.6);">❓</div>
       <div style="text-align:center;">
-        <div class="book-show-brand-name">${key === 'mania' ? 'WRESTLEMANIA' : key}</div>
-        <div class="book-show-brand-tier">${lock.locked ? '🔒 LVL ' + lock.req + ' REQ' : tierText}</div>
+        <div class="book-show-brand-name">???</div>
+        <div class="book-show-brand-tier">🔒 TOP SECRET: LVL ${lock.req}</div>
+      </div>
+    ` : `
+      <img src="${(typeof getShowLogo === 'function') ? getShowLogo(key) : key + '_logo.png'}" alt="${showLabel}" onerror="this.outerHTML='<div style=\\'height:70px; display:flex; align-items:center; justify-content:center; font-family:Russo One; font-size:1.3rem; color:#fff;\\'>${showLabel}</div>'">
+      <div style="text-align:center;">
+        <div class="book-show-brand-name">${showLabel}</div>
+        <div class="book-show-brand-tier">${tierText}</div>
       </div>
     `;
 
@@ -136,7 +147,7 @@ window.openBookShowModal = function() {
     } else {
       tile.onclick = () => {
         try { const audio = typeof anvilSlamSound !== 'undefined' ? anvilSlamSound : new Audio('anvil.mp3'); audio.currentTime = 0; audio.play().catch(() => {}); } catch(e){}
-        alert(`🔒 SHOW LOCKED!\n\n${key.toUpperCase()} broadcasts unlock at Level ${lock.req}.`);
+        alert(`🔒 TOP SECRET SHOW!\n\nThis show unlocks at Level ${lock.req}. What could it be?`);
       };
     }
     grid.appendChild(tile);
@@ -255,7 +266,7 @@ window.generateShowCard = function(showKey) {
         titleName: scheduledStory.isTitleMatch ? (scheduledStory.titleName || 'World Heavyweight Championship') : null,
         titleImg: scheduledStory.isTitleMatch ? (scheduledStory.titleImg || 'whc.png') : null,
         isCareerMatch: !!scheduledStory.isCareerMatch,
-        feudStake: scheduledStory.feudStake || '📋 SANCTIONED STORYLINE CONTRACT',
+        feudStake: scheduledStory.feudStake || '📋 STORYLINE GRUDGE MATCH',
         isSanctionedContract: true,
         referee: null,
         status: 'pending',
@@ -691,7 +702,12 @@ window.generateShowCard = function(showKey) {
     });
   }
 
-  const showTitle = (typeof showIntros !== 'undefined' && showIntros[showKey]?.name) ? showIntros[showKey].name : showKey.toUpperCase();
+  // BATCH 11: locked match types can't sneak onto a card, and the new shows get their themes
+  if (typeof window.ewfPostProcessShowCard === 'function') {
+    try { bouts = window.ewfPostProcessShowCard(showKey, bouts, activeW) || bouts; } catch (e) { console.warn(e); }
+  }
+
+  const showTitle = (typeof getShowName === 'function') ? getShowName(showKey) : showKey.toUpperCase();
 
   window.activeShowSession = {
     showKey: showKey,
@@ -749,9 +765,12 @@ window.renderBookShowCardModal = function() {
     kotr: { primary: '#9933ff', secondary: '#ffd700' },
     mania: { primary: '#ffd700', secondary: '#ffffff' },
     mitb: { primary: '#00cc66', secondary: '#ffd700' },
-    backlash: { primary: '#ff2222', secondary: '#333344' }
+    backlash: { primary: '#ff2222', secondary: '#333344' },
+    badblood: { primary: '#b71c1c', secondary: '#1a0000' },
+    judgmentday: { primary: '#e0e0e0', secondary: '#4a148c' },
+    nomercy: { primary: '#ff6d00', secondary: '#212121' }
   };
-  const theme = brandColors[session.showKey] || brandColors.raw;
+  const theme = (typeof window.ewfShowTheme === 'function' && window.ewfShowTheme(session.showKey)) || brandColors[session.showKey] || brandColors.raw; // BATCH 12: custom show colours
   
   const backdrop = document.getElementById('bookShowAmbientBackdrop');
   if (backdrop) {
@@ -781,7 +800,7 @@ window.renderBookShowCardModal = function() {
     if (bout.isTitleMatch) stakeHtml = `<div class="bsb-stake-ribbon"><img src="${bout.titleImg}" style="height:14px; filter:drop-shadow(0 0 4px #000);"> ${bout.titleName} ON LINE</div>`;
     else if (bout.feudStake) stakeHtml = `<div class="bsb-stake-ribbon" style="color:#ff3333;">💀 ${bout.feudStake}</div>`;
     else if (bout.referee) stakeHtml = `<div class="bsb-stake-ribbon" style="color:#00ffcc;">👔 GUEST REF: ${bout.referee.name.toUpperCase()}</div>`;
-    else if (bout.isSanctionedContract) stakeHtml = `<div class="bsb-stake-ribbon" style="color:#ffd700;">📋 SANCTIONED CONTRACT BOUT</div>`;
+    else if (bout.isSanctionedContract) stakeHtml = `<div class="bsb-stake-ribbon" style="color:#ffd700;">📋 BOOKED BY GM ELLIS</div>`;
 
     let p1Status = '', p2Status = '', p3Status = '', p4Status = '', p5Status = '', p6Status = '';
     let hasW1 = bout.participants.length > 0 && bout.participants[0];
@@ -1521,6 +1540,9 @@ function isShowLocked(showKey) {
   if (showKey === 'kotr' && lvl < 8) return { locked: true, req: 8, name: "King of the Ring" };
   if (showKey === 'mitb' && lvl < 7) return { locked: true, req: 7, name: "Money in the Bank" };
   if (showKey === 'rumble' && lvl < 9) return { locked: true, req: 9, name: "Royal Rumble" };
+  if (showKey === 'badblood' && lvl < 11) return { locked: true, req: 11, name: "Bad Blood" };
+  if (showKey === 'judgmentday' && lvl < 13) return { locked: true, req: 13, name: "Judgment Day" };
+  if (showKey === 'nomercy' && lvl < 15) return { locked: true, req: 15, name: "No Mercy" };
   return { locked: false };
 }
 
@@ -1610,16 +1632,17 @@ function updateShowCarouselUI() {
   if (lock && lock.locked) {
     display.innerHTML = `
       <div style="position:relative; display:flex; align-items:center; justify-content:center;">
-        <img src="${logoFile}" alt="${key}" class="show-logo-img locked-item-silhouette">
+        <div class="show-logo-img" style="display:flex; align-items:center; justify-content:center; font-size:4rem; color:#ffd700; min-height:120px;">❓</div>
         <div class="locked-dossier-overlay">
           <div style="font-size:2rem; margin-bottom:4px;">🔒</div>
-          <div>CLASSIFIED SHOW INTRO</div>
+          <div>TOP SECRET SHOW</div>
           <div style="font-size:0.8rem; color:#ffd700; margin-top:4px;">REQUIRES LEVEL ${lock.req}</div>
         </div>
       </div>
     `;
   } else {
-    display.innerHTML = `<img src="${logoFile}" alt="${key}" class="show-logo-img" onerror="this.outerHTML='<h2 style=\\'color:#fff; font-family:Russo One;\\'>${key.toUpperCase()}</h2>'">`;
+    const lbl = (typeof getShowName === 'function') ? getShowName(key) : key.toUpperCase();
+    display.innerHTML = `<img src="${logoFile}" alt="${lbl}" class="show-logo-img" onerror="this.outerHTML='<h2 style=\\'color:#fff; font-family:Russo One;\\'>${lbl}</h2>'">`;
   }
 }
 
@@ -1628,7 +1651,7 @@ window.confirmShowCarouselChoice = function() {
   const lock = isShowLocked(key);
   if (lock.locked) {
     try { const audio = typeof anvilSlamSound !== 'undefined' ? anvilSlamSound : new Audio('anvil.mp3'); audio.currentTime = 0; audio.play().catch(() => {}); } catch (e) {}
-    alert(`🔒 SHOW LOCKED!\n\n${lock.name} broadcast intro unlocks at Level ${lock.req}.`);
+    alert(`🔒 TOP SECRET SHOW!\n\nThis show unlocks at Level ${lock.req}. What could it be?`);
     return;
   }
   activeBookedMatch.showKey = key;
@@ -1640,7 +1663,7 @@ window.selectMatchShow = function(showKey) {
   const lock = isShowLocked(showKey);
   if (lock.locked) {
     try { const audio = typeof anvilSlamSound !== 'undefined' ? anvilSlamSound : new Audio('anvil.mp3'); audio.currentTime = 0; audio.play().catch(() => {}); } catch (e) {}
-    alert(`🔒 SHOW LOCKED!\n\n${lock.name} broadcast intro unlocks at Level ${lock.req}.`);
+    alert(`🔒 TOP SECRET SHOW!\n\nThis show unlocks at Level ${lock.req}. What could it be?`);
     return;
   }
   activeBookedMatch.showKey = showKey;
@@ -1878,7 +1901,7 @@ function toggleTitleStakesInEngine() {
   const currentLevel = (typeof getGMLevel === 'function') ? getGMLevel() : 1;
   if (currentLevel < 2) {
     try { const audio = typeof anvilSlamSound !== 'undefined' ? anvilSlamSound : new Audio('anvil.mp3'); audio.currentTime = 0; audio.play().catch(() => {}); } catch(e){}
-    alert("🔒 CHAMPIONSHIP SANCTIONING LOCKED!\n\nYou must reach Level 2 (TV Coordinator) in the GM Office before sanctioning physical championship matches.");
+    alert("🔒 TITLE MATCHES ARE LOCKED!\n\nReach Level 2 to put a title on the line.");
     return;
   }
 
@@ -1903,7 +1926,7 @@ function updateTitleStakeBtnUI() {
 
   if (btn) {
     if (getGMLevel() < 2) {
-      btn.innerText = `🔒 TITLE SANCTIONING (REQ. LVL 2)`;
+      btn.innerText = `🔒 TITLE MATCHES (LEVEL 2)`;
       btn.className = "action-btn";
       btn.style.opacity = '0.5';
     } else {
@@ -1996,9 +2019,9 @@ function checkAndTriggerContractSigning(onComplete) {
       tableImg.style.display = 'block';
     }
 
-    if (banner) banner.innerText = `MANDATORY ${activeBookedMatch.titleName.toUpperCase()} SANCTIONING`;
-    const earnedWay = hasContenderLock ? 'GM Ellis #1 Contender Lock' : 'Win Streak';
-    if (subText) subText.innerText = `${champ.name.toUpperCase()} faces #1 Contender ${challenger.name.toUpperCase()} (Earned via ${earnedWay}). Paperwork is on the dais.`;
+    if (banner) banner.innerText = `${activeBookedMatch.titleName.toUpperCase()} CONTRACT SIGNING`;
+    const earnedWay = hasContenderLock ? 'A TITLE SHOT FROM GM ELLIS' : 'A WIN STREAK';
+    if (subText) subText.innerText = `${champ.name.toUpperCase()} DEFENDS THE TITLE AGAINST #1 CONTENDER ${challenger.name.toUpperCase()}, WHO EARNED THE SHOT WITH ${earnedWay}. THE CONTRACT IS ON THE TABLE!`;
     if (actionArea) actionArea.innerHTML = `<button id="contractSignBtn" class="contract-action-btn" onclick="executeContractAction()">✍️ SIGN CONTRACT</button>`;
 
     modal.style.setProperty('z-index', '2147483646', 'important');
@@ -2023,7 +2046,7 @@ window.executeContractAction = function() {
 
   if (!isBrawl) {
     try { const audio = typeof penSignSound !== 'undefined' ? penSignSound : new Audio('pen_sign.mp3'); audio.currentTime = 0; audio.play().catch(() => {}); } catch (e) {}
-    if (banner) banner.innerText = "CONTRACT OFFICIALLY SANCTIONED!";
+    if (banner) banner.innerText = "CONTRACT SIGNED!";
     if (subText) subText.innerText = `✍️ Both superstars ink the contract without throwing hands! Intense venom in the stare-down, but officials maintain order. This championship main event is locked in!`;
 
     if (typeof logShowFalloutEvent === 'function') {
@@ -2697,9 +2720,12 @@ function launchMatchCardOverlay() {
       kotr: { primary: '#9933ff', secondary: '#ffd700' },
       mania: { primary: '#ffd700', secondary: '#ffffff' },
       mitb: { primary: '#00cc66', secondary: '#ffd700' },
-      backlash: { primary: '#ff2222', secondary: '#333344' }
+      backlash: { primary: '#ff2222', secondary: '#333344' },
+      badblood: { primary: '#b71c1c', secondary: '#1a0000' },
+      judgmentday: { primary: '#e0e0e0', secondary: '#4a148c' },
+      nomercy: { primary: '#ff6d00', secondary: '#212121' }
     };
-    const currentTheme = brandColors[showKey] || brandColors.raw;
+    const currentTheme = (typeof window.ewfShowTheme === 'function' && window.ewfShowTheme(showKey)) || brandColors[showKey] || brandColors.raw;
 
     const slashBlue = overlay.querySelector('.mc-slash-blue');
     const slashRed = overlay.querySelector('.mc-slash-red');
@@ -3216,6 +3242,7 @@ function startRumbleTimer() {
   activeMatchMode = 'rumble';
   
   let bgShowUrl = (activeBookedMatch.showKey && typeof showIntros !== 'undefined' && showIntros[activeBookedMatch.showKey]) ? showIntros[activeBookedMatch.showKey] : ((typeof showIntros !== 'undefined' && showIntros.raw) ? showIntros.raw : '');
+  { const opts = String(bgShowUrl || '').split(',').map(u => u.trim()).filter(Boolean); bgShowUrl = opts[Math.floor(Math.random() * opts.length)] || bgShowUrl; } // pick one of the show's intros
   const bgVideoId = typeof extractVideoID === 'function' ? extractVideoID(bgShowUrl) : null;
   const iframe = document.getElementById('youtubeIframe');
   // BATCH 6 ITEM 8: Include &playlist=${bgVideoId}&enablejsapi=1 so background show intro loops continuously
@@ -3502,6 +3529,7 @@ function showMatchInProgressWinnerScreen() {
   clearTimeout(rumbleEntranceDurationTimeout);
   
   let bgShowUrl = (activeBookedMatch.showKey && typeof showIntros !== 'undefined' && showIntros[activeBookedMatch.showKey]) ? showIntros[activeBookedMatch.showKey] : ((typeof showIntros !== 'undefined' && showIntros.raw) ? showIntros.raw : '');
+  { const opts = String(bgShowUrl || '').split(',').map(u => u.trim()).filter(Boolean); bgShowUrl = opts[Math.floor(Math.random() * opts.length)] || bgShowUrl; } // pick one of the show's intros
   const bgVideoId = typeof extractVideoID === 'function' ? extractVideoID(bgShowUrl) : null;
 
   const iframe = document.getElementById('youtubeIframe');
@@ -4683,7 +4711,7 @@ window.declareMatchWinner = function(resultData) {
     }
   }
 
-  const resolvedShowName = (activeBookedMatch.showKey && typeof showIntros !== 'undefined' && showIntros[activeBookedMatch.showKey] && showIntros[activeBookedMatch.showKey].name)
+  const resolvedShowName = (typeof getShowName === 'function' && activeBookedMatch.showKey && activeBookedMatch.showKey !== 'none') ? getShowName(activeBookedMatch.showKey) : (activeBookedMatch.showKey && typeof showIntros !== 'undefined' && showIntros[activeBookedMatch.showKey] && showIntros[activeBookedMatch.showKey].name)
     ? showIntros[activeBookedMatch.showKey].name
     : (activeBookedMatch.showKey || 'RAW').toUpperCase();
 
@@ -4948,7 +4976,14 @@ window.confirmAndLogMatchSummary = function() {
     const finalDefenseCount = (activeBookedMatch.isTitleMatch && typeof getTitleDefenseCount === 'function') ? getTitleDefenseCount(activeBookedMatch.titleCode) : 0;
     const savedLosers = Array.isArray(s.losers) ? [...s.losers] : [];
     const loserNames = (savedLosers.length > 0) ? savedLosers.map(l => l.name).join(' & ') : 'Opponents';
-    const winnerName = s.winner ? s.winner.name.toUpperCase() : 'A SUPERSTAR';
+    // BATCH 11 ITEM 4: tag team winners are both partners, not just the first one
+    let winnerTeam = s.winner ? [s.winner] : [];
+    if (s.winner && activeBookedMatch && activeBookedMatch.formatKey === 'tag' && Array.isArray(activeBookedMatch.participants)) {
+      const loserIdsT = savedLosers.map(l => l && l.id);
+      const team = activeBookedMatch.participants.filter(p => p && !loserIdsT.includes(p.id));
+      if (team.length === 2) winnerTeam = team.some(p => p.id === s.winner.id) ? [s.winner, team.find(p => p.id !== s.winner.id)] : team;
+    }
+    const winnerName = winnerTeam.length ? winnerTeam.map(w => w.name.toUpperCase()).join(' & ') : 'A SUPERSTAR';
     const winnerId = s.winner ? s.winner.id : null;
     const matchDurationText = s.matchTime ? ` (Time: ${s.matchTime})` : '';
     const matchQuality = s.rating || 0;
@@ -5017,6 +5052,9 @@ window.confirmAndLogMatchSummary = function() {
           curBout.winnerId = winnerId;
           curBout.winnerName = winnerName;
           curBout.winnerObj = s.winner;
+          curBout.winnerObjs = winnerTeam;
+          curBout.titleWon = !!(s.titleName && s.titleWon);
+          curBout.titleRetained = !!(s.titleName && !s.titleWon);
           curBout.loserName = loserNames;
           curBout.rating = matchQuality;
           curBout.status = 'completed';
@@ -5201,6 +5239,21 @@ function openEventHighlightsModal() {
     heroStage.style.display = 'flex';
     heroStage.style.alignItems = 'center';
     heroStage.style.overflow = 'hidden';
+  }
+
+  // BATCH 11 ITEM 4: tag team main event winners stand side by side
+  const oldPartner = document.getElementById('ehHeroPartnerPoseImg');
+  if (oldPartner) oldPartner.remove();
+  if (heroPoseImg && Array.isArray(mainEvent.winnerObjs) && mainEvent.winnerObjs.length === 2) {
+    const partner = mainEvent.winnerObjs.find(w => w && winner && w.id !== winner.id) || mainEvent.winnerObjs[1];
+    if (partner) {
+      const pImg = heroPoseImg.cloneNode(false);
+      pImg.id = 'ehHeroPartnerPoseImg';
+      pImg.src = resolveHeroPose(partner);
+      pImg.onerror = function () { this.onerror = null; this.src = partner.image; };
+      pImg.style.marginLeft = '-6%';
+      heroPoseImg.insertAdjacentElement('afterend', pImg);
+    }
   }
 
   if (heroPoseImg) {
@@ -5413,7 +5466,7 @@ function triggerShowFinaleCelebration() {
 
   const isTv = (session.showKey === 'raw' || session.showKey === 'smackdown');
   const isBig = (session.showKey === 'summerslam' || session.showKey === 'mania');
-  const xpReward = isTv ? 150 : (isBig ? 600 : 350);
+  const xpReward = session.customXp || (isTv ? 150 : (isBig ? 600 : 350)); // BATCH 12: custom shows set their own XP
 
   session.finalGrade = grade;
   session.finalRating = avg;
@@ -6162,7 +6215,7 @@ if (formEl) {
         formEl.reset();
 
         if (typeof executeSuperstarBlackoutDebut === 'function') {
-          executeSuperstarBlackoutDebut({ level: 1, unlockName: newWrestler.name, unlockType: 'wrestler' }, newWrestler);
+          executeSuperstarBlackoutDebut({ level: 1, unlockName: newWrestler.name, unlockType: 'wrestler', fromCode: true }, newWrestler);
         } else {
           if (typeof renderGrid === 'function') renderGrid();
           if (typeof renderRoster === 'function') renderRoster();

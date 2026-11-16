@@ -106,18 +106,41 @@
     return m.length ? byId(pick(m).other) : null;
   };
 
+  // Batch 11 item 18: only the big stuff makes someone FURIOUS, it cools after 4 matches, max 3 at once
   function makeFurious(id, vsId, why, st) {
     if (!id) return;
-    st.furious[id] = { vs: vsId || null, why: why || 'Wants revenge', until: st.matchNo + 6 };
+    const active = Object.keys(st.furious).filter(k => k !== id && st.furious[k].until > st.matchNo);
+    if (!st.furious[id] && active.length >= 3) return;
+    st.furious[id] = { vs: vsId || null, why: why || 'Wants revenge', until: st.matchNo + 4 };
   }
+
+  /* ---------- Bad guy mark (Batch 11 item 15): 🫯 if the tablet can draw it, otherwise just the red name ---------- */
+  // A colour emoji ignores the red fill colour; a "missing glyph" box is drawn in plain red. So: any non-red pixels = supported.
+  function emojiSupported(ch) {
+    try {
+      const c = document.createElement('canvas'); c.width = c.height = 40;
+      const x = c.getContext('2d'); x.textBaseline = 'top'; x.font = '32px sans-serif'; x.fillStyle = '#ff0000';
+      x.fillText(ch, 2, 2);
+      const d = x.getImageData(0, 0, 40, 40).data;
+      let colour = 0, ink = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i + 3] < 60) continue;
+        ink++;
+        if (d[i + 1] > 60 || d[i + 2] > 60) colour++;
+      }
+      return ink > 20 && colour > ink * 0.15;
+    } catch (e) { return false; }
+  }
+  const BADMARK = emojiSupported('🫯') ? '🫯' : '';
+  const bm = (t) => (BADMARK ? BADMARK + ' ' : '') + t;
 
   /* ---------- Moods ---------- */
   const MOODS = {
     cocky: { e: '👑', label: 'COCKY', col: '#ffd700' },
     hungry: { e: '💪', label: 'HUNGRY', col: '#00e676' },
-    fedup: { e: '🥱', label: 'FED UP', col: '#9e9e9e' },
-    jealous: { e: '😒', label: 'JEALOUS', col: '#b388ff' },
-    furious: { e: '😡', label: 'FURIOUS', col: '#ff1744' }
+    fedup: { e: '💤', label: 'FED UP', col: '#9e9e9e' },
+    jealous: { e: '👀', label: 'JEALOUS', col: '#b388ff' },
+    furious: { e: '🌋', label: 'FURIOUS', col: '#ff1744' }
   };
   function heldTitles(id) {
     const h = typeof getTitleHolders === 'function' ? (getTitleHolders() || {}) : {};
@@ -220,7 +243,8 @@
         const r = getRel(A.id, B.id, st);
         if (!r || r.t !== 'jealous') setRel(A.id, B.id, 'badblood', short(story, A, B), null, st);
       }
-      if ((d.a || 0) < 0) makeFurious(B.id, A.id, `Wants revenge on ${A.name}`, st);
+      if (story.type === 'injury_feud') makeFurious(B.id, A.id, `Put in hospital by ${A.name}`, st);
+      else if (story.type === 'betrayal') makeFurious(B.id, A.id, `Betrayed by ${A.name}`, st);
       if (story.type === 'injury_feud') st.injuredBy[B.id] = A.id;
       save(st);
     } catch (e) {}
@@ -344,13 +368,21 @@
         font-size: clamp(1.1rem, 3vw, 2rem); letter-spacing: 2px; text-transform: uppercase; border: 2px solid #fff; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
       .ewfp-title img { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; border: 2px solid #ffd700; }
       .ewfp-stage { position: relative; flex: 1; z-index: 2; }
-      .ewfp-pose { position: absolute; bottom: 0; height: 78%; max-width: 42%; object-fit: contain; filter: drop-shadow(0 0 18px rgba(0,0,0,0.9)); }
-      .ewfp-pose.left { left: 4%; animation: ewfpInLeft .6s ease-out both; }
-      .ewfp-pose.right { right: 4%; animation: ewfpInRight .6s ease-out both; }
+      /* Batch 11 item 10: superstars square up in the middle, victims go down properly */
+      .ewfp-pose { position: absolute; bottom: 0; height: 88%; max-width: 40%; object-fit: contain; filter: drop-shadow(0 0 18px rgba(0,0,0,0.9));
+        transform-origin: bottom center; transition: rotate .25s ease-out, translate .25s ease-out, filter .25s; }
+      .ewfp-pose.left { left: 15%; z-index: 2; animation: ewfpInLeft .6s ease-out both; }
+      .ewfp-pose.right { right: 15%; z-index: 1; animation: ewfpInRight .6s ease-out both; }
       .ewfp-pose.center { left: 50%; transform: translateX(-50%); animation: ewfpRise .7s ease-out both; }
-      .ewfp-pose.square { height: auto; width: min(30vw, 260px); bottom: 12%; border: 3px solid #fff; }
-      .ewfp-pose.hurt { filter: grayscale(0.6) brightness(0.65) drop-shadow(0 0 12px #000); transform: rotate(-8deg); transform-origin: bottom center; }
-      .ewfp-pose.right.hurt { transform: rotate(8deg); }
+      .ewfp-pose.square { height: auto; width: min(26vw, 240px); bottom: 12%; border: 3px solid #fff; }
+      .ewfp-pose.left.square { left: 22%; } .ewfp-pose.right.square { right: 22%; }
+      .ewfp-pose.hurt { filter: grayscale(0.85) brightness(0.5) drop-shadow(0 0 12px #000); rotate: -20deg; translate: -6% 10%; }
+      .ewfp-pose.right.hurt { rotate: 20deg; translate: 6% 10%; }
+      .ewfp-monitor { position: absolute; top: 4%; right: 3%; width: min(24vw, 230px); background: #000; border: 5px solid #2b2b2b; outline: 2px solid #555;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.9); z-index: 5; animation: ewfpPop .5s ease-out both; }
+      .ewfp-monitor img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; filter: contrast(1.1) saturate(0.9); }
+      .ewfp-monitor div { position: absolute; top: 6px; left: 8px; color: #ff1744; font-family: 'Russo One', sans-serif; font-size: 0.8rem; text-shadow: 0 0 6px #000; }
+      .ewfp-monitor span { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.75); color: #fff; font-family: 'Russo One', sans-serif; font-size: 0.75rem; padding: 3px 6px; text-align: center; }
       .ewfp-obj { position: absolute; z-index: 4; pointer-events: none; filter: drop-shadow(0 6px 14px rgba(0,0,0,0.85)); }
       .ewfp-obj.drop { animation: ewfpDrop .7s cubic-bezier(.3,1.4,.6,1) both; }
       .ewfp-obj.slideL { animation: ewfpInLeft .7s ease-out both; }
@@ -359,7 +391,7 @@
       .ewfp-obj.pop { animation: ewfpPop .5s ease-out both; }
       .ewfp-panel { position: relative; z-index: 5; margin: 0 auto 22px auto; width: min(880px, 94%); background: rgba(8,8,14,0.9); border: 2px solid #ffd700;
         box-shadow: 0 0 30px rgba(0,0,0,0.9); padding: 14px 18px; text-align: center; }
-      .ewfp-text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: clamp(1rem, 2.2vw, 1.25rem); line-height: 1.4; }
+      .ewfp-text { font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: clamp(1rem, 2.2vw, 1.25rem); line-height: 1.4; }
       .ewfp-text b { color: #ffd700; }
       .ewfp-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
       .ewfp-btn { font-family: 'Russo One', sans-serif; font-size: 1rem; padding: 12px 20px; border: 2px solid #fff; cursor: pointer; color: #fff; background: linear-gradient(180deg, #333, #111); text-transform: uppercase; }
@@ -387,16 +419,44 @@
         display: flex !important; align-items: center !important; justify-content: center !important; border-radius: 4px !important; font-size: 0.92rem !important;
         z-index: 17 !important; pointer-events: none; line-height: 1 !important; background: rgba(10,10,14,0.88) !important; border: 2px solid #fff; }
       .card .bad-guy-mark { margin-left: 4px; }
-      #universeTabSuperstars { background: linear-gradient(rgba(5,5,10,0.78), rgba(5,5,10,0.9)), url('relationships_bg.png') center/cover; padding: 10px; border: 1px solid #333; }
+      /* Batch 11 item 11: Book a Show results */
+      .bsb-fighter-thumb-wrap.bsb-win .bsb-fighter-thumb { border: 2px solid #ffd700 !important; box-shadow: 0 0 14px rgba(255,215,0,0.95), 0 0 4px #fff !important; }
+      .bsb-win-ribbon { position: absolute; left: -6px; right: -6px; bottom: -7px; z-index: 4; background: linear-gradient(180deg, #ffe066, #d4af37 60%, #b8860b);
+        color: #000; font-family: 'Russo One', sans-serif; font-size: 0.5rem; letter-spacing: 0.5px; text-align: center; padding: 1px 0; border: 1px solid #fff;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.8); white-space: nowrap; }
+      .bsb-lose-stamp { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-18deg); z-index: 4; color: #ff1744; border: 2px solid #ff1744;
+        font-family: 'Russo One', sans-serif; font-size: 0.48rem; padding: 1px 3px; background: rgba(0,0,0,0.55); letter-spacing: 0.5px; white-space: nowrap; }
+      .bsb-fighter-name.bsb-win-name { color: #ffd700 !important; text-shadow: 0 0 8px rgba(255,215,0,0.6); }
+      .bsb-fighter-name.bsb-lose-name { color: #888 !important; text-decoration: none !important; }
+      .bsb-res { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; font-family: 'Russo One', sans-serif; }
+      .bsb-res .stars { color: #ffd700; font-size: 1.05rem; text-shadow: 0 0 8px #ffd700; letter-spacing: 1px; }
+      .bsb-res .time { color: #ccc; font-size: 0.68rem; }
+      .bsb-res .champ { display: flex; align-items: center; gap: 5px; background: linear-gradient(180deg, #ffe066, #b8860b); color: #000; font-size: 0.66rem; padding: 3px 7px; border: 1.5px solid #fff; box-shadow: 0 0 12px rgba(255,215,0,0.8); }
+      .bsb-res .champ img { height: 16px; }
+      .bsb-res .kept { color: #4fc3f7; font-size: 0.66rem; border: 1px solid #4fc3f7; padding: 2px 6px; }
+      .bs-bout-strip.ewfp-slam { animation: ewfpSlam .55s cubic-bezier(.2,1.6,.5,1) both; }
+      @keyframes ewfpSlam { 0% { transform: scale(1.35); opacity: 0; filter: brightness(2); } 60% { transform: scale(0.97); opacity: 1; } 100% { transform: scale(1); filter: none; } }
+      /* Batch 11 item 14: one job per corner */
+      .card .rival-badge, .card .defense-counter-pill { display: none !important; }
+      .rival-tile { position: absolute !important; top: 104px !important; left: 6px !important; min-width: 26px; height: 26px; padding: 0 3px; box-sizing: border-box;
+        display: flex !important; align-items: center; justify-content: center; gap: 1px; border-radius: 4px; font-size: 0.85rem; line-height: 1; z-index: 17; pointer-events: none;
+        background: rgba(30, 0, 0, 0.9); border: 2px solid #ff1744; box-shadow: 0 0 10px rgba(255, 23, 68, 0.75); color: #fff; font-family: 'Russo One', sans-serif; }
+      .rival-tile.blood { border-color: #b71c1c; background: #000; box-shadow: 0 0 12px #ff0000; animation: pulseFire 1.5s infinite alternate; }
+      .rival-tile small { font-size: 0.62rem; }
+      .belt-def-count { position: absolute; right: 1px; bottom: 1px; min-width: 18px; height: 18px; border-radius: 9px; padding: 0 4px; box-sizing: border-box;
+        background: linear-gradient(180deg, #ffd700, #b8860b); color: #000; border: 1.5px solid #fff; font-family: 'Russo One', sans-serif; font-size: 0.6rem;
+        display: flex; align-items: center; justify-content: center; z-index: 25; box-shadow: 0 0 8px rgba(255, 215, 0, 0.8); }
+      #universeTabSuperstars { background: linear-gradient(rgba(5,5,10,0.35), rgba(5,5,10,0.55)), url('relationships_bg.png') center/cover; padding: 10px; border: 1px solid #333; }
       .ewfp-hot { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
-      .ewfp-hot div { flex: 1; min-width: 150px; background: rgba(0,0,0,0.6); border: 1px solid #ffd700; padding: 6px 8px; font-size: 0.75rem; }
+      .ewfp-hot div { flex: 1; min-width: 150px; background: rgba(0,0,0,0.72); border: 1px solid #ffd700; padding: 6px 8px; font-size: 0.75rem; }
+      .ewfp-tile div { text-shadow: 0 1px 3px #000, 0 0 6px #000; }
       .ewfp-hot b { color: #ffd700; display: block; font-family: 'Russo One', sans-serif; font-size: 0.7rem; letter-spacing: 1px; }
       .ewfp-roster { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 10px; }
       .ewfp-tile { width: 74px; cursor: pointer; text-align: center; font-family: 'Russo One', sans-serif; font-size: 0.6rem; position: relative; }
       .ewfp-tile img { width: 64px; height: 64px; object-fit: cover; border: 2px solid #fff; display: block; margin: 0 auto 3px auto; }
       .ewfp-tile.sel img { border-color: #ffd700; box-shadow: 0 0 14px #ffd700; }
       .ewfp-tile .mb { position: absolute; top: 44px; right: 4px; font-size: 0.8rem; }
-      .ewfp-prof { background: rgba(0,0,0,0.7); border: 1px solid #555; padding: 10px; font-size: 0.85rem; text-align: left; }
+      .ewfp-prof { background: rgba(0,0,0,0.78); border: 1px solid #555; padding: 10px; font-size: 0.85rem; text-align: left; }
       .ewfp-prof h3 { margin: 0 0 6px 0; font-family: 'Russo One', sans-serif; }
       .ewfp-row { margin: 4px 0; }
       .ewfp-rel { display: flex; justify-content: space-between; gap: 6px; border-bottom: 1px solid #222; padding: 4px 0; }
@@ -427,17 +487,18 @@
       <div class="ewfp-stage"></div>
       <div class="ewfp-panel"><div class="ewfp-text"></div><div class="ewfp-btns"></div></div>`;
     const stage = el.querySelector('.ewfp-stage');
-    const addPose = (w, cls, hurt) => {
+    const addPose = (w, cls, hurt, style) => {
       if (!w) return;
       const img = document.createElement('img');
       img.className = `ewfp-pose ${cls}${hurt ? ' hurt' : ''}`;
+      if (style) img.style.cssText = style;
       img.src = pose(w);
       img.alt = w.name;
       img.onerror = function () { this.onerror = null; this.src = w.image; this.classList.add('square'); };
       stage.appendChild(img);
     };
-    addPose(opts.left, 'left', opts.leftHurt);
-    addPose(opts.right, 'right', opts.rightHurt);
+    addPose(opts.left, 'left', opts.leftHurt, opts.leftStyle);
+    addPose(opts.right, 'right', opts.rightHurt, opts.rightStyle);
     addPose(opts.center, 'center', false);
     (opts.objects || []).forEach(o => {
       const img = document.createElement('img');
@@ -491,6 +552,7 @@
   /* ---------- Booking helpers ---------- */
   function bookMatch(a, b, cfg, when, done) {
     cfg = cfg || {};
+    if (cfg.matchType) cfg.matchType = safeType(cfg.matchType);
     const isTitle = !!cfg.titleCode;
     if (when === 'next') {
       const m = {
@@ -546,11 +608,11 @@
     setAlign(w.id, t.to, st);
     save(st);
     const bad = t.to === 'bad';
-    log(bad ? `😈 BAD GUY TURN: ${NM(w)} has turned their back on the fans! (${t.why})` : `😇 GOOD GUY TURN: ${NM(w)} has won the fans back! (${t.why})`, 'match');
-    fallout('cutscene', bad ? `😈 ${NM(w)} TURNED BAD GUY!` : `😇 ${NM(w)} TURNED GOOD GUY!`);
+    log(bad ? `${bm('BAD GUY TURN')}: ${NM(w)} has turned their back on the fans! (${t.why})` : `⭐ GOOD GUY TURN: ${NM(w)} has won the fans back! (${t.why})`, 'match');
+    fallout('cutscene', bad ? bm(`${NM(w)} TURNED BAD GUY!`) : `⭐ ${NM(w)} TURNED GOOD GUY!`);
     scene({
       bg: bad ? 'bad_guy_turn_bg.png' : 'good_guy_turn_bg.png',
-      title: bad ? `😈 ${NM(w)} HAS TURNED BAD GUY! 😈` : `😇 ${NM(w)} IS A GOOD GUY AGAIN! 😇`,
+      title: bad ? bm(`${NM(w)} HAS TURNED BAD GUY!`) : `⭐ ${NM(w)} IS A GOOD GUY AGAIN! ⭐`,
       titleBg: bad ? 'linear-gradient(180deg,#b71c1c,#1a0000)' : 'linear-gradient(180deg,#1e88e5,#0d2a5c)',
       center: w,
       text: bad
@@ -563,7 +625,7 @@
     flash();
     if (typeof renderGrid === 'function') setTimeout(renderGrid, 50);
     bret(bad ? 'badTurn' : 'goodTurn', bad
-      ? `Whoa, GM! <b>${w.name}</b> just turned <b>BAD GUY</b>! Bad guys get a <b>red name and a 😈</b> on their card. They cheat, they attack after the bell, and the fans boo them. Every hero needs a villain!`
+      ? `Whoa, GM! <b>${w.name}</b> just turned <b>BAD GUY</b>! Bad guys get a <b>red name${BADMARK ? ' and a ' + BADMARK : ''}</b> on their card. They cheat, they attack after the bell, and the fans boo them. Every hero needs a villain!`
       : `What a moment, GM! <b>${w.name}</b> is a <b>GOOD GUY</b> again. Do enough good deeds, like making a save, and even the worst bad guy can win the fans back!`, 1600);
   }
 
@@ -576,10 +638,10 @@
     }).slice(0, 4);
     if (!pool.length) return done();
     scene({
-      bg: 'bad_guy_turn_bg.png', title: '😈 THE EWF NEEDS A BAD GUY! 😈', titleBg: 'linear-gradient(180deg,#b71c1c,#1a0000)',
+      bg: 'bad_guy_turn_bg.png', title: bm('THE EWF NEEDS A BAD GUY!'), titleBg: 'linear-gradient(180deg,#b71c1c,#1a0000)',
       center: pool[0],
       text: `GM, everyone's a good guy right now... and every hero needs a <b>VILLAIN</b> to beat! Who's going to turn their back on the fans?`,
-      buttons: [...pool.map(w => ({ label: `😈 ${w.name}`, cls: 'red', fn: () => { closeScene(); playTurn({ id: w.id, to: 'bad', why: 'Chosen by GM Ellis to be the EWF\'s big bad' }, done); } })),
+      buttons: [...pool.map(w => ({ label: bm(w.name), cls: 'red', fn: () => { closeScene(); playTurn({ id: w.id, to: 'bad', why: 'Chosen by GM Ellis to be the EWF\'s big bad' }, done); } })),
         { label: 'NOT YET', cls: '', fn: () => { closeScene(); done(); } }],
       comm: true
     });
@@ -630,7 +692,8 @@
     if (c.type === 'return') st.pendingReturn = st.pendingReturn.filter(p => p.id !== c.w.id);
     save(st);
     const w = c.w;
-    const mic = { src: 'microphone.png', style: 'right: 30%; bottom: 8%; height: 42%;', cls: 'slideR', delay: 300 };
+    const mic = { src: 'microphone.png', style: 'left: 55%; top: 10%; height: 44%; rotate: -24deg; z-index: 4;', cls: 'slideR', delay: 300 };
+    const micLeft = { src: 'microphone.png', style: 'left: 35%; top: 10%; height: 44%; rotate: -24deg; z-index: 4;', cls: 'slideR', delay: 300 };
     const bookFlow = (vs, cfg, when, okText) => {
       if (when === 'no') return;
       closeScene();
@@ -658,15 +721,15 @@
     } else if (c.type === 'catering') {
       const vs = pick(fit().filter(x => x.id !== w.id));
       scene({
-        bg: 'catering_bg.png', title: `🥱 ${NM(w)}: "I'M SICK OF SITTING IN CATERING!"`, titleBg: 'linear-gradient(180deg,#616161,#212121)',
+        bg: 'catering_bg.png', title: `💤 ${NM(w)}: "I'M SICK OF SITTING IN CATERING!"`, titleBg: 'linear-gradient(180deg,#616161,#212121)',
         center: w,
         text: `<b>${w.name}</b> throws down a plate of sandwiches: <i>"I've been sat back here for ages! Put me in a match, GM!"</i>`,
         buttons: whenButtons(when => {
           if (when === 'no') return refuse(`<b>${w.name}</b> kicks over the snack table and storms off. Someone's in a mood...`, 'bin_crash.mp3', () => deed(w.id, -1, 'Threw a tantrum in catering'));
-          bookFlow(vs, { stake: '🥱 OUT OF CATERING' }, when, `${NM(w)} is out of catering to face ${NM(vs)}!`);
+          bookFlow(vs, { stake: '💤 OUT OF CATERING' }, when, `${NM(w)} is out of catering to face ${NM(vs)}!`);
         }, Object.assign({ noLabel: '⏳ WAIT YOUR TURN' }, opts))
       });
-      bret('callout_catering', `This superstar is <b>🥱 FED UP</b> because they haven't had a match in ages. Keep everyone busy, GM, or they get grumpy!`);
+      bret('callout_catering', `This superstar is <b>💤 FED UP</b> because they haven't had a match in ages. Keep everyone busy, GM, or they get grumpy!`);
     } else if (c.type === 'walking') {
       const top = fit().filter(x => x.id !== w.id).sort((a, b) => (momentum(b.id).wins || 0) - (momentum(a.id).wins || 0))[0];
       if (!top) return done();
@@ -676,7 +739,7 @@
         text: `<b>${w.name}</b> has lost too many and they've had enough: <i>"Give me a <b>BIG</b> match, GM. Against <b>${top.name}</b>. Or I'm walking out that door!"</i>`,
         buttons: whenButtons(when => {
           if (when === 'no') return refuse(`<b>${w.name}</b> storms out and <b>SLAMS</b> the door so hard the GM's trophies rattle!`, 'door_slam.mp3', () => { const s2 = load(); s2.lastMatch[w.id] = s2.matchNo - 8; save(s2); });
-          bookFlow(top, { matchType: 'Extreme Rules', stake: '❄️ BIG MATCH OR WALK' }, when, `${NM(w)} gets the big match against ${NM(top)}!`);
+          bookFlow(top, { matchType: 'No Disqualification', stake: '❄️ BIG MATCH OR WALK' }, when, `${NM(w)} gets the big match against ${NM(top)}!`);
         }, Object.assign({ noLabel: '🚪 LET THEM STORM OFF' }, opts))
       });
       bret('callout_walking', `This superstar is <b>❄️ ICE COLD</b>, they keep losing! They want one big match to turn things around. Will you give them the chance?`);
@@ -696,12 +759,12 @@
       bret('callout_open', `This superstar is <b>👑 COCKY</b>! They think they're unbeatable, so they've laid down an <b>OPEN CHALLENGE</b>. You pick who answers it!`);
     } else if (c.type === 'return') {
       scene({
-        bg: 'hospital_escape_bg.png', title: `😡 ${NM(w)}: "I WANT THE ONE WHO PUT ME OUT!"`, titleBg: 'linear-gradient(180deg,#d50000,#3d0000)',
-        left: w, right: c.vs, objects: [mic],
+        bg: 'hospital_escape_bg.png', title: `🌋 ${NM(w)}: "I WANT THE ONE WHO PUT ME OUT!"`, titleBg: 'linear-gradient(180deg,#d50000,#3d0000)',
+        left: w, right: c.vs, objects: [micLeft],
         text: `<b>${w.name}</b> is back from injury... and they've only got one name on their mind: <b>${c.vs.name}</b>! <i>"You put me in the hospital. Now it's PAYBACK!"</i>`,
         buttons: whenButtons(when => {
           if (when === 'no') return refuse(`Not yet! But <b>${w.name}</b> won't forget...`, null, () => { const s2 = load(); makeFurious(w.id, c.vs.id, `Wants payback on ${c.vs.name}`, s2); save(s2); });
-          bookFlow(c.vs, { matchType: 'No Disqualification', stake: '😡 PAYBACK MATCH' }, when, `${NM(w)} gets payback on ${NM(c.vs)}!`);
+          bookFlow(c.vs, { matchType: 'No Disqualification', stake: '🌋 PAYBACK MATCH' }, when, `${NM(w)} gets payback on ${NM(c.vs)}!`);
         }, Object.assign({ noLabel: '⏳ NOT YET' }, opts))
       });
       bret('callout_return', `They're <b>BACK</b> from injury, GM, and they want the superstar who put them there! Revenge matches are the best kind.`);
@@ -752,12 +815,15 @@
         ? (a.jealous ? `<b>${att.name}</b> couldn't stand watching <b>${vic.name}</b> celebrate with the gold. They've attacked their own mate!` : `<b>${vic.name}</b> is celebrating... until <b>${att.name}</b> storms the ring from behind!`)
         : (a.sore ? `<b>${att.name}</b> can't handle losing! The bell has rung but they're beating down <b>${vic.name}</b>!` : `<b>${att.name}</b> won the match but they're not finished. They're still laying into <b>${vic.name}</b>!`);
       const el = scene({
-        bg: 'show_bg.png', title, left: att, right: vic, rightHurt: true,
-        objects: [{ src: 'steel_chair.png', style: 'left: 40%; top: 18%; height: 40%;', cls: 'spin', delay: 400 }],
+        bg: 'show_bg.png', title, left: att, right: vic,
+        objects: [{ src: 'steel_chair.png', style: 'left: 40%; top: 4%; height: 62%; z-index: 6;', cls: 'spin', delay: 300 }],
         text: why, buttons: []
       });
       if (isBad(att.id)) sfx('crowd_boo.mp3', 0.8);
-      setTimeout(() => { sfx('table_crash.mp3', 0.6); shake(el); }, 1000);
+      setTimeout(() => {
+        sfx('table_crash.mp3', 0.6); shake(el); flash(el);
+        const v = el.querySelector('.ewfp-pose.right'); if (v) v.classList.add('hurt');
+      }, 1100);
       const s2 = load();
       deed(att.id, -1, a.jealous ? 'Attacked their own mate out of jealousy' : 'Attacked a superstar after the bell', s2);
       log(`💥 POST-MATCH ATTACK: ${NM(att)} attacked ${NM(vic)}${a.type === 'jump' ? ' during the celebration' : ' after the bell'}!`, 'interference');
@@ -796,7 +862,7 @@
           save(s3);
           if (a.jealous) disbandIf(att.id, vic.id);
           update(`${why}<br><br><b>${vic.name}</b> is left laid out in the middle of the ring. They'll want <b>REVENGE</b>!`, cont(done));
-          bret('beatdown', `That's a <b>POST-MATCH BEATDOWN</b>, GM! Bad guys and furious superstars do this. The victim is now <b>😡 FURIOUS</b> and wants revenge!`);
+          bret('beatdown', `That's a <b>POST-MATCH BEATDOWN</b>, GM! Bad guys and furious superstars do this. The victim is now <b>🌋 FURIOUS</b> and wants revenge!`);
         }
       }, 2600);
     } else if (a.type === 'interrupt') {
@@ -910,13 +976,216 @@
     } catch (e) {}
   }
 
+  /* ---------- Batch 11 item 8: unlock screens always go first ---------- */
+  function visible(id) {
+    const el = document.getElementById(id);
+    if (!el) return false;
+    const cs = getComputedStyle(el);
+    return cs.display !== 'none' && cs.visibility !== 'hidden' && el.getClientRects().length > 0;
+  }
+  function unlockBusy() {
+    if (window.activeDebutFinishHandler) return true;
+    if (['levelUpOverlay', 'unlockShowcaseOverlay', 'welcomeInductionModal'].some(visible)) return true;
+    const ach = document.getElementById('achievementPopup');
+    if (ach && ach.classList.contains('show')) return true;
+    const q = window.queuedLevelUps || (typeof queuedLevelUps !== 'undefined' ? queuedLevelUps : []);
+    return Array.isArray(q) && q.length > 0;
+  }
+  window.ewfUnlockBusy = unlockBusy;
+  // run fn once nothing celebratory is on screen (gives up waiting after 2 minutes)
+  function whenFree(fn, delay) {
+    const started = Date.now();
+    const tryRun = () => {
+      if (unlockBusy() && Date.now() - started < 120000) {
+        const q = window.queuedLevelUps || [];
+        const anyShown = ['levelUpOverlay', 'unlockShowcaseOverlay', 'welcomeInductionModal'].some(visible) || window.activeDebutFinishHandler;
+        if (q.length && !anyShown && typeof checkNextQueuedLevelUp === 'function' && !window.isMatchPostScreenActive) { try { checkNextQueuedLevelUp(); } catch (e) {} }
+        return setTimeout(tryRun, 600);
+      }
+      fn();
+    };
+    setTimeout(tryRun, delay === undefined ? 380 : delay);
+  }
+  window.ewfWhenFree = whenFree;
+  function wrapStoryOpen() {
+    const orig = window.openStorylineModal;
+    if (typeof orig !== 'function') return;
+    window.openStorylineModal = function (...args) {
+      if (unlockBusy()) { whenFree(() => window.openStorylineModal(...args), 600); return; }
+      return orig.apply(this, args);
+    };
+    try { openStorylineModal = window.openStorylineModal; } catch (e) {}
+  }
+
+  /* ---------- Batch 11 items 6 & 7: lock-safe match types and the new shows' themes ---------- */
+  const LOCK_SWAP = { 'TLC Match': 'Ladder Match', 'Ambulance Match': 'Last Man Standing' };
+  function safeType(t) {
+    try { if (t && typeof isMatchTypeLocked === 'function' && isMatchTypeLocked(t).locked) return LOCK_SWAP[t] || 'Normal Match'; } catch (e) {}
+    return t;
+  }
+  window.ewfSafeMatchType = safeType;
+
+  function recastMain(bouts, a, b, cfg, activeW) {
+    const main = bouts[bouts.length - 1];
+    if (!main || !a || !b) return;
+    const orig = (main.participants || []).filter(Boolean);
+    const freed = orig.filter(p => p.id !== a.id && p.id !== b.id);
+    main.participants = [a, b];
+    main.formatKey = '1v1';
+    if (main.matchType === 'Royal Rumble Match') main.matchType = 'Normal Match';
+    if (cfg.matchType) main.matchType = safeType(cfg.matchType);
+    if (cfg.stake) main.feudStake = cfg.stake;
+    if (main.referee && (main.referee.id === a.id || main.referee.id === b.id)) main.referee = null;
+    if (main.isTitleMatch) {
+      const h = typeof getTitleHolders === 'function' ? (getTitleHolders() || {}) : {};
+      const holder = main.titleCode === 'tag' ? null : h[main.titleCode];
+      if (!holder || (holder !== a.id && holder !== b.id)) { main.isTitleMatch = false; main.titleCode = null; main.titleName = null; main.titleImg = null; }
+    }
+    const used = new Set([a.id, b.id]);
+    bouts.slice(0, -1).forEach(bt => (bt.participants || []).forEach(p => p && used.add(p.id)));
+    const spare = () => freed.shift() || (activeW || []).find(w => !used.has(w.id) && (used.add(w.id) || true));
+    bouts.slice(0, -1).forEach(bt => {
+      if (bt.referee && (bt.referee.id === a.id || bt.referee.id === b.id)) bt.referee = null;
+      bt.participants = (bt.participants || []).map(p => {
+        if (p && (p.id === a.id || p.id === b.id)) { const r = spare(); if (r) used.add(r.id); return r || null; }
+        return p;
+      });
+      if (bt.participants.some(p => !p)) bt._drop = true;
+    });
+    for (let i = bouts.length - 2; i >= 0; i--) if (bouts[i]._drop) bouts.splice(i, 1);
+  }
+
+  window.ewfPostProcessShowCard = function (showKey, bouts, activeW) {
+    bouts = (bouts || []).filter(Boolean);
+    bouts.forEach(b => { if (b.matchType) b.matchType = safeType(b.matchType); });
+    const main = bouts[bouts.length - 1];
+    const special = ['rumble', 'kotr', 'mitb'];
+    const canTheme = main && !main.isSanctionedContract && !special.includes(main.formatKey);
+    const st = load();
+    const ok = (w) => w && activeW.some(x => x.id === w.id);
+    if (showKey === 'nomercy') {
+      const solo = ['No Disqualification', 'Falls Count Anywhere', 'Tables Match', 'Last Man Standing', 'Ambulance Match'];
+      const tag = ['No Disqualification', 'Tables Match', 'Ladder Match'];
+      bouts.forEach(b => {
+        if (special.includes(b.formatKey) || b.isSanctionedContract) return;
+        b.matchType = safeType(pick(b.formatKey === 'tag' ? tag : solo));
+      });
+      if (canTheme) main.feudStake = '🚫 NO MERCY MAIN EVENT: ANYTHING GOES';
+      bret('show_nomercy', `Welcome to <b>NO MERCY</b>, GM! Tonight there are no rules: <b>No DQ, tables, falls count anywhere</b>. Grab every weapon you've got!`, 1500);
+    } else if (showKey === 'badblood' && canTheme) {
+      let pair = null;
+      try {
+        const rivs = getRivalries().filter(r => r && ok(byId(r.w1)) && ok(byId(r.w2))).sort((x, y) => (y.heat || 1) - (x.heat || 1));
+        if (rivs.length) pair = [byId(rivs[0].w1), byId(rivs[0].w2)];
+      } catch (e) {}
+      if (!pair) {
+        const k = Object.keys(st.rel).filter(k => ['badblood', 'jealous'].includes(st.rel[k].t)).map(k => k.split('|').map(byId)).filter(p => ok(p[0]) && ok(p[1]));
+        if (k.length) pair = k[k.length - 1];
+      }
+      if (pair) recastMain(bouts, pair[0], pair[1], { matchType: 'No Disqualification', stake: '💢 BAD BLOOD MAIN EVENT: SETTLE THE GRUDGE' }, activeW);
+      bret('show_badblood', `It's <b>BAD BLOOD</b>, GM! The main event is always the two superstars who hate each other the most. Time to settle the grudge!`, 1500);
+    } else if (showKey === 'judgmentday' && canTheme) {
+      const bads = activeW.filter(w => isBad(w.id, st)).sort((x, y) => (momentum(y.id).wins || 0) - (momentum(x.id).wins || 0));
+      const goods = activeW.filter(w => !isBad(w.id, st));
+      if (bads.length && goods.length) {
+        const villain = bads[0];
+        const rival = goods.find(g => (getRel(g.id, villain.id, st) || {}).t === 'badblood');
+        const hero = rival || goods.sort((x, y) => (momentum(y.id).wins || 0) - (momentum(x.id).wins || 0))[0];
+        recastMain(bouts, hero, villain, { stake: '⚖️ JUDGMENT DAY: GOOD GUY VS BAD GUY' }, activeW);
+      }
+      bret('show_judgmentday', `<b>JUDGMENT DAY</b> is here! The main event is <b>GOOD GUY vs BAD GUY</b>. Will the villain finally get what's coming to them?`, 1500);
+    }
+    return bouts;
+  };
+
+  function wrapQueueBout() {
+    const orig = window.queueCutsceneBoutIntoShow;
+    if (typeof orig !== 'function') return;
+    window.queueCutsceneBoutIntoShow = function (cfg) {
+      if (cfg && cfg.matchType) cfg.matchType = safeType(cfg.matchType);
+      return orig.call(this, cfg);
+    };
+  }
+
+  /* ---------- Batch 11 item 11: proper results on the show card ---------- */
+  let lastSlammed = null;
+  function decorateShowCard() {
+    try {
+      const sess = window.activeShowSession;
+      const box = document.getElementById('bookShowBoutsContainer');
+      if (!sess || !box) return;
+      // the XP at stake was always shown as 150; show the real amount for this show
+      const xpEl = document.getElementById('bookShowXpStake');
+      if (xpEl) {
+        const k = sess.showKey;
+        const xp = sess.customXp || ((k === 'raw' || k === 'smackdown') ? 150 : ((k === 'summerslam' || k === 'mania') ? 600 : 350));
+        xpEl.textContent = `+${xp} XP AT STAKE`;
+      }
+      const strips = [...box.querySelectorAll('.bs-bout-strip')];
+      sess.bouts.forEach((bout, idx) => {
+        const row = strips[idx];
+        if (!row || idx >= sess.currentBoutIdx || bout.formatKey === 'rumble') return;
+        const winIds = (Array.isArray(bout.winnerObjs) && bout.winnerObjs.length ? bout.winnerObjs : [{ id: bout.winnerId }]).map(w => w && w.id);
+        const thumbs = [...row.querySelectorAll('.bsb-fighter-thumb')];
+        thumbs.forEach((img, i) => {
+          const p = bout.participants[i];
+          const wrap = img.closest('.bsb-fighter-thumb-wrap');
+          if (!p || !wrap) return;
+          [...wrap.children].forEach(ch => { if (ch !== img && /WINNER/.test(ch.textContent || '')) ch.remove(); });
+          // tag partners overlap, so only the front photo of each team carries the ribbon / stamp
+          const isTag = bout.formatKey === 'tag';
+          const front = !isTag || i === 0 || i === 2;
+          if (winIds.includes(p.id)) {
+            wrap.classList.add('bsb-win');
+            img.style.filter = '';
+            if (front && !wrap.querySelector('.bsb-win-ribbon')) wrap.insertAdjacentHTML('beforeend', `<div class="bsb-win-ribbon">🏆 ${isTag ? 'WINNERS' : 'WINNER'}</div>`);
+          } else if (front && !wrap.querySelector('.bsb-lose-stamp')) {
+            wrap.insertAdjacentHTML('beforeend', '<div class="bsb-lose-stamp">DEFEATED</div>');
+          }
+        });
+        row.querySelectorAll('.bsb-fighter').forEach((f, i) => {
+          const nm = f.querySelector('.bsb-fighter-name');
+          const p = bout.participants[i];
+          if (!nm || !p || bout.formatKey === 'tag') return;
+          nm.classList.add(winIds.includes(p.id) ? 'bsb-win-name' : 'bsb-lose-name');
+        });
+        const stamp = row.querySelector('.bsb-result-stamp');
+        if (stamp && !stamp.classList.contains('bsb-res')) {
+          const r = Math.max(0, Math.min(5, bout.rating || 0));
+          let extra = '';
+          if (bout.titleWon) extra = `<div class="champ"><img src="${bout.titleImg || 'whc.png'}" alt="">🏆 NEW CHAMPION${(bout.winnerObjs || []).length > 1 ? 'S' : ''}!</div>`;
+          else if (bout.titleRetained) extra = `<div class="kept">🛡️ RETAINED</div>`;
+          stamp.className = 'bsb-res';
+          stamp.innerHTML = `<div class="stars">${'★'.repeat(r)}${'☆'.repeat(5 - r)}</div>${extra}${bout.matchTime ? `<div class="time">⏱️ ${bout.matchTime}</div>` : ''}`;
+        }
+        // the result that just happened slams in
+        const key = (sess.showKey || '') + ':' + idx + ':' + (bout.winnerId || '');
+        if (idx === sess.currentBoutIdx - 1 && lastSlammed !== key) {
+          lastSlammed = key;
+          row.classList.add('ewfp-slam');
+          setTimeout(() => {
+            try { const a = typeof matchCardSlamSound !== 'undefined' ? matchCardSlamSound : new Audio('match_card_slam.mp3'); a.currentTime = 0; a.volume = 0.7; a.play().catch(() => {}); } catch (e) {}
+            const c = sfx('crowd.mp3', 0.45); if (c) setTimeout(() => { try { c.pause(); } catch (e) {} }, 2200);
+            shake(row);
+          }, 120);
+        }
+      });
+    } catch (e) { console.warn('decorateShowCard', e); }
+  }
+  function wrapShowCard() {
+    const orig = window.renderBookShowCardModal;
+    if (typeof orig !== 'function') return;
+    window.renderBookShowCardModal = function (...a) { const r = orig.apply(this, a); decorateShowCard(); return r; };
+    try { renderBookShowCardModal = window.renderBookShowCardModal; } catch (e) {}
+  }
+
   /* ---------- Main hook: after every match ---------- */
   // Returns true if it took over (and will call ctx.done when finished)
   function afterBout(ctx) {
     try {
       const st = load();
       if (!ctx || !ctx.winner) return false;
-      const go = (fn) => { setTimeout(() => { try { fn(); } catch (e) { console.warn(e); closeScene(); ctx.done(); } }, 380); return true; };
+      const go = (fn) => { whenFree(() => { try { fn(); } catch (e) { console.warn(e); closeScene(); ctx.done(); } }); return true; };
 
       // 1. queued turns always play first
       if (st.pendingTurns.length) {
@@ -968,7 +1237,7 @@
       if (W && mateOf(W.id, st, [L && L.id])) segs.push('mates');
       if (!segs.length) return false;
       const seg = pick(segs);
-      setTimeout(() => { try { runBackstage(seg, W, L, outs, rowPair, done); } catch (e) { console.warn(e); closeScene(); done(); } }, 380);
+      whenFree(() => { try { runBackstage(seg, W, L, outs, rowPair, done); } catch (e) { console.warn(e); closeScene(); done(); } });
       return true;
     } catch (e) { return false; }
   }
@@ -982,20 +1251,33 @@
         text: `A furious <b>${L.name}</b> marches up the corridor after losing to <b>${W ? W.name : 'their opponent'}</b>... and boots a bin across the hallway!`, buttons: cont(done) });
       setTimeout(() => { sfx('bin_crash.mp3', 0.9); shake(); }, 1200);
       setTimeout(() => sfx('locker_slam.mp3', 0.7), 2600);
-      if (W) { const st = load(); makeFurious(L.id, W.id, `Lost to ${W.name} and wants a rematch`, st); save(st); }
+      if (W) { const st = load(); setRel(L.id, W.id, 'badblood', `lost to them and stormed off`, null, st); save(st); }
       log(`🎥 BACKSTAGE: ${NM(L)} stormed off after the loss and trashed the corridor!`, 'match');
     } else if (seg === 'interview') {
       const st = load();
       const target = badBloodOf(W.id, st, [L && L.id]) || pick(outs.length ? outs : fit().filter(x => x.id !== W.id));
       if (!target) return done();
-      scene({ bg: 'interview_bg.png', title: `🎤 BACKSTAGE INTERVIEW: ${NM(W)}`, titleBg: 'linear-gradient(180deg,#1565c0,#0d2a5c)', left: W, skip,
-        objects: [{ src: 'cameraman.png', style: 'right: 4%; bottom: 0; height: 70%;', cls: 'slideR', delay: 200 }, { src: 'microphone.png', style: 'left: 34%; bottom: 10%; height: 40%;', cls: 'pop', delay: 600 }],
+      const ivEl = scene({ bg: 'interview_bg.png', title: `🎤 BACKSTAGE INTERVIEW: ${NM(W)}`, titleBg: 'linear-gradient(180deg,#1565c0,#0d2a5c)', left: W, skip,
+        leftStyle: 'left: 20%; height: 92%;',
+        objects: [
+          { src: 'microphone.png', style: 'left: 41%; top: 12%; height: 44%; rotate: -24deg; z-index: 4;', cls: 'slideR', delay: 500 },
+          { src: 'cameraman.png', style: 'right: -1%; bottom: 0; height: 84%; z-index: 6;', cls: 'slideR', delay: 150 }
+        ],
         text: `<b>${W.name}</b> grabs the interviewer's mic: <i>"I just won, and I'm only getting started. <b>${target.name}</b>, you're NEXT!"</i><br>Does <b>${target.name}</b> accept?`,
         buttons: [
           { label: '✅ ACCEPT', cls: 'green', fn: () => { closeScene(); log(`🎤 CALLOUT ACCEPTED: ${NM(target)} accepted ${NM(W)}'s challenge!`, 'match'); bookMatch(W, target, { stake: '🎤 BACKSTAGE CHALLENGE' }, 'next', done); } },
           { label: '🙉 IGNORE', cls: '', fn: () => { closeScene(); done(); } }
         ] });
       setTimeout(() => sfx('mic_feedback.mp3', 0.6), 500);
+      // the superstar being called out appears on a backstage monitor
+      setTimeout(() => {
+        if (!sceneEl || sceneEl !== ivEl) return;
+        const mon = document.createElement('div');
+        mon.className = 'ewfp-monitor';
+        mon.innerHTML = `<img src="${target.image}" alt="${target.name}"><div>● LIVE</div><span>${NM(target)} IS WATCHING...</span>`;
+        sceneEl.querySelector('.ewfp-stage').appendChild(mon);
+        sfx('cctv_static.mp3', 0.35);
+      }, 1500);
     } else if (seg === 'carPark') {
       const st = load();
       const bads = outs.filter(w => isBad(w.id, st));
@@ -1011,17 +1293,15 @@
             const s2 = load();
             setRel(att.id, vic.id, 'badblood', 'ambushed them in the car park', null, s2);
             deed(att.id, -1, 'Ambushed someone in the car park', s2);
-            if (!inTime) makeFurious(vic.id, att.id, `Ambushed by ${att.name} in the car park`, s2);
             save(s2);
             log(`🚗 CAR PARK AMBUSH: ${NM(att)} jumped ${NM(vic)}${inTime ? ', but security broke it up!' : ' and security were too late!'}`, 'interference');
-            update(inTime ? `Security pile in and drag <b>${att.name}</b> away! <b>${vic.name}</b> is OK... but they're not happy.` : `<b>TOO LATE!</b> By the time security arrive, <b>${vic.name}</b> is laid out next to their car. <b>${vic.name}</b> is <b>FURIOUS</b>!`, cont(done),
+            update(inTime ? `Security pile in and drag <b>${att.name}</b> away! <b>${vic.name}</b> is OK... but they're not happy.` : `<b>TOO LATE!</b> By the time security arrive, <b>${vic.name}</b> is laid out next to their car. There's <b>BAD BLOOD</b> now!`, cont(done),
               () => { if (!inTime && sceneEl) { const r = sceneEl.querySelector('.ewfp-pose.right'); r && r.classList.add('hurt'); } });
           } },
           { label: '🍿 LET IT PLAY OUT', cls: '', fn: () => {
             const s2 = load();
             setRel(att.id, vic.id, 'badblood', 'ambushed them in the car park', null, s2);
             deed(att.id, -1, 'Ambushed someone in the car park', s2);
-            makeFurious(vic.id, att.id, `Ambushed by ${att.name} in the car park`, s2);
             save(s2);
             shake(); sfx('table_crash.mp3', 0.6);
             const r = sceneEl && sceneEl.querySelector('.ewfp-pose.right'); r && r.classList.add('hurt');
@@ -1072,10 +1352,9 @@
             const s2 = load();
             setRel(att.id, vic.id, 'badblood', 'was caught on CCTV attacking them', null, s2);
             deed(att.id, -1, 'Caught on camera attacking someone', s2);
-            makeFurious(vic.id, att.id, `Caught ${att.name} on CCTV`, s2);
             save(s2);
             log(`📹 CCTV REVEAL: The mystery attacker who laid out ${NM(vic)} was ${NM(att)}!`, 'interference');
-            update(`IT WAS <b>${NM(att)}</b>! Caught red-handed on camera. <b>${vic.name}</b> is going to be <b>FURIOUS</b>!`, cont(done));
+            update(`IT WAS <b>${NM(att)}</b>! Caught red-handed on camera. There's <b>BAD BLOOD</b> between them now!`, cont(done));
           }, 2600);
         } }] });
     } else return done();
@@ -1086,7 +1365,7 @@
   const live = { at: null, done: false, evenAt: null, victimId: null, attackerId: null, cheatAt: null };
   function resetLive() {
     const m = typeof activeBookedMatch !== 'undefined' ? activeBookedMatch : {};
-    const bigShows = ['wrestlemania', 'summerslam', 'survivor', 'backlash', 'mitb', 'rumble', 'kotr'];
+    const bigShows = ['mania', 'summerslam', 'survivor', 'backlash', 'mitb', 'rumble', 'kotr', 'badblood', 'judgmentday', 'nomercy'];
     let chance = 0.30;
     const isMain = !!(window.activeShowSession && window.activeShowSession.bouts && window.activeShowSession.currentBoutIdx === window.activeShowSession.bouts.length - 1);
     if (isMain) chance += 0.15;
@@ -1135,11 +1414,11 @@
     const vm = document.getElementById('videoModal');
     const b = document.createElement('div');
     b.style.cssText = 'position:fixed; top:16%; left:50%; transform:translateX(-50%); z-index:2147483640; background:linear-gradient(180deg,#b71c1c,#3d0000); color:#fff; border:2px solid #fff; padding:14px 22px; font-family:"Russo One",sans-serif; font-size:clamp(1rem,2.6vw,1.6rem); text-align:center; display:flex; align-items:center; gap:14px; box-shadow:0 0 30px #f00; max-width:90%;';
-    const lines = [`😈 ${NM(w)} GRABBED A STEEL CHAIR BEHIND THE REF'S BACK!`, `😈 ${NM(w)} IS PULLING THE TIGHTS! THE REF DIDN'T SEE IT!`, `😈 ${NM(w)} THREW DUST IN THEIR OPPONENT'S EYES!`, `😈 ${NM(w)} DISTRACTED THE REFEREE!`];
+    const lines = [`${bm('')}${NM(w)} GRABBED A STEEL CHAIR BEHIND THE REF'S BACK!`, `${bm('')}${NM(w)} IS PULLING THE TIGHTS! THE REF DIDN'T SEE IT!`, `${bm('')}${NM(w)} THREW DUST IN THEIR OPPONENT'S EYES!`, `${bm('')}${NM(w)} DISTRACTED THE REFEREE!`];
     b.innerHTML = `<img src="steel_chair.png" style="height:60px;" onerror="this.remove()"><span>${pick(lines)}</span>`;
     host().appendChild(b);
     sfx('crowd_boo.mp3', 0.75);
-    log(`😈 CHEATING: ${NM(w)} broke the rules behind the referee's back!`, 'interference');
+    log(`${bm('CHEATING:')} ${NM(w)} broke the rules behind the referee's back!`, 'interference');
     bret('cheat', `Did you see that, GM? <b>BAD GUYS CHEAT!</b> Act it out with the figures... the ref never sees it!`);
     setTimeout(() => b.remove(), 6000);
   }
@@ -1161,7 +1440,6 @@
     if (attacker && victimId) {
       deed(attacker.id, -1, 'Interfered in a match', st);
       setRel(attacker.id, victimId, 'badblood', 'ran in and attacked them', null, st);
-      makeFurious(victimId, attacker.id, `Ambushed by ${attacker.name} mid-match`, st);
     }
     save(st);
     if (victimId && Math.random() < 0.6 && mateOf(victimId, st, (activeBookedMatch.participants || []).map(p => p.id).concat([attacker.id]))) {
@@ -1224,7 +1502,25 @@
         const h3 = card.querySelector('h3');
         if (h3 && isBad(w.id, st)) {
           h3.style.color = '#ff1744';
-          if (!h3.querySelector('.bad-guy-mark')) h3.insertAdjacentHTML('beforeend', '<span class="bad-guy-mark">😈</span>');
+          if (!h3.querySelector('.bad-guy-mark')) BADMARK && h3.insertAdjacentHTML('beforeend', `<span class="bad-guy-mark">${BADMARK}</span>`);
+        }
+        // rivalry tile, bottom left (⚔️, ⚔️2, or 💀 for a Blood Feud)
+        const rb = card.querySelector('.rival-badge');
+        if (rb) {
+          const t = rb.textContent || '';
+          const tile = document.createElement('div');
+          const n = (t.match(/(\d+)\s*RIVAL/) || [])[1];
+          tile.className = 'rival-tile' + (/BLOOD FEUD/.test(t) ? ' blood' : '');
+          tile.title = t.trim();
+          tile.innerHTML = /BLOOD FEUD/.test(t) ? '💀' : `⚔️${n ? `<small>${n}</small>` : ''}`;
+          card.appendChild(tile);
+        }
+        // defence count sits on the belt instead of covering the name
+        const pill = card.querySelector('.defense-counter-pill');
+        const belts = card.querySelector('.title-badges-container');
+        if (pill && belts) {
+          const n = (pill.textContent.match(/\d+/) || [])[0];
+          if (n) { const c = document.createElement('div'); c.className = 'belt-def-count'; c.title = pill.textContent; c.textContent = n; belts.appendChild(c); }
         }
         const m = moodOf(w.id, st);
         if (m) {
@@ -1239,7 +1535,7 @@
           card.appendChild(d);
         }
       });
-      if (anyMood) bret('moodBadge', `See that badge in the <b>bottom corner</b> of a card? That's the superstar's <b>MOOD</b>! 👑 Cocky, 💪 Hungry, 🥱 Fed up, 😒 Jealous, 😡 Furious. Check the <b>SUPERSTARS</b> tab in the EWF Universe to find out why!`, 900);
+      if (anyMood) bret('moodBadge', `See that badge in the <b>bottom right corner</b> of a card? That's the superstar's <b>MOOD</b>! 👑 Cocky, 💪 Hungry, 💤 Fed up, 👀 Jealous, 🌋 Furious. Check the <b>SUPERSTARS</b> tab in the EWF Universe to find out why!`, 900);
     } catch (e) {}
   }
   function wrapGrid() {
@@ -1259,7 +1555,7 @@
         // turns earned in a quick-play storyline play straight away (in shows they wait for the next bout)
         const st = load();
         if (!window.activeShowSession && st.pendingTurns.length && !document.querySelector('.ewfp-scene')) {
-          setTimeout(() => { const s2 = load(); if (s2.pendingTurns.length) playTurn(s2.pendingTurns[0], () => {}); }, 500);
+          whenFree(() => { const s2 = load(); if (s2.pendingTurns.length && !document.querySelector('.ewfp-scene')) playTurn(s2.pendingTurns[0], () => {}); }, 500);
         }
       } catch (e) {}
       return r;
@@ -1269,7 +1565,7 @@
 
   /* ---------- SUPERSTARS tab (EWF Universe) ---------- */
   let selId = null;
-  const REL_LABEL = { mates: '🤝 MATES', badblood: '💢 BAD BLOOD', jealous: '😒 JEALOUS OF', respect: '🙌 RESPECT' };
+  const REL_LABEL = { mates: '🤝 MATES', badblood: '💢 BAD BLOOD', jealous: '👀 JEALOUS OF', respect: '🙌 RESPECT' };
   const REL_COL = { mates: '#00e676', badblood: '#ff1744', jealous: '#b388ff', respect: '#ffd700' };
 
   function ensureTab() {
@@ -1279,7 +1575,7 @@
     btn.type = 'button'; btn.className = 'universe-tab-btn'; btn.id = 'tabBtnSuperstars';
     btn.innerHTML = '⭐ Superstars';
     btn.onclick = () => switchUniverseTab('superstars');
-    tabs.appendChild(btn);
+    tabs.insertBefore(btn, tabs.firstChild); // Batch 11 item 17: SUPERSTARS first
     const div = document.createElement('div');
     div.id = 'universeTabSuperstars'; div.style.display = 'none';
     const inj = document.getElementById('universeTabInjuries');
@@ -1297,7 +1593,7 @@
       <div><b>🔥 HOTTEST IN THE EWF</b>${hot ? `${hot.w.name}${hot.m.streak ? ` (${hot.m.streak} wins in a row)` : ''}` : '-'}</div>
       <div><b>💢 BIGGEST BAD BLOOD</b>${bb.length ? `${bb[bb.length - 1][0].name} vs ${bb[bb.length - 1][1].name}` : 'Nobody... yet'}</div>
       <div><b>🤝 BEST MATES</b>${mates.length ? `${mates[mates.length - 1][0].name} & ${mates[mates.length - 1][1].name}` : 'Nobody... yet'}</div>
-      <div><b>😈 BAD GUYS</b>${bads.length ? bads.map(w => w.name).join(', ') : 'None! Everyone\'s a good guy'}</div>
+      <div><b>${bm('BAD GUYS')}</b>${bads.length ? bads.map(w => w.name).join(', ') : 'None! Everyone\'s a good guy'}</div>
     </div>`;
   }
 
@@ -1313,7 +1609,7 @@
       const m = moodOf(w.id, st);
       return `<div class="ewfp-tile ${w.id === selId ? 'sel' : ''}" data-id="${w.id}">
         <img src="${w.image}" onerror="handleImgError(this, '${w.id}')">${m ? `<span class="mb">${MOODS[m.k].e}</span>` : ''}
-        <div style="color:${isBad(w.id, st) ? '#ff1744' : '#fff'}">${w.name}${isBad(w.id, st) ? ' 😈' : ''}</div></div>`;
+        <div style="color:${isBad(w.id, st) ? '#ff1744' : '#fff'}">${w.name}${isBad(w.id, st) && BADMARK ? ' ' + BADMARK : ''}</div></div>`;
     }).join('');
     box.innerHTML = hottest(st) + `<div class="ewfp-roster">${tiles}</div><div class="ewfp-prof" id="ewfpProfile"></div>`;
     box.querySelectorAll('.ewfp-tile').forEach(t => t.onclick = () => { selId = t.getAttribute('data-id'); renderSuperstarsTab(); });
@@ -1335,17 +1631,17 @@
     const relHTML = rels.length ? rels.map(r => {
       const o = byId(r.other);
       let label = REL_LABEL[r.t];
-      if (r.t === 'jealous') label = r.by === w.id ? '😒 JEALOUS OF' : '😒 IS JEALOUS OF THEM';
+      if (r.t === 'jealous') label = r.by === w.id ? '👀 JEALOUS OF' : '👀 IS JEALOUS OF THEM';
       return `<div class="ewfp-rel"><span><b style="color:${REL_COL[r.t]}">${label}</b> ${o.name}</span><span style="color:#aaa; font-size:0.75rem; text-align:right;">${r.why || ''}</span></div>`;
     }).join('') : '<div style="color:#888;">No relationships yet. They\'ll build up as matches happen!</div>';
     const others = roster().filter(o => o.id !== w.id).map(o => `<option value="${o.id}">${o.name}</option>`).join('');
     el.innerHTML = `
-      <h3 style="color:${bad ? '#ff1744' : '#4fc3f7'}">${w.name.toUpperCase()} ${bad ? '😈 BAD GUY' : '😇 GOOD GUY'}</h3>
+      <h3 style="color:${bad ? '#ff1744' : '#4fc3f7'}">${w.name.toUpperCase()} ${bad ? bm('BAD GUY') : '⭐ GOOD GUY'}</h3>
       <div class="ewfp-row"><b>FORM:</b> ${form} (${mom.wins || 0} wins in last ${mom.total || 0})${titles.length ? ` &nbsp; <b>🏆</b> ${titles.map(t => TITLE_NAMES[t]).join(', ')}` : ''}</div>
       <div class="ewfp-row"><b>MOOD:</b> ${m ? `<span style="color:${MOODS[m.k].col}">${MOODS[m.k].e} ${MOODS[m.k].label}</span> <span style="color:#aaa">(${m.why})</span>` : 'Calm'}</div>
       <div class="ewfp-row" style="margin-top:8px;"><b>RELATIONSHIPS</b></div>${relHTML}
       <div class="ewfp-gm">
-        <button class="action-btn ${bad ? 'btn-blue' : 'btn-red'}" id="ewfpTurnBtn">${bad ? '😇 MAKE GOOD GUY' : '😈 MAKE BAD GUY'}</button>
+        <button class="action-btn ${bad ? 'btn-blue' : 'btn-red'}" id="ewfpTurnBtn">${bad ? '⭐ MAKE GOOD GUY' : bm('MAKE BAD GUY')}</button>
       </div>
       <div class="ewfp-gm" style="align-items:center;">
         <select id="ewfpOther" style="flex:1; min-width:140px;">${others}</select>
@@ -1401,8 +1697,139 @@
     try { switchUniverseTab = window.switchUniverseTab; } catch (e) {}
     const origOpen = window.openUniverseModal;
     if (typeof origOpen === 'function') {
-      window.openUniverseModal = function (...a) { ensureTab(); const sDiv = document.getElementById('universeTabSuperstars'); if (sDiv) sDiv.style.display = 'none'; const b = document.getElementById('tabBtnSuperstars'); if (b) b.classList.remove('active'); return origOpen.apply(this, a); };
+      // Batch 11 item 17: the Universe opens on the SUPERSTARS tab
+      window.openUniverseModal = function (...a) { ensureTab(); const r = origOpen.apply(this, a); try { window.switchUniverseTab('superstars'); } catch (e) {} return r; };
       try { openUniverseModal = window.openUniverseModal; } catch (e) {}
+    }
+  }
+
+  /* ---------- Batch 11 item 13: Dad's PIN for Reset Universe and DEV UNLOCK, plus UNDO ---------- */
+  const PIN_HASH = 'ef24131bf488185b28e4de0c48ca43c61ef79f5929ec45287312f5625023f6df'; // sha-256, never the PIN itself
+  const UNDO_KEY = 'ewf_reset_undo';
+  async function pinOk(pin) {
+    try {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('ewf-pin-' + pin));
+      return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('') === PIN_HASH;
+    } catch (e) { return false; }
+  }
+  function pinPad(opts, onOk) {
+    ensureStyles();
+    const old = document.getElementById('ewfPinPad'); if (old) old.remove();
+    const ov = document.createElement('div');
+    ov.id = 'ewfPinPad';
+    ov.style.cssText = 'position:fixed; inset:0; z-index:2147483646; background:rgba(20,0,0,0.92); display:flex; align-items:center; justify-content:center; padding:16px; box-sizing:border-box;';
+    ov.innerHTML = `
+      <div style="width:min(440px,100%); background:#0b0b10; border:3px solid #d50000; box-shadow:0 0 40px rgba(255,0,0,0.6); padding:18px; text-align:center; color:#fff;">
+        <div style="font-family:'Russo One',sans-serif; font-size:1.5rem; color:#ff1744; letter-spacing:1px;">${opts.title}</div>
+        <div style="font-size:0.95rem; margin:10px 0 14px 0; line-height:1.4;">${opts.text}</div>
+        <div style="font-family:'Russo One',sans-serif; color:#ffd700; font-size:0.85rem; letter-spacing:2px;">ENTER DAD'S PIN</div>
+        <div id="ewfPinDots" style="font-size:2rem; letter-spacing:12px; margin:8px 0 10px 0; min-height:2.4rem;">○○○○</div>
+        <div id="ewfPinKeys" style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; max-width:280px; margin:0 auto;"></div>
+        <div style="display:flex; gap:10px; justify-content:center; margin-top:14px;">
+          <button type="button" id="ewfPinCancel" class="ewfp-btn" style="background:linear-gradient(180deg,#00a152,#004d26);">✋ NO, KEEP EVERYTHING</button>
+        </div>
+      </div>`;
+    host().appendChild(ov);
+    let pin = '';
+    const dots = ov.querySelector('#ewfPinDots');
+    const draw = () => { dots.textContent = '●'.repeat(pin.length) + '○'.repeat(4 - pin.length); };
+    const keys = ov.querySelector('#ewfPinKeys');
+    ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].forEach(k => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = k; b.className = 'ewfp-btn';
+      b.style.cssText = 'padding:14px 0; font-size:1.3rem;';
+      b.onclick = async () => {
+        if (k === 'C') pin = '';
+        else if (k === '⌫') pin = pin.slice(0, -1);
+        else if (pin.length < 4) pin += k;
+        draw();
+        if (pin.length === 4) {
+          if (await pinOk(pin)) { ov.remove(); onOk(); }
+          else { dots.textContent = '✖ WRONG PIN'; dots.style.color = '#ff1744'; shake(ov.firstElementChild); pin = ''; setTimeout(() => { dots.style.color = ''; draw(); }, 1100); }
+        }
+      };
+      keys.appendChild(b);
+    });
+    ov.querySelector('#ewfPinCancel').onclick = () => ov.remove();
+  }
+  function withConfirmYes(fn) {
+    const c = window.confirm;
+    window.confirm = () => true;
+    try { fn(); } finally { window.confirm = c; }
+  }
+  function wrapReset() {
+    const orig = window.promptResetUniverse;
+    if (typeof orig !== 'function') return;
+    window.promptResetUniverse = function () {
+      pinPad({
+        title: '⚠️ RESET THE WHOLE EWF?',
+        text: `This wipes <b>everything</b>: champions, rivalries, history, show archives, good guys and bad guys, relationships, GM level and XP, and every signed superstar.<br><b style="color:#ffd700;">It can only be undone until the next match is played.</b>`
+      }, () => {
+        let snapOk = false;
+        try {
+          const snap = {};
+          for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k !== UNDO_KEY) snap[k] = localStorage.getItem(k); }
+          localStorage.setItem(UNDO_KEY, JSON.stringify({ at: Date.now(), keys: snap }));
+          snapOk = true;
+        } catch (e) {}
+        withConfirmYes(() => orig.apply(this, []));
+        if (!snapOk) alert('Heads up: there was not enough space to keep an UNDO copy this time.');
+      });
+    };
+    try { promptResetUniverse = window.promptResetUniverse; } catch (e) {}
+  }
+  function undoAvailable() {
+    try {
+      if (!localStorage.getItem(UNDO_KEY)) return false;
+      const h = typeof getHistory === 'function' ? getHistory() : [];
+      if (h.some(x => x && x.type === 'match' && / def\. /i.test(x.text || ''))) { localStorage.removeItem(UNDO_KEY); return false; }
+      return true;
+    } catch (e) { return false; }
+  }
+  window.ewfUndoReset = function () {
+    try {
+      const snap = JSON.parse(localStorage.getItem(UNDO_KEY) || 'null');
+      if (!snap || !snap.keys) return;
+      const keep = Object.keys(snap.keys);
+      const now = []; for (let i = 0; i < localStorage.length; i++) now.push(localStorage.key(i));
+      now.forEach(k => { if (k !== UNDO_KEY && !keep.includes(k)) localStorage.removeItem(k); });
+      keep.forEach(k => localStorage.setItem(k, snap.keys[k]));
+      localStorage.removeItem(UNDO_KEY);
+      alert('✅ UNDONE! The EWF is back exactly as it was before the reset.');
+      location.reload();
+    } catch (e) { alert('Sorry, the undo did not work: ' + e.message); }
+  };
+  function wrapGMOffice() {
+    const orig = window.openGMOffice;
+    if (typeof orig === 'function') {
+      window.openGMOffice = function (...a) {
+        const r = orig.apply(this, a);
+        try {
+          let b = document.getElementById('ewfUndoResetBtn');
+          const devBtn = [...document.querySelectorAll('#gmOfficeModal button')].find(x => /devCheatLevelUp/.test(x.getAttribute('onclick') || ''));
+          if (undoAvailable() && devBtn) {
+            if (!b) {
+              b = document.createElement('button');
+              b.id = 'ewfUndoResetBtn'; b.type = 'button'; b.className = 'action-btn btn-gold';
+              b.style.cssText = 'flex:1; font-size:0.75rem; padding:10px;';
+              b.textContent = '↩️ UNDO RESET';
+              b.onclick = () => window.ewfUndoReset();
+              devBtn.parentElement.appendChild(b);
+            }
+            b.style.display = '';
+          } else if (b) b.style.display = 'none';
+        } catch (e) {}
+        return r;
+      };
+      try { openGMOffice = window.openGMOffice; } catch (e) {}
+    }
+    const dev = window.devCheatLevelUp;
+    if (typeof dev === 'function') {
+      window.ewfDevUnlockNoPin = dev; // for testing from the browser console only
+      window.devCheatLevelUp = function () {
+        pinPad({ title: '⚡ DEV: UNLOCK EVERYTHING?', text: 'This jumps to Level 20 and unlocks every show, match and superstar. It spoils all the surprises!' }, () => withConfirmYes(() => dev()));
+      };
+      try { devCheatLevelUp = window.devCheatLevelUp; } catch (e) {}
     }
   }
 
@@ -1434,6 +1861,11 @@
     wrapEntranceBoos();
     wrapGrid();
     wrapStoryClose();
+    wrapStoryOpen();
+    wrapQueueBout();
+    wrapReset();
+    wrapGMOffice();
+    wrapShowCard();
     wrapUniverseTabs();
     ensureTab();
     try { if (typeof renderGrid === 'function') renderGrid(); } catch (e) {}

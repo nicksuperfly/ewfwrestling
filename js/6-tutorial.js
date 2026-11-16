@@ -35,7 +35,7 @@
       .ewf-tut-bubble { position: fixed; z-index: 2147483647; max-width: 460px; width: calc(100vw - 40px);
         background: linear-gradient(160deg, #15151f, #08080c); border: 2px solid #ffd700; border-radius: 6px;
         box-shadow: 0 0 30px rgba(255,215,0,0.45); color: #fff; padding: 14px 16px; display: flex; gap: 12px;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
       .ewf-tut-bubble img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid #ffd700; flex: none; background: #222; }
       .ewf-tut-name { font-family: 'Russo One', sans-serif; color: #ffd700; font-size: 0.8rem; letter-spacing: 1px; margin-bottom: 4px; }
       .ewf-tut-text { font-size: 1rem; line-height: 1.35; }
@@ -45,6 +45,7 @@
       .ewf-tut-skip { background: none; border: none; color: #999; font-size: 0.8rem; text-decoration: underline; cursor: pointer; }
       .ewf-tut-step { color: #888; font-size: 0.7rem; font-family: 'Russo One', sans-serif; }
       .ewf-tut-tip { top: 16px; left: 50%; transform: translateX(-50%); }
+      .ewf-tut-tip.in-scene { top: 96px; left: auto; right: 16px; transform: none; max-width: 400px; }
       #ewfBroadcastIntro { position: fixed; inset: 0; z-index: 2147483500; display: flex; flex-direction: column; align-items: center;
         justify-content: center; padding: 24px; box-sizing: border-box; text-align: center;
         background: linear-gradient(rgba(5,5,10,0.55), rgba(5,5,10,0.85)), url('commentary_desk_bg.png') center/cover no-repeat, #000; }
@@ -103,7 +104,7 @@
     }
 
     bubbleEl = document.createElement('div');
-    bubbleEl.className = 'ewf-tut-bubble' + (tipMode ? ' ewf-tut-tip' : '');
+    bubbleEl.className = 'ewf-tut-bubble' + (tipMode ? ' ewf-tut-tip' : '') + (tipMode && document.querySelector('.ewfp-scene') ? ' in-scene' : '');
     bubbleEl.innerHTML = `
       <img src="${BRET_IMG}" alt="Bret Hart" onerror="this.style.display='none'">
       <div style="flex:1;">
@@ -205,19 +206,103 @@
     if (st.broadcastIntroDone) return;
     const count = (typeof getUnlockedWrestlers === 'function') ? getUnlockedWrestlers().length : 0;
     if (count >= 2) setTimeout(openBroadcastIntro, 900);
+    else if (count === 1 && st.xmasDone) setTimeout(() => {
+      const addCard = document.querySelector('#wrestler-grid .add-card');
+      showBubble({ text: `One down, one to go! Tap the <b>+</b> card again and enter the code of your <b>second</b> favourite superstar.`, target: addCard, nextLabel: `ON IT! ➔` });
+    }, 900);
   };
+
+  /* ---------- 0. Batch 11: Christmas morning welcome ---------- */
+  function openChristmasWelcome(after) {
+    ensureStyles();
+    if (!document.getElementById('ewfXmasStyles')) {
+      const css = document.createElement('style');
+      css.id = 'ewfXmasStyles';
+      css.textContent = `
+        #ewfXmas { position: fixed; inset: 0; z-index: 2147483500; display: flex; flex-direction: column; align-items: center; justify-content: center;
+          text-align: center; padding: 24px; box-sizing: border-box; overflow: hidden;
+          background: radial-gradient(ellipse at center, rgba(120,0,0,0.55), rgba(0,0,0,0.95) 70%), url('show_bg.png') center/cover no-repeat, #000; animation: ewfXmasIn .6s ease-out; }
+        #ewfXmas .logo { width: min(240px, 40vw); filter: drop-shadow(0 0 25px rgba(255,215,0,0.6)); margin-bottom: 10px; animation: ewfXmasPop .8s .2s both cubic-bezier(.3,1.5,.6,1); }
+        #ewfXmas h1 { font-family: 'Russo One', sans-serif; font-size: clamp(2rem, 6.5vw, 4.4rem); margin: 0; color: #fff; letter-spacing: 2px;
+          text-shadow: 0 0 12px #ff1744, 0 0 30px #ff1744, 0 4px 0 #7f0000; animation: ewfXmasPop .8s .5s both cubic-bezier(.3,1.5,.6,1); }
+        #ewfXmas h2 { font-family: 'Russo One', sans-serif; font-size: clamp(1.1rem, 3.2vw, 2rem); margin: 10px 0 26px 0; color: #ffd700; letter-spacing: 3px;
+          text-shadow: 0 0 18px rgba(255,215,0,0.7); animation: ewfXmasPop .8s .9s both cubic-bezier(.3,1.5,.6,1); }
+        #ewfXmas button { font-family: 'Russo One', sans-serif; font-size: clamp(1.1rem, 2.6vw, 1.5rem); padding: 16px 38px; border: 3px solid #fff; color: #000; cursor: pointer;
+          background: linear-gradient(180deg, #ffe066, #d4af37 55%, #b8860b); box-shadow: 0 0 30px rgba(255,215,0,0.7); animation: ewfXmasPop .8s 1.3s both cubic-bezier(.3,1.5,.6,1), ewfXmasGlow 1.6s 2s infinite; z-index: 3; }
+        #ewfXmas .flake { position: absolute; top: -20px; color: #fff; opacity: 0.85; pointer-events: none; animation: ewfXmasSnow linear infinite; text-shadow: 0 0 6px rgba(255,255,255,0.8); }
+        @keyframes ewfXmasIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes ewfXmasPop { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes ewfXmasGlow { 0%,100% { box-shadow: 0 0 20px rgba(255,215,0,0.6); } 50% { box-shadow: 0 0 45px rgba(255,215,0,1); } }
+        @keyframes ewfXmasSnow { to { transform: translateY(110vh) translateX(40px) rotate(360deg); } }
+      `;
+      document.head.appendChild(css);
+    }
+    let ov = document.getElementById('ewfXmas');
+    if (ov) ov.remove();
+    ov = document.createElement('div');
+    ov.id = 'ewfXmas';
+    ov.innerHTML = `
+      <img class="logo" src="logo.png" alt="EWF" onerror="this.src='logo_notext.png'">
+      <h1>🎄 MERRY CHRISTMAS ELLIS! 🎄</h1>
+      <h2>WELCOME TO THE EWF</h2>
+      <button type="button" id="ewfXmasGo">GET STARTED ➔</button>`;
+    for (let i = 0; i < 40; i++) {
+      const f = document.createElement('div');
+      f.className = 'flake';
+      f.textContent = i % 3 ? '❄' : '•';
+      f.style.left = (Math.random() * 100) + 'vw';
+      f.style.fontSize = (8 + Math.random() * 18) + 'px';
+      f.style.animationDuration = (6 + Math.random() * 8) + 's';
+      f.style.animationDelay = (-Math.random() * 10) + 's';
+      ov.appendChild(f);
+    }
+    (host() || document.body).appendChild(ov);
+    try { if (typeof stopBGMForAction === 'function') stopBGMForAction(); } catch (e) {}
+    setTimeout(() => {
+      try { if (typeof playPyroBlast === 'function') playPyroBlast(); } catch (e) {}
+      try { const c = new Audio('crowd.mp3'); c.volume = 0.6; c.play().catch(() => {}); setTimeout(() => { let v = 0.6; const iv = setInterval(() => { v -= 0.05; if (v <= 0) { clearInterval(iv); c.pause(); } else c.volume = v; }, 150); }, 3500); } catch (e) {}
+    }, 500);
+    ov.querySelector('#ewfXmasGo').onclick = () => {
+      ov.remove();
+      patchState({ xmasDone: true });
+      try { if (typeof resumeBGM === 'function') resumeBGM(); } catch (e) {}
+      setTimeout(after || bretCodeMessage, 350);
+    };
+  }
+  function bretCodeMessage() {
+    const count = (typeof getUnlockedWrestlers === 'function') ? getUnlockedWrestlers().length : 0;
+    if (count >= 2) { openBroadcastIntro(); return; }
+    window.scrollTo(0, 0);
+    const addCard = document.querySelector('#wrestler-grid .add-card');
+    if (addCard) addCard.scrollIntoView({ block: 'center' });
+    showBubble({
+      text: `Merry Christmas Ellis. I'm Bret. But enough about me, let's get this show on the road. Enter the codes of your <b>2 favourite wrestlers</b> you got for Christmas and I'll show you how this all works.<br><br>There's a lot to it, so <b>buckle in!</b>`,
+      target: addCard,
+      nextLabel: `LET'S DO IT ➔`
+    });
+  }
+  window.ewfOpenChristmasWelcome = openChristmasWelcome;
+  function maybeChristmas() {
+    const st = getState();
+    if (st.xmasDone || st.broadcastIntroDone) return;
+    const count = (typeof getUnlockedWrestlers === 'function') ? getUnlockedWrestlers().length : 0;
+    if (count >= 2) return;
+    openChristmasWelcome();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(maybeChristmas, 600));
+  else setTimeout(maybeChristmas, 600);
 
   /* ---------- 2. Home screen tour ---------- */
   const btnByText = (txt) => [...document.querySelectorAll('.control-panel button')].find(b => (b.innerText || '').trim().toUpperCase() === txt);
 
   const TOUR = [
-    { target: null, text: `Welcome to the EWF, <b>GM Ellis</b>! I'm Bret "The Hitman" Hart, the best there is, the best there was and the best there ever will be. Let me show you how to run the hottest promotion on the planet!` },
+    { target: null, text: `Right then, <b>GM Ellis</b>! The commentary team is ready, so let me show you how to run the hottest promotion on the planet. Remember, you're learning from the best there is, the best there was and the best there ever will be!` },
     { target: () => document.getElementById('wrestler-grid'), text: `This is your <b>locker room</b>. Every figure you sign shows up here. Got a new figure? Tap the <b>+</b> card and enter its contract code to bring them into the EWF!` },
-    { target: () => document.getElementById('wrestler-grid'), text: `Watch the <b>badges</b> on each card! <b>🔥 or ❄️</b> in the top corner means they're on fire or ice cold. The badge in the <b>bottom corner</b> is their <b>mood</b>. And a <b style="color:#ff1744;">red name with a 😈</b> means they're a <b>BAD GUY</b>!` },
+    { target: () => document.getElementById('wrestler-grid'), text: `Watch the <b>corners</b> of each card! <b>Top left:</b> any title they hold (the little number is how many times they've defended it). <b>Top right:</b> 🔥 on fire or ❄️ ice cold. <b>Bottom left:</b> ⚔️ a rivalry, or 💀 a Blood Feud! <b>Bottom right:</b> their <b>mood</b>. And a <b style="color:#ff1744;">red name</b> means they're a <b>BAD GUY</b>!` },
     { target: () => btnByText('CHOOSE YOUR MATCH'), text: `<b>CHOOSE YOUR MATCH</b>: pick the show, the superstars and the rules. Then watch the entrances and act out the match with your figures in the ring!` },
     { target: () => btnByText('MYSTERY MATCH'), text: `Can't decide? <b>MYSTERY MATCH</b> spins the reels and picks the show, the match type AND the superstars for you. Anything can happen!` },
     { target: () => btnByText('BOOK A SHOW'), text: `<b>BOOK A SHOW</b>: build a whole night of action, from Raw to WrestleMania! Title matches, feuds and a main event, all graded at the end of the night.` },
-    { target: () => document.getElementById('gmProfileWidget') || btnByText('GM OFFICE'), text: `Every match earns you <b>XP</b>. Level up as GM to unlock new match types, huge events like the Royal Rumble and... maybe some surprise superstars. Check the <b>GM OFFICE</b> to see what's next!` },
+    { target: () => document.getElementById('gmProfileWidget') || btnByText('GM OFFICE'), text: `Every match earns you <b>XP</b>. Level up as GM to unlock new match types, huge events and... maybe a surprise or two. Check the <b>GM OFFICE</b> to see what's next!` },
     { target: () => btnByText('EWF UNIVERSE'), text: `The <b>EWF UNIVERSE</b> is where you manage your champions, rivalries, alliances and injuries. And <b>HISTORY</b> next to it keeps every result and title change. Legends are made here!` },
     { target: () => btnByText('STORY LINE'), text: `<b>STORY LINE</b> stirs up drama between two superstars: sneak attacks, betrayals, challenges! Sometimes it ends in a grudge match. Storylines can also kick off on their own after matches!` },
     { target: () => btnByText('PROMO MODE'), text: `<b>PROMO MODE</b>: switch it on, then tap a superstar to play their promo. Grab the figure and do the trash talk yourself!` },
@@ -369,7 +454,7 @@
   const WALK = {
     bookMenu: [
       { target: () => $('#bookShowGrid'), text: `Welcome to <b>BOOK A SHOW</b>, GM! Pick a brand: TV specials like Raw and SmackDown have 2 matches, big events like SummerSlam and WrestleMania have up to 4.` },
-      { target: () => $('#bookShowGrid .is-locked'), text: `See the 🔒? Those shows unlock as you level up. Money in the Bank, King of the Ring and the Royal Rumble are waiting for you!` }
+      { target: () => $('#bookShowGrid .is-locked'), text: `See the 🔒 ❓ tiles? Those shows unlock as you level up. What's behind them? You'll have to find out!` }
     ],
     bookCard: [
       { target: () => $('#bookShowBoutsContainer'), text: `This is tonight's <b>CARD</b>. The matches go from the opener at the top to the <b>MAIN EVENT</b> at the bottom. Play them in order!` },
@@ -399,11 +484,11 @@
       { target: () => $('#histTabTrophies'), text: `And the <b>TROPHY CABINET</b>: special trophies to unlock. Tap one to see how to win it!` }
     ],
     universe: [
-      { target: () => $('#tabBtnTitles'), text: `Welcome to the <b>EWF UNIVERSE</b>, where you're the boss! <b>TITLES</b> lets you choose who holds each championship.` },
+      { target: () => $('#tabBtnSuperstars'), text: `Welcome to the <b>EWF UNIVERSE</b>, where you're the boss! <b>SUPERSTARS</b> is where your figures come alive. Tap anyone to see if they're a good guy or a bad guy, their form, their <b>mood</b> and why, and who their <b>MATES</b>, <b>BAD BLOOD</b>, <b>JEALOUS</b> and <b>RESPECT</b> are. You can even make them mates, start bad blood, squash it, or turn them good or bad!` },
+      { target: () => $('#tabBtnTitles'), text: `<b>TITLES</b> lets you choose who holds each championship.` },
       { target: () => $('#tabBtnAlliances'), text: `<b>ALLIANCES</b>: team two superstars up as a tag team with their own name and colour.` },
       { target: () => $('#tabBtnFeuds'), text: `<b>FEUDS</b>: start a rivalry! The hotter it gets, the closer they get to a Blood Feud.` },
-      { target: () => $('#tabBtnInjuries'), text: `<b>INJURIES</b> is the Medical Ward: see who's hurt and how many matches until they're back.` },
-      { target: () => $('#tabBtnSuperstars'), text: `<b>SUPERSTARS</b> is where your figures come alive! Tap anyone to see if they're a good guy or a bad guy, their form, their <b>mood</b> and why, and who their <b>MATES</b>, <b>BAD BLOOD</b>, <b>JEALOUS</b> and <b>RESPECT</b> are. You can even make them mates, start bad blood, squash it, or turn them good or bad!` }
+      { target: () => $('#tabBtnInjuries'), text: `<b>INJURIES</b> is the Medical Ward: see who's hurt and how many matches until they're back.` }
     ]
   };
 
@@ -441,7 +526,7 @@
     limo: `A <b>SECRET MEETING</b>! Two red-hot superstars could join forces as an alliance. Enter the limo to make the deal, or dismiss it.`,
     staredown: `<b>ROAD TO WRESTLEMANIA!</b> The Royal Rumble winner is coming for the World champion. Fast-track the match for tonight, or build the tension?`,
     commentary: `I've got news, GM! This superstar has had a rough run, so Corbin and I have got them a <b>#1 CONTENDER</b> title shot. Book it now, add it to the next card, or save it for later!`,
-    hospital: `Look who's broken out of the <b>HOSPITAL</b>! They're hunting their rival and want back in. Sanction their return and they're cleared to wrestle!`,
+    hospital: `Look who's broken out of the <b>HOSPITAL</b>! They're hunting their rival and want back in. Let them back and they're cleared to wrestle!`,
     mitbStalk: `The <b>MONEY IN THE BANK</b> holder is lurking around the champion! Rattle the champ to knock their confidence, or call your shot for a title match?`
   };
   function cutOnce(key) {
@@ -494,6 +579,6 @@
   window.ewfReplayTutorial = function () {
     saveState({ broadcastIntroDone: false });
     if (typeof closeGMOffice === 'function') closeGMOffice();
-    setTimeout(openBroadcastIntro, 300);
+    setTimeout(() => openChristmasWelcome(bretCodeMessage), 300);
   };
 })();

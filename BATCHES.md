@@ -10,6 +10,50 @@ How we work:
 
 ---
 
+## Batch 12 - Create Your Own Show (16 Nov 2026)
+
+| # | Item | File | Status |
+|---|------|------|--------|
+| 1 | CREATE YOUR OWN SHOW unlocks at Level 12 (??? tile before then): name, logo by camera photo (draw it on paper!) or gallery, optional YouTube intro, weekly (2-3 matches, 150 XP) or PPV (3-6 matches, 350/600 XP), 6 arena colour schemes, build every match (style, type, title, superstars), last match = main event, FILL THE GAPS FOR ME, friendly checks | js/8 | ✅ Done |
+| 2 | Bret and Corbin welcome everyone to the show by name; injured superstars get a replacement, announced | js/8 | ✅ Done |
+| 3 | Event poster (logo, main event poses, undercard) with Save and Print | js/8 | ✅ Done |
+| 4 | Each show keeps its own history: times run, best night, best match ever, past main event winners; SOLD OUT after 2 nights rated 4+ stars | js/8 | ✅ Done |
+| 5 | Up to 8 saved shows, edit or delete; Reset Universe wipes them (Undo brings them back) | js/8, js/3 | ✅ Done |
+| 6 | Recap screen for custom shows: one generic background (custom_highlights_bg.png, 3584x1184, falls back to show_bg.png) tinted with the show's colours, plus the show's own logo in the corner | js/8 | ✅ Done (image to come from Nicko) |
+| 7 | Show intro videos: Bad Blood, Judgment Day and No Mercy links added; extra intros for Raw (4), SmackDown (4), SummerSlam (2) and WrestleMania (2), one picked at random each time (also for the Rumble background loop) | js/1, js/5 | ✅ Done |
+| 8 | Story mode: camera_flash.mp3 now plays (with the white flash) as each wrestler card pops out, instead of the pyro sound | js/3 | ✅ Done |
+
+Suggested commit message: "Batch 11 + 12: Christmas welcome, no spoilers, Bad Blood/Judgment Day/No Mercy, tag winners, better results, safer reset, card badges, cutscene polish, Create Your Own Show"
+
+---
+
+## Batch 11 - Christmas morning, no spoilers, polish (15-16 Nov 2026)
+
+| # | Item | File | Status |
+|---|------|------|--------|
+| 1 | Christmas welcome: first open shows MERRY CHRISTMAS ELLIS overlay (snow, crowd pop, GET STARTED), then Bret: "Merry Christmas Ellis. I'm Bret... enter the codes of your 2 favourite wrestlers... buckle in!" spotlighting the + card; "One down, one to go!" after the first code; 2nd code leads into the commentator intros. Replay Tutorial / Reset Universe bring it back | js/6 | ✅ Done |
+| 2 | No spoilers from Bret: tour and Book a Show walkthrough no longer name the Royal Rumble, MITB or KOTR | js/6 | ✅ Done |
+| 3 | Mystery tiles: locked shows are a ❓ ??? tile (no name or logo) in Book a Show and Choose Your Match; GM Office and roadmap show ??? for future rank names and TOP SECRET rewards (level still shown) | js/2, js/5 | ✅ Done |
+| 4 | Tag team winners: both partners named in history, scorecards and the recap; both poses stand side by side on the highlights screen | js/5 | ✅ Done |
+| 5 | No 'pick up your gift from Dad' line on superstars signed with a contract code (level rewards keep it) | js/1, js/2, js/5 | ✅ Done |
+| 6 | Locked match types can't appear: Book a Show swaps TLC for Ladder and Ambulance for Last Man Standing until unlocked; storyline/callout bouts checked too; Batch 10 'Extreme Rules' (not a real match type) is now No DQ | js/5, js/7 | ✅ Done |
+| 7 | New shows: Bad Blood (Lvl 11, main event = biggest grudge, No DQ), Judgment Day (Lvl 13, Good Guy vs Bad Guy main event), No Mercy (Lvl 15, No DQ/weapons all night). Need logos, highlights backgrounds and intro links from Nicko | js/1, js/2, js/5, js/7 | ✅ Done |
+| 8 | Unlock screens go first: storylines, callouts, attacks, turns and backstage segments wait until level-up/unlock/achievement screens are closed | js/7 | ✅ Done |
+| 9 | Champions aren't cast in #1 contender stories | js/3 | ✅ Done |
+| 10 | Cutscene staging: wrestlers closer together and bigger, chair 3x bigger and lands on the victim, victim knocked down and greyed, Bret tip moved to the corner, interview redesign (mic at the chin, big cameraman, called-out superstar on a LIVE monitor) | js/6, js/7 | ✅ Done |
+| 11 | Book a Show results: gold WINNER ribbon and glow, DEFEATED stamp, star rating, match time, NEW CHAMPION / RETAINED badges, result slams in with a crowd pop | js/5, js/7 | ✅ Done |
+| 12 | Plain-English wording: no more 'dais', 'sanction', 'PLE', 'classified clearance'; SAVE IT FOR THE NEXT SHOW everywhere | many | ✅ Done |
+| 13 | Safer Reset Universe: big warning + Dad's PIN (stored hashed, not in this file), UNDO RESET in the GM Office until the next match; PIN also protects DEV: UNLOCK ALL; reset moved to a Danger Zone | index.html, js/7 | ✅ Done |
+| 14 | Tidy card badges: top left belt + defence count, top right 🔥/❄️, bottom left ⚔️ rivalry (number if more, 💀 Blood Feud), bottom right mood; alliance name wraps instead of cutting off | js/7, index.html | ✅ Done |
+| 15 | New icons: 💤 fed up, 👀 jealous, 🌋 furious; bad guys get 🫯 if the tablet can draw it (otherwise just the red name) | js/7 | ✅ Done |
+| 16 | DM Sans for message text (Russo One stays for titles and buttons) | index.html, js/6, js/7 | ✅ Done |
+| 17 | SUPERSTARS tab first and opens by default, background more visible | js/6, js/7 | ✅ Done |
+| 18 | Mood balance: only injuries, title losses, betrayals and post-match beatdowns make someone FURIOUS; cools after 4 matches; max 3 at once | js/7 | ✅ Done |
+
+Bonus fixes: Sim Match could leave a hidden screen stuck in fullscreen (fixed in Batch 10 build), run-ins now get the big-show boost at WrestleMania, 'XP at stake' on the show card shows the real amount.
+
+---
+
 ## Batch 10 - Characters come alive (planned 14 Nov 2026)
 
 | # | Item | Status |
@@ -17,7 +61,7 @@ How we work:
 | 1 | "OH MY GOD!" (ohmygod.mp3) plays over superstar arrival banners (code signings and level-up debuts) | ✅ Done |
 | 2 | App icon fix: manifest.json pointed at the wide logo (bullet-shaped icon). Use square icon-192/512 + padded maskable icons; index.html favicon line | Logged (zip sent, apply in batch) |
 | 3 | Good Guys and Bad Guys: everyone starts Good Guy; turns earned through stories (bad/good deed tally from Nicko's 79 stories, which stay unchanged), losing runs, betrayals, title losses; "EWF needs a bad guy" nudge (max ~1/3 bad guys); bad guys cheat, attack after the bell, crowd boos; red name + 😈 on cards (Option B); casting leans bad guys into villain roles in stories; MAKE GOOD GUY / BAD GUY in Universe. Assets: crowd_boo.mp3, bad_guy_turn_bg.png, good_guy_turn_bg.png | ✅ Done |
-| 4 | Compress all images (same names, same look, 60-80% smaller); check samples with Nicko first | ⏳ Ready, waiting for Nicko to OK the samples |
+| 4 | Compress all images (same names, same look, 60-80% smaller); check samples with Nicko first | ⏳ Ready in "Claude outputs/compressed", waiting for Nicko to OK the samples |
 | 5 | Superstars remember each other: hidden relationships per pair: 🤝 MATES, 💢 BAD BLOOD, 😒 JEALOUS OF, 🫡 RESPECT, built from tag wins, saves, betrayals, run-ins, title changes, 5-star matches. Lead to alliance offers, betrayals, revenge, rematches. New SUPERSTARS tab in EWF Universe (profile: good/bad, form, mood, relationships with reasons, GM buttons MAKE THEM MATES / START BAD BLOOD / SQUASH IT, "Hottest in the EWF"). Tapping cards still plays intros. Asset: relationships_bg.png | ✅ Done |
 | 6 | Moods and callouts: mood badge bottom right of cards (👑 COCKY gold, 💪 HUNGRY green, 🥱 FED UP grey, 😒 JEALOUS purple, 😡 FURIOUS red); 🔥/❄️ stay top right for form. Callouts max every 5 matches: I WANT MY SHOT, SAT IN CATERING, BIG MATCH OR I'M WALKING, ANYONE ANY TIME (open challenge), I WANT THE GUY WHO PUT ME OUT. Choices feed moods, relationships, turns. Assets: gm_office_bg.png, open_challenge_bg.png, door_slam.mp3, microphone.png | ✅ Done |
 | 7 | Backstage segments in Book a Show (~40% between bouts, never after another cutscene, SKIP button, Bret/Corbin commentary): loser storms off, winner interview call-out, car park ambush, locker room row, mates celebrate, mystery attacker + security footage reveal. Assets: backstage_corridor_bg, interview_bg, car_park_bg, locker_room_bg, catering_bg, crime_scene_bg, security_office_bg; steel_chair, trash_bin, security_guards, cameraman, briefcase_shadow; bin_crash, car_alarm, locker_slam, mic_feedback, cctv_static, locker_cheer | ✅ Done |

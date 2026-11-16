@@ -708,7 +708,7 @@ function promptResetUniverse() {
       'ewf_ice_overrides', 'ewf_promo_plays', 'ewf_last_career_contract_match',
       'ewf_last_media_scrum_match', 'ewf_last_decree_match', 'ewf_uncrowned_king', 'ewf_acknowledged_levels',
       'ewf_last_summit_match', 'ewf_tag_loss_streaks', 'ewf_scheduled_story_match',
-      'ewf_contender_title_locks', 'ewf_eight_loss_redemption_seen', 'ewf_last_mitb_stalk_match', 'ewf_tutorial_state', 'ewf_personality'
+      'ewf_contender_title_locks', 'ewf_eight_loss_redemption_seen', 'ewf_last_mitb_stalk_match', 'ewf_tutorial_state', 'ewf_personality', 'ewf_custom_shows'
     ];
     keysToRemove.forEach(k => localStorage.removeItem(k));
 
@@ -917,7 +917,7 @@ const EWF_BACKUP_KEYS = [
   'ewf_ice_overrides', 'ewf_promo_plays', 'ewf_last_career_contract_match',
   'ewf_last_media_scrum_match', 'ewf_last_decree_match', 'ewf_uncrowned_king', 'ewf_vault_banished',
   'ewf_acknowledged_levels', 'ewf_last_summit_match', 'ewf_tag_loss_streaks', 'ewf_scheduled_story_match',
-  'ewf_contender_title_locks', 'ewf_eight_loss_redemption_seen', 'ewf_last_mitb_stalk_match', 'ewf_tutorial_state', 'ewf_personality'
+  'ewf_contender_title_locks', 'ewf_eight_loss_redemption_seen', 'ewf_last_mitb_stalk_match', 'ewf_tutorial_state', 'ewf_personality', 'ewf_custom_shows'
 ];
 
 function exportUniverseBackup() {
@@ -1132,12 +1132,12 @@ function openUniverseModal() {
 function switchUniverseTab(tabName) {
   const gmLevel = typeof getGMLevel === 'function' ? getGMLevel() : 1;
   if (tabName === 'titles' && gmLevel < 2) {
-    alert("🔒 CLASSIFIED CLEARANCE: Physical Championship Sanctioning unlocks at Level 2 (TV Coordinator) after 500 XP.");
+    alert("🔒 TITLES ARE LOCKED!\n\nYou can choose your champions once you reach Level 2.");
     tabName = 'feuds';
   }
 
   if (tabName === 'injuries' && gmLevel < 3) {
-    alert("🔒 CLASSIFIED CLEARANCE: The Medical Ward & Injury Tracking system unlocks at Level 3 (Chief Medical Officer) after 1,100 XP.");
+    alert("🔒 THE MEDICAL WARD IS LOCKED!\n\nIt opens at Level 3.");
     tabName = 'feuds';
   }
 
@@ -1402,7 +1402,7 @@ function openCareerContractModal(wA, wB, feudObj, h2h) {
         ⚔️ FIGHT RIGHT NOW ➔
       </button>
       <button class="action-btn btn-gold" style="flex:1 1 240px; padding:12px; font-size:0.9rem; font-family:'Russo One'; box-shadow:0 0 20px #ffd700;" onclick="executeCareerContractSanction()">
-        📋 SANCTION FOR NEXT BROADCAST ➔
+        📋 SAVE IT FOR THE NEXT SHOW ➔
       </button>
       <button class="action-btn" style="flex:1 1 100%; padding:10px; font-size:0.82rem; font-family:'Russo One'; background:#1b1d2a; color:#aaa; border-color:#555;" onclick="executeCareerContractRefuse()">
         ❌ REFUSE TERMS (COWARD BACKS DOWN)
@@ -1496,7 +1496,7 @@ window.executeCareerContractSanction = function() {
   setTimeout(() => {
     const modal = document.getElementById('careerContractCutsceneModal');
     if (modal) modal.style.display = 'none';
-    alert(`💀 PINK SLIP MATCH SANCTIONED!\n\n${wrestlerA.name.toUpperCase()} vs ${wrestlerB.name.toUpperCase()} (LOSER LEAVES EWF) is locked as the Main Event for your next broadcast!`);
+    alert(`💀 LOSER LEAVES MATCH BOOKED!\n\n${wrestlerA.name.toUpperCase()} vs ${wrestlerB.name.toUpperCase()} (LOSER LEAVES EWF) is locked as the Main Event for your next broadcast!`);
     if (typeof renderGrid === 'function') renderGrid();
   }, 2400);
 };
@@ -1650,7 +1650,7 @@ function openBloodFeudShowdown(wrestlerA, wrestlerB, feudObj = null) {
     if (sanctionBtn) {
       sanctionBtn.className = "action-btn btn-gold";
       sanctionBtn.style.cssText = "box-shadow: 0 0 18px rgba(255, 215, 0, 0.6); font-size: 0.9rem; font-weight: bold; flex: 1 1 220px;";
-      sanctionBtn.innerHTML = "📋 SANCTION FOR NEXT BROADCAST ➔";
+      sanctionBtn.innerHTML = "📋 SAVE IT FOR THE NEXT SHOW ➔";
       sanctionBtn.onclick = () => window.sanctionBloodFeudForNextBroadcast();
     }
 
@@ -1715,7 +1715,7 @@ window.sanctionBloodFeudForNextBroadcast = function() {
 
   closeBloodFeudOverlay();
 
-  alert(`📋 BLOOD FEUD BLOWOFF SANCTIONED!\n\n${wrestlerA.name.toUpperCase()} vs ${wrestlerB.name.toUpperCase()} (${stip.toUpperCase()}) is locked in as the Main Event for your next broadcast!`);
+  alert(`📋 BLOOD FEUD MATCH BOOKED!\n\n${wrestlerA.name.toUpperCase()} vs ${wrestlerB.name.toUpperCase()} (${stip.toUpperCase()}) is locked in as the Main Event for your next broadcast!`);
 
   if (typeof renderGrid === 'function') renderGrid();
 };
@@ -2094,7 +2094,7 @@ window.openBoardroomDecreeModal = function(champId, titleCode, reason = 'Title I
   modal.innerHTML = `
     <div style="text-align:center; z-index:10;">
       <div style="font-family:'Russo One', sans-serif; font-size:clamp(1.2rem, 2.2vw, 1.8rem); color:#ffd700; letter-spacing:2px; text-shadow:0 0 15px rgba(255,215,0,0.6);">
-        ⚖️ EMERGENCY BOARDROOM SESSION // TITLE SANCTIONING DECREE ⚖️
+        ⚖️ EMERGENCY BOARDROOM MEETING: WHAT HAPPENS TO THE TITLE? ⚖️
       </div>
       <div style="font-family:'Russo One', sans-serif; font-size:0.85rem; color:#ff6666; margin-top:4px;">
         OFFICIAL SUMMONS: ${champ ? champ.name.toUpperCase() : 'CHAMPION'} (${reason.toUpperCase()})
@@ -2324,7 +2324,7 @@ window.openHospitalEscapeModal = function(injuredWrestler, rivalWrestler) {
 
     <div style="display:flex; gap:16px; width:100%; max-width:650px; justify-content:center; z-index:10; margin-bottom:10px;">
       <button class="action-btn btn-red" style="flex:1; padding:12px; font-size:0.95rem; font-family:'Russo One'; box-shadow:0 0 25px #ff0000;" onclick="confirmHospitalEscapeClearance('${injuredWrestler.id}', '${rivalWrestler.id}')">
-        🔥 SANCTION IMMEDIATE RETURN TO ROSTER ➔
+        🔥 LET THEM BACK ON THE ROSTER ➔
       </button>
     </div>
   `;
@@ -3069,6 +3069,13 @@ function openStorylineModal(forcedA = null, forcedB = null, isBreakingNews = fal
       if (!champ) return false;
     }
 
+    // BATCH 11 ITEM 9: the champion can't fight to become #1 contender for their own title
+    if (story.type === 'contendership') {
+      const champId = currentHolders.whc;
+      if (forcedA && forcedB && champId && (forcedA.id === champId || forcedB.id === champId)) return false;
+      if (!(forcedA && forcedB) && allWrestlers.filter(w => w.id !== champId).length < 2) return false;
+    }
+
     return true;
   });
 
@@ -3117,6 +3124,10 @@ function openStorylineModal(forcedA = null, forcedB = null, isBreakingNews = fal
         activeStoryWrestlerA = shuffled[0];
         activeStoryWrestlerB = shuffled[1];
       }
+    } else if (activeStoryline.type === 'contendership') {
+      const contenders = shuffled.filter(w => w.id !== currentHolders.whc);
+      activeStoryWrestlerA = contenders[0] || shuffled[0];
+      activeStoryWrestlerB = contenders[1] || shuffled[1];
     } else {
       activeStoryWrestlerA = shuffled[0];
       activeStoryWrestlerB = shuffled[1];
@@ -3196,6 +3207,13 @@ function openStorylineModal(forcedA = null, forcedB = null, isBreakingNews = fal
   startStorylineTypewriter(activeStoryline.text, activeStoryWrestlerA, activeStoryWrestlerB);
 }
 
+// Story cards pop out with a camera flash sound (Batch 12 tweak)
+function storyCardFlash() {
+  const flash = document.getElementById('flashOverlay');
+  if (flash) { flash.classList.remove('flash-anim'); void flash.offsetWidth; flash.classList.add('flash-anim'); setTimeout(() => flash.classList.remove('flash-anim'), 400); }
+  try { const a = new Audio('camera_flash.mp3'); a.volume = 0.9; a.play().catch(() => {}); } catch (e) {}
+}
+
 function startStorylineTypewriter(rawText, wrestlerA, wrestlerB) {
   const container = document.getElementById('storyNarrativeText');
   container.innerHTML = '';
@@ -3237,11 +3255,11 @@ function startStorylineTypewriter(rawText, wrestlerA, wrestlerB) {
       container.appendChild(currentSpan);
 
       if (curToken.isA) {
-        if (typeof triggerCameraFlash === 'function') triggerCameraFlash();
+        storyCardFlash();
         const badgeA = document.getElementById('storyBadgeA');
         if (badgeA) { badgeA.style.display = 'flex'; badgeA.classList.add('popped'); }
       } else if (curToken.isB) {
-        if (typeof triggerCameraFlash === 'function') triggerCameraFlash();
+        storyCardFlash();
         const badgeB = document.getElementById('storyBadgeB');
         if (badgeB) { badgeB.style.display = 'flex'; badgeB.classList.add('popped'); }
       }
@@ -3279,7 +3297,7 @@ function proceedToStoryScreen2() {
     sanctionBtn.id = 'storySanctionMatchBtn';
     sanctionBtn.className = 'action-btn btn-gold';
     sanctionBtn.style.cssText = 'display:none; margin-top:8px; width:100%; font-family:"Russo One", sans-serif; font-size:0.9rem; padding:10px; box-shadow:0 0 15px rgba(255,215,0,0.5);';
-    sanctionBtn.innerText = '📋 SANCTION FOR NEXT BROADCAST';
+    sanctionBtn.innerText = '📋 SAVE IT FOR THE NEXT SHOW';
     sanctionBtn.onclick = () => window.sanctionStorylineForNextBroadcast();
     bookBtn.parentElement.appendChild(sanctionBtn);
   }
@@ -3408,10 +3426,10 @@ function sanctionStorylineForNextBroadcast() {
   closeStorylineModal();
 
   if (typeof saveHistoryLog === 'function') {
-    saveHistoryLog(`📋 SANCTIONED FOR NEXT BROADCAST: ${wA.name.toUpperCase()} vs ${wB.name.toUpperCase()} [${matchType.toUpperCase()}]`, 'booking');
+    saveHistoryLog(`📋 BOOKED FOR THE NEXT SHOW: ${wA.name.toUpperCase()} vs ${wB.name.toUpperCase()} [${matchType.toUpperCase()}]`, 'booking');
   }
 
-  alert(`📋 MATCH OFFICIALLY SANCTIONED!\n\n${wA.name.toUpperCase()} vs ${wB.name.toUpperCase()} (${matchType.toUpperCase()}) has been locked into the card for the next EWF Broadcast.\n\nOpen "BOOK A SHOW" to generate the event!`);
+  alert(`📋 MATCH BOOKED FOR THE NEXT SHOW!\n\n${wA.name.toUpperCase()} vs ${wB.name.toUpperCase()} (${matchType.toUpperCase()}) has been locked into the card for the next EWF Broadcast.\n\nOpen "BOOK A SHOW" to generate the event!`);
 
   if (typeof renderGrid === 'function') renderGrid();
 }
