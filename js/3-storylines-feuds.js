@@ -560,8 +560,8 @@ function getUnlockedWrestlers() {
     }
     // BATCH 7 ITEM 14: code-signed superstars only appear once their contract code has been redeemed
     if (w.requiresCode) return unlockedVaultIds.includes(w.id);
-    if (w.id === 'default-theundertaker' && currentLvl < 6) return false;
-    if (w.id === 'default-kane' && currentLvl < 10) return false;
+    if (w.id === 'default-theundertaker' && currentLvl < ((window.EWF_UNLOCK_LEVELS || {}).undertaker || 4)) return false;
+    if (w.id === 'default-kane' && currentLvl < ((window.EWF_UNLOCK_LEVELS || {}).kane || 8)) return false;
     return !w.unlockLevel || w.unlockLevel <= currentLvl;
   });
 
@@ -708,7 +708,7 @@ function promptResetUniverse() {
       'ewf_ice_overrides', 'ewf_promo_plays', 'ewf_last_career_contract_match',
       'ewf_last_media_scrum_match', 'ewf_last_decree_match', 'ewf_uncrowned_king', 'ewf_acknowledged_levels',
       'ewf_last_summit_match', 'ewf_tag_loss_streaks', 'ewf_scheduled_story_match',
-      'ewf_contender_title_locks', 'ewf_eight_loss_redemption_seen', 'ewf_last_mitb_stalk_match', 'ewf_tutorial_state', 'ewf_personality', 'ewf_custom_shows'
+      'ewf_contender_title_locks', 'ewf_eight_loss_redemption_seen', 'ewf_last_mitb_stalk_match', 'ewf_tutorial_state', 'ewf_personality', 'ewf_custom_shows', 'ewf_commissioner'
     ];
     keysToRemove.forEach(k => localStorage.removeItem(k));
 
@@ -917,7 +917,7 @@ const EWF_BACKUP_KEYS = [
   'ewf_ice_overrides', 'ewf_promo_plays', 'ewf_last_career_contract_match',
   'ewf_last_media_scrum_match', 'ewf_last_decree_match', 'ewf_uncrowned_king', 'ewf_vault_banished',
   'ewf_acknowledged_levels', 'ewf_last_summit_match', 'ewf_tag_loss_streaks', 'ewf_scheduled_story_match',
-  'ewf_contender_title_locks', 'ewf_eight_loss_redemption_seen', 'ewf_last_mitb_stalk_match', 'ewf_tutorial_state', 'ewf_personality', 'ewf_custom_shows'
+  'ewf_contender_title_locks', 'ewf_eight_loss_redemption_seen', 'ewf_last_mitb_stalk_match', 'ewf_tutorial_state', 'ewf_personality', 'ewf_custom_shows', 'ewf_commissioner'
 ];
 
 function exportUniverseBackup() {
@@ -1692,7 +1692,7 @@ window.sanctionBloodFeudForNextBroadcast = function() {
 
   const violentStipulations = ['Last Man Standing', 'No Disqualification'];
   const gmLevel = typeof getGMLevel === 'function' ? getGMLevel() : 1;
-  if (gmLevel >= 5) violentStipulations.push('Ambulance Match');
+  if (typeof isMatchTypeLocked === 'function' && !isMatchTypeLocked('Ambulance Match').locked) violentStipulations.push('Ambulance Match');
   const stip = violentStipulations[Math.floor(Math.random() * violentStipulations.length)];
 
   const scheduledMatch = {
@@ -1816,7 +1816,7 @@ function proceedBloodFeudToMatch() {
 
   const violentStipulations = ['Last Man Standing', 'No Disqualification'];
   const gmLevel = typeof getGMLevel === 'function' ? getGMLevel() : 1;
-  if (gmLevel >= 5) violentStipulations.push('Ambulance Match');
+  if (typeof isMatchTypeLocked === 'function' && !isMatchTypeLocked('Ambulance Match').locked) violentStipulations.push('Ambulance Match');
 
   const stip = violentStipulations[Math.floor(Math.random() * violentStipulations.length)];
 
@@ -3037,8 +3037,7 @@ function openStorylineModal(forcedA = null, forcedB = null, isBreakingNews = fal
     }
 
     if (story.type === 'injury_feud' && gmLevel < 3) return false;
-    if (story.matchMatch === 'TLC Match' && gmLevel < 4) return false;
-    if (story.matchMatch === 'Ambulance Match' && gmLevel < 5) return false;
+    if (story.matchMatch && typeof isMatchTypeLocked === 'function' && isMatchTypeLocked(story.matchMatch).locked) return false;
     
     if (story.type === 'alliance' || story.type === 'alliance_only') {
       const hasTeamA = activeAlliances.some(a => a.p1 === (forcedA ? forcedA.id : null) || a.p2 === (forcedA ? forcedA.id : null));

@@ -128,6 +128,7 @@ window.getWrestlerPosePath = getWrestlerPosePath;
 const defaultWrestlers = [
   { 
     id: 'default-tripleh', 
+    heelTendency: 'likely', // BATCH 13: likely / neutral / unlikely to turn bad guy
     name: "Triple H", 
     image: "triplehicon.png", 
     poseImage: "tripleh_pose.png", 
@@ -143,6 +144,7 @@ const defaultWrestlers = [
   },
   { 
     id: 'default-therock', 
+    heelTendency: 'unlikely', // BATCH 13: likely / neutral / unlikely to turn bad guy
     name: "The Rock", 
     image: "therock.png", 
     poseImage: "therock_pose.png", 
@@ -158,6 +160,7 @@ const defaultWrestlers = [
   },
   { 
     id: 'default-stonecold', 
+    heelTendency: 'unlikely', // BATCH 13: likely / neutral / unlikely to turn bad guy
     name: "Stone Cold", 
     image: "stonecold.png", 
     poseImage: "stonecold_pose.png", 
@@ -173,6 +176,7 @@ const defaultWrestlers = [
   },
   { 
     id: 'default-mankind', 
+    heelTendency: 'unlikely', // BATCH 13: likely / neutral / unlikely to turn bad guy
     name: "Mankind", 
     image: "mankind.png", 
     poseImage: "mankind_pose.png", 
@@ -188,6 +192,7 @@ const defaultWrestlers = [
   },
   { 
     id: 'default-theundertaker', 
+    heelTendency: 'neutral', // BATCH 13: likely / neutral / unlikely to turn bad guy
     name: "The Undertaker", 
     image: "theundertaker.png", 
     poseImage: "theundertaker_pose.png", 
@@ -198,6 +203,7 @@ const defaultWrestlers = [
   },
   { 
     id: 'default-kane', 
+    heelTendency: 'likely', // BATCH 13: likely / neutral / unlikely to turn bad guy
     name: "Kane", 
     image: "kane.png", 
     poseImage: "kane_pose.png", 
@@ -214,6 +220,7 @@ const SECRET_TALENT_VAULT = [
   {
     code: "CANTSEEME",
     id: "vault-johncena",
+    heelTendency: 'unlikely', // BATCH 13: likely / neutral / unlikely to turn bad guy
     name: "John Cena",
     image: "cena.png",
     poseImage: "cena_pose.png",
@@ -226,6 +233,7 @@ const SECRET_TALENT_VAULT = [
   {
     code: "BLOODLINE",
     id: "vault-romanreigns",
+    heelTendency: 'likely', // BATCH 13: likely / neutral / unlikely to turn bad guy
     name: "Roman Reigns",
     image: "roman.png",
     poseImage: "romanreigns_pose.png",
@@ -239,6 +247,7 @@ const SECRET_TALENT_VAULT = [
   {
     code: "STRAIGHTEDGE",
     id: "vault-cmpunk",
+    heelTendency: 'neutral', // BATCH 13: likely / neutral / unlikely to turn bad guy
     name: "CM Punk",
     image: "cmpunk.png",
     poseImage: "cmpunk_pose.png",
@@ -263,6 +272,15 @@ function ensureRosterReady(minNeeded = 2) {
   } catch (e) { return true; }
 }
 window.ensureRosterReady = ensureRosterReady;
+
+// BATCH 13: code cards that come with presents (not superstars)
+window.EWF_GIFT_FROM = 'Grandma & Grandad';
+window.EWF_GIFT_CODES = {
+  CASHIN: { id: 'gift-mitb', name: 'Money in the Bank', unlockType: 'show', unlockKey: 'mitb', img: 'mitb_briefcase.png',
+    blurb: 'The MONEY IN THE BANK show and the briefcase ladder match are now open!' },
+  NEENAW: { id: 'gift-slambulance', name: 'The Slambulance', unlockType: 'match', unlockKey: 'Ambulance Match', img: 'ambulance.png',
+    blurb: 'SLAMBULANCE MATCHES are now open. Load your opponent in the back to win!' }
+};
 
 function getUnlockedVaultIds() {
   try {
@@ -291,6 +309,23 @@ window.redeemVaultCode = function() {
 
   const code = inputEl.value.trim().toUpperCase();
   const unlocked = getUnlockedVaultIds();
+
+  // BATCH 13: Christmas presents unlock with the code card in the box
+  const gift = (window.EWF_GIFT_CODES || {})[code];
+  if (gift) {
+    if (unlocked.includes(gift.id)) {
+      msgEl.innerText = "⚠️ THAT PRESENT IS ALREADY UNLOCKED";
+      msgEl.style.color = "#ffd700";
+      msgEl.style.display = "block";
+      return;
+    }
+    msgEl.style.display = "none";
+    inputEl.value = "";
+    saveUnlockedVaultId(gift.id);
+    if (typeof window.closeModal === 'function') window.closeModal();
+    if (typeof window.ewfRevealGift === 'function') window.ewfRevealGift(gift);
+    return;
+  }
   // BATCH 7 ITEM 14: core superstars (Triple H, The Rock, Stone Cold, Mankind) are now signed by code too
   const found = SECRET_TALENT_VAULT.find(v => v.code === code) ||
                 (typeof defaultWrestlers !== 'undefined' ? defaultWrestlers.find(w => w.requiresCode && w.code === code) : null);

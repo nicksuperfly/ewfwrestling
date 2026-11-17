@@ -132,7 +132,7 @@ window.openBookShowModal = function() {
       <div style="height:70px; display:flex; align-items:center; justify-content:center; font-family:'Russo One', sans-serif; font-size:2.6rem; color:#ffd700; text-shadow:0 0 18px rgba(255,215,0,0.6);">❓</div>
       <div style="text-align:center;">
         <div class="book-show-brand-name">???</div>
-        <div class="book-show-brand-tier">🔒 TOP SECRET: LVL ${lock.req}</div>
+        <div class="book-show-brand-tier">${lock.code ? '🎁 NEEDS A SPECIAL CODE' : '🔒 TOP SECRET: LVL ' + lock.req}</div>
       </div>
     ` : `
       <img src="${(typeof getShowLogo === 'function') ? getShowLogo(key) : key + '_logo.png'}" alt="${showLabel}" onerror="this.outerHTML='<div style=\\'height:70px; display:flex; align-items:center; justify-content:center; font-family:Russo One; font-size:1.3rem; color:#fff;\\'>${showLabel}</div>'">
@@ -147,7 +147,7 @@ window.openBookShowModal = function() {
     } else {
       tile.onclick = () => {
         try { const audio = typeof anvilSlamSound !== 'undefined' ? anvilSlamSound : new Audio('anvil.mp3'); audio.currentTime = 0; audio.play().catch(() => {}); } catch(e){}
-        alert(`🔒 TOP SECRET SHOW!\n\nThis show unlocks at Level ${lock.req}. What could it be?`);
+        alert(lock.code ? `🎁 TOP SECRET SHOW!\n\nThis one needs a special code. Maybe it comes with a present...` : `🔒 TOP SECRET SHOW!\n\nThis show unlocks at Level ${lock.req}. What could it be?`);
       };
     }
     grid.appendChild(tile);
@@ -949,8 +949,8 @@ window.shuffleBout = function(idx) {
     else if (stipRoll > 0.85 && gmLevel >= 4) newStip = 'Tables Match';
     else if (stipRoll > 0.80) newStip = 'Submission Match';
   } else if (isBig) {
-    if (stipRoll > 0.80 && gmLevel >= 4) newStip = 'TLC Match';
-    else if (stipRoll > 0.60 && gmLevel >= 5) newStip = 'Ambulance Match';
+    if (stipRoll > 0.80 && !isMatchTypeLocked('TLC Match').locked) newStip = 'TLC Match';
+    else if (stipRoll > 0.60 && !isMatchTypeLocked('Ambulance Match').locked) newStip = 'Ambulance Match';
     else if (stipRoll > 0.40) newStip = 'Last Man Standing';
     else if (stipRoll > 0.20) newStip = 'Ladder Match';
     else newStip = '2 out of 3 Falls';
@@ -1535,29 +1535,44 @@ window.navGoToStep = navGoToStep;
 /* --------------------------------------------------------------------------
    3. CAROUSEL CONTROLS, SELECTION & GATING
    -------------------------------------------------------------------------- */
-function isShowLocked(showKey) {
+/* BATCH 13: ONE PLACE FOR EVERY UNLOCK
+   Levels: 4 Undertaker, 5 TLC, 6 King of the Ring, 7 Royal Rumble, 8 Kane, 9 Bad Blood, 10 Create Your Own Show,
+   11 Judgment Day, 12 Stephanie McMahon, 13 No Mercy. Money in the Bank and the Slambulance unlock with code cards. */
+window.EWF_UNLOCK_LEVELS = { undertaker: 4, tlc: 5, kotr: 6, rumble: 7, kane: 8, badblood: 9, custom: 10, judgmentday: 11, stephanie: 12, nomercy: 13 };
+window.ewfHasGift = function(id) { try { return (typeof getUnlockedVaultIds === 'function' ? getUnlockedVaultIds() : []).includes(id); } catch (e) { return false; } };
+const EWF_GIFT_LOCKS = { mitb: { gift: 'gift-mitb', name: 'Money in the Bank' }, 'Ambulance Match': { gift: 'gift-slambulance', name: 'Slambulance Match' } };
+function ewfLevelLock(key, name) {
   const lvl = (typeof getGMLevel === 'function') ? getGMLevel() : 1;
-  if (showKey === 'kotr' && lvl < 8) return { locked: true, req: 8, name: "King of the Ring" };
-  if (showKey === 'mitb' && lvl < 7) return { locked: true, req: 7, name: "Money in the Bank" };
-  if (showKey === 'rumble' && lvl < 9) return { locked: true, req: 9, name: "Royal Rumble" };
-  if (showKey === 'badblood' && lvl < 11) return { locked: true, req: 11, name: "Bad Blood" };
-  if (showKey === 'judgmentday' && lvl < 13) return { locked: true, req: 13, name: "Judgment Day" };
-  if (showKey === 'nomercy' && lvl < 15) return { locked: true, req: 15, name: "No Mercy" };
+  const req = window.EWF_UNLOCK_LEVELS[key];
+  return (req && lvl < req) ? { locked: true, req, name } : { locked: false };
+}
+function ewfGiftLock(key) {
+  const g = EWF_GIFT_LOCKS[key];
+  return (g && !window.ewfHasGift(g.gift)) ? { locked: true, code: true, req: null, name: g.name } : { locked: false };
+}
+
+function isShowLocked(showKey) {
+  if (showKey === 'mitb') return ewfGiftLock('mitb');
+  if (showKey === 'kotr') return ewfLevelLock('kotr', "King of the Ring");
+  if (showKey === 'rumble') return ewfLevelLock('rumble', "Royal Rumble");
+  if (showKey === 'badblood') return ewfLevelLock('badblood', "Bad Blood");
+  if (showKey === 'judgmentday') return ewfLevelLock('judgmentday', "Judgment Day");
+  if (showKey === 'nomercy') return ewfLevelLock('nomercy', "No Mercy");
   return { locked: false };
 }
 
 function isFormatLocked(formatKey) {
   const lvl = (typeof getGMLevel === 'function') ? getGMLevel() : 1;
-  if (formatKey === 'kotr' && lvl < 8) return { locked: true, req: 8, name: "King of the Ring" };
-  if (formatKey === 'mitb' && lvl < 7) return { locked: true, req: 7, name: "Money in the Bank" };
-  if (formatKey === 'rumble' && lvl < 9) return { locked: true, req: 9, name: "Royal Rumble" };
+  if (formatKey === 'mitb') return ewfGiftLock('mitb');
+  if (formatKey === 'kotr') return ewfLevelLock('kotr', "King of the Ring");
+  if (formatKey === 'rumble') return ewfLevelLock('rumble', "Royal Rumble");
   return { locked: false };
 }
 
 function isMatchTypeLocked(matchType) {
   const lvl = (typeof getGMLevel === 'function') ? getGMLevel() : 1;
-  if (matchType === 'TLC Match' && lvl < 4) return { locked: true, req: 4, name: "TLC Match" };
-  if (matchType === 'Ambulance Match' && lvl < 5) return { locked: true, req: 5, name: "Slambulance Match" };
+  if (matchType === 'TLC Match') return ewfLevelLock('tlc', "TLC Match");
+  if (matchType === 'Ambulance Match') return ewfGiftLock('Ambulance Match');
   return { locked: false };
 }
 
@@ -1576,9 +1591,7 @@ window.randomiseCarousel = function(carouselType) {
     updateShowCarouselUI();
   } else if (carouselType === 'format') {
     const eligibleFormats = formatKeys.filter(fmt => {
-      if (fmt === 'kotr' && gmLevel < 8) return false;
-      if (fmt === 'mitb' && gmLevel < 7) return false;
-      if (fmt === 'rumble' && gmLevel < 9) return false;
+      if (isFormatLocked(fmt).locked) return false;
       return true;
     });
     const chosenFormat = eligibleFormats[Math.floor(Math.random() * eligibleFormats.length)];
@@ -1586,8 +1599,7 @@ window.randomiseCarousel = function(carouselType) {
     updateFormatCarouselUI();
   } else if (carouselType === 'type') {
     const eligibleTypes = activeMatchTypesList.filter(type => {
-      if (type === 'TLC Match' && gmLevel < 4) return false;
-      if (type === 'Ambulance Match' && gmLevel < 5) return false;
+      if (isMatchTypeLocked(type).locked) return false;
       return true;
     });
     const chosenType = eligibleTypes[Math.floor(Math.random() * eligibleTypes.length)];
@@ -1636,7 +1648,7 @@ function updateShowCarouselUI() {
         <div class="locked-dossier-overlay">
           <div style="font-size:2rem; margin-bottom:4px;">🔒</div>
           <div>TOP SECRET SHOW</div>
-          <div style="font-size:0.8rem; color:#ffd700; margin-top:4px;">REQUIRES LEVEL ${lock.req}</div>
+          <div style="font-size:0.8rem; color:#ffd700; margin-top:4px;">${lock.code ? '🎁 NEEDS A SPECIAL CODE' : 'REQUIRES LEVEL ' + lock.req}</div>
         </div>
       </div>
     `;
@@ -1651,7 +1663,7 @@ window.confirmShowCarouselChoice = function() {
   const lock = isShowLocked(key);
   if (lock.locked) {
     try { const audio = typeof anvilSlamSound !== 'undefined' ? anvilSlamSound : new Audio('anvil.mp3'); audio.currentTime = 0; audio.play().catch(() => {}); } catch (e) {}
-    alert(`🔒 TOP SECRET SHOW!\n\nThis show unlocks at Level ${lock.req}. What could it be?`);
+    alert(lock.code ? `🎁 TOP SECRET SHOW!\n\nThis one needs a special code. Maybe it comes with a present...` : `🔒 TOP SECRET SHOW!\n\nThis show unlocks at Level ${lock.req}. What could it be?`);
     return;
   }
   activeBookedMatch.showKey = key;
@@ -1663,7 +1675,7 @@ window.selectMatchShow = function(showKey) {
   const lock = isShowLocked(showKey);
   if (lock.locked) {
     try { const audio = typeof anvilSlamSound !== 'undefined' ? anvilSlamSound : new Audio('anvil.mp3'); audio.currentTime = 0; audio.play().catch(() => {}); } catch (e) {}
-    alert(`🔒 TOP SECRET SHOW!\n\nThis show unlocks at Level ${lock.req}. What could it be?`);
+    alert(lock.code ? `🎁 TOP SECRET SHOW!\n\nThis one needs a special code. Maybe it comes with a present...` : `🔒 TOP SECRET SHOW!\n\nThis show unlocks at Level ${lock.req}. What could it be?`);
     return;
   }
   activeBookedMatch.showKey = showKey;
@@ -1685,11 +1697,11 @@ function updateFormatCarouselUI() {
   if (lockStatus.locked) {
     display.innerHTML = `
       <div style="position:relative; display:flex; align-items:center; justify-content:center;">
-        <img src="${logoFile}" class="qm-format-img locked-item-silhouette" alt="${label}">
+        <div class="qm-format-img" style="display:flex; align-items:center; justify-content:center; font-size:4rem; color:#ffd700; min-height:110px;">❓</div>
         <div class="locked-dossier-overlay">
           <div style="font-size:2rem; margin-bottom:4px;">🔒</div>
-          <div>CLASSIFIED DOSSIER</div>
-          <div style="font-size:0.8rem; color:#ffd700; margin-top:4px;">REQUIRES LEVEL ${lockStatus.req}</div>
+          <div>TOP SECRET</div>
+          <div style="font-size:0.8rem; color:#ffd700; margin-top:4px;">${lockStatus.code ? '🎁 NEEDS A SPECIAL CODE' : 'REQUIRES LEVEL ' + lockStatus.req}</div>
         </div>
       </div>
     `;
@@ -1707,7 +1719,7 @@ window.confirmFormatCarouselChoice = function() {
       const audio = typeof anvilSlamSound !== 'undefined' ? anvilSlamSound : new Audio('anvil.mp3');
       audio.currentTime = 0; audio.play().catch(() => {});
     } catch (e) {}
-    alert(`🔒 CLASSIFIED EVENT!\n\n${lockStatus.name.toUpperCase()} requires Level ${lockStatus.req} executive clearance to unlock.`);
+    alert(lockStatus.code ? `🎁 TOP SECRET!\n\nThis one needs a special code. Maybe it comes with a present...` : `🔒 TOP SECRET!\n\nThis unlocks at Level ${lockStatus.req}. What could it be?`);
     return;
   }
 
@@ -1752,11 +1764,11 @@ function updateTypeCarouselUI() {
   if (lockStatus.locked) {
     display.innerHTML = `
       <div style="position:relative; display:flex; align-items:center; justify-content:center;">
-        ${renderMatchLogoHTML(matchType, 'locked-item-silhouette')}
+        <div style="display:flex; align-items:center; justify-content:center; font-size:4rem; color:#ffd700; min-height:110px; min-width:160px;">❓</div>
         <div class="locked-dossier-overlay">
           <div style="font-size:2rem; margin-bottom:4px;">🔒</div>
-          <div>CLASSIFIED STIPULATION</div>
-          <div style="font-size:0.8rem; color:#ffd700; margin-top:4px;">REQUIRES LEVEL ${lockStatus.req}</div>
+          <div>TOP SECRET MATCH</div>
+          <div style="font-size:0.8rem; color:#ffd700; margin-top:4px;">${lockStatus.code ? '🎁 NEEDS A SPECIAL CODE' : 'REQUIRES LEVEL ' + lockStatus.req}</div>
         </div>
       </div>
     `;
@@ -1774,7 +1786,7 @@ window.confirmTypeCarouselChoice = function() {
       const audio = typeof anvilSlamSound !== 'undefined' ? anvilSlamSound : new Audio('anvil.mp3');
       audio.currentTime = 0; audio.play().catch(() => {});
     } catch (e) {}
-    alert(`🔒 CLASSIFIED STIPULATION!\n\n${lockStatus.name.toUpperCase()} requires Level ${lockStatus.req} clearance to book.`);
+    alert(lockStatus.code ? `🎁 TOP SECRET MATCH!\n\nThis one needs a special code. Maybe it comes with a present...` : `🔒 TOP SECRET MATCH!\n\nThis unlocks at Level ${lockStatus.req}. What could it be?`);
     return;
   }
 
@@ -2386,8 +2398,7 @@ function spinMysteryRouletteStaged() {
   if (allWrestlers.length < 2) { alert("Add at least 2 active, uninjured wrestlers!"); window.closeVideoModal(); return; }
 
   const eligibleTypes = allMatchTypes.filter(type => {
-    if (type === 'TLC Match' && gmLevel < 4) return false;
-    if (type === 'Ambulance Match' && gmLevel < 5) return false;
+    if (isMatchTypeLocked(type).locked) return false;
     return true;
   });
 
@@ -6202,7 +6213,8 @@ if (formEl) {
           youtubeUrl: url,
           promoUrl: promoUrl,
           isDefault: false,
-          unlockLevel: 1
+          unlockLevel: 1,
+          heelTendency: (document.getElementById('heelTendencyInput') || {}).value || 'neutral' // BATCH 13
         };
 
         if (typeof saveCustomWrestler === 'function') {

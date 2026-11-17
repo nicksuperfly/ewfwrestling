@@ -51,6 +51,13 @@
   function badCount(st) { return roster().filter(w => st.align[w.id] === 'bad').length; }
   function maxBad() { return Math.max(1, Math.floor(roster().length / 3)); }
 
+  // Batch 13: how easily each superstar turns (set per superstar as heelTendency: likely / neutral / unlikely)
+  const TURN_BAD = { likely: 3, neutral: 4, unlikely: 6 };
+  const TURN_GOOD = { likely: 4, neutral: 3, unlikely: 2 };
+  const TEND_RANK = { likely: 0, neutral: 1, unlikely: 2 };
+  function tendencyOf(id) { const w = byId(id); const t = w && w.heelTendency; return TURN_BAD[t] ? t : 'neutral'; }
+  window.ewfTendencyOf = tendencyOf;
+
   // pts > 0 = good deed, pts < 0 = bad deed
   function deed(id, pts, why, st) {
     if (!id || !pts) return;
@@ -60,9 +67,10 @@
     const bad = st.align[id] === 'bad';
     const queued = st.pendingTurns.some(t => t.id === id);
     if (!queued) {
-      if (!bad && d.b - d.g >= 4 && badCount(st) < maxBad()) {
+      const t = tendencyOf(id);
+      if (!bad && d.b - d.g >= TURN_BAD[t] && badCount(st) < maxBad()) {
         st.pendingTurns.push({ id, to: 'bad', why: why || 'One dirty trick too many' });
-      } else if (bad && d.g - d.b >= 3) {
+      } else if (bad && d.g - d.b >= TURN_GOOD[t]) {
         st.pendingTurns.push({ id, to: 'good', why: why || 'Won the fans back' });
       }
     }
@@ -214,6 +222,13 @@
       if (aBadDeed && !isBad(A.id, st) && isBad(B.id, st)) swap();
       else if (aGood && isBad(A.id, st) && !isBad(B.id, st)) swap();
       else if (bGood && isBad(B.id, st) && !isBad(A.id, st)) swap();
+      // Batch 13: born villains get the villain's role, fan favourites rarely do
+      else if (aBadDeed && !isBad(A.id, st) && !isBad(B.id, st) && TEND_RANK[tendencyOf(A.id)] > TEND_RANK[tendencyOf(B.id)] && Math.random() < 0.75) swap();
+      if (!forced && Array.isArray(pool) && aBadDeed && !isBad(A.id, st) && tendencyOf(A.id) === 'unlikely' && Math.random() < 0.6) {
+        const heels = pool.filter(w => w && w.id !== B.id && tendencyOf(w.id) !== 'unlikely');
+        const likely = heels.filter(w => tendencyOf(w.id) === 'likely');
+        if (likely.length || heels.length) A = pick(likely.length && Math.random() < 0.7 ? likely : heels);
+      }
       if (!forced && Array.isArray(pool) && Math.random() < 0.7) {
         if (aBadDeed && !isBad(A.id, st)) {
           const bads = pool.filter(w => w && isBad(w.id, st) && w.id !== B.id);
@@ -633,6 +648,8 @@
     const st = load();
     st.lastNudge = st.matchNo; save(st);
     const pool = fit().sort((a, b) => {
+      const ta = TEND_RANK[tendencyOf(a.id)], tb = TEND_RANK[tendencyOf(b.id)];
+      if (ta !== tb) return ta - tb;
       const da = st.deeds[a.id] || { b: 0, g: 0 }, db = st.deeds[b.id] || { b: 0, g: 0 };
       return (db.b - db.g) - (da.b - da.g);
     }).slice(0, 4);
@@ -1194,6 +1211,11 @@
         st.pendingTurns.shift(); save(st);
       }
 
+      // 1b. Batch 13: the Commissioner (Stephanie McMahon) can step in
+      if (typeof window.ewfCommissionerHook === 'function') {
+        try { if (window.ewfCommissionerHook(ctx, go)) return true; } catch (e) { console.warn(e); }
+      }
+
       // 2. post-match angles (beatdown, the save, celebration jump, title challenge)
       if (st.matchNo - st.lastAngle >= 3) {
         const cands = angleCandidates(ctx, st);
@@ -1384,6 +1406,7 @@
     try {
       if (sec <= 1) resetLive();
       if (!inMatchOK()) return;
+      if (typeof window.ewfCommissionerTick === 'function' && window.ewfCommissionerTick(sec)) return;
       if (live.at !== null && !live.done && sec >= live.at) {
         live.done = true;
         if (window.armedAmbushWrestler && !ambushTriggeredThisMatch) { executePendingReturnAmbushIfArmed(); return; }
@@ -1636,10 +1659,10 @@
     }).join('') : '<div style="color:#888;">No relationships yet. They\'ll build up as matches happen!</div>';
     const others = roster().filter(o => o.id !== w.id).map(o => `<option value="${o.id}">${o.name}</option>`).join('');
     el.innerHTML = `
-      <h3 style="color:${bad ? '#ff1744' : '#4fc3f7'}">${w.name.toUpperCase()} ${bad ? bm('BAD GUY') : '⭐ GOOD GUY'}</h3>
+      <h3 style="color:${bad ? '#ff1744' : '#4fc3f7'}">${w.name.toUpperCase()} ${bad ? bm('BAD GUY') : '⭐ GOOD GUY'}${tendencyOf(w.id) === 'likely' ? ' <span style="font-size:0.7rem; color:#ff8a80; border:1px solid #ff8a80; padding:1px 5px; vertical-align:middle;">🐍 BORN VILLAIN</span>' : (tendencyOf(w.id) === 'unlikely' ? ' <span style="font-size:0.7rem; color:#ffd700; border:1px solid #ffd700; padding:1px 5px; vertical-align:middle;">⭐ FAN FAVOURITE</span>' : '')}</h3>
       <div class="ewfp-row"><b>FORM:</b> ${form} (${mom.wins || 0} wins in last ${mom.total || 0})${titles.length ? ` &nbsp; <b>🏆</b> ${titles.map(t => TITLE_NAMES[t]).join(', ')}` : ''}</div>
       <div class="ewfp-row"><b>MOOD:</b> ${m ? `<span style="color:${MOODS[m.k].col}">${MOODS[m.k].e} ${MOODS[m.k].label}</span> <span style="color:#aaa">(${m.why})</span>` : 'Calm'}</div>
-      <div class="ewfp-row" style="margin-top:8px;"><b>RELATIONSHIPS</b></div>${relHTML}
+      <div class="ewfp-row" style="margin-top:8px;"><b>RELATIONSHIPS</b></div>${typeof window.ewfProfileExtra === 'function' ? (window.ewfProfileExtra(w) || '') : ''}${relHTML}
       <div class="ewfp-gm">
         <button class="action-btn ${bad ? 'btn-blue' : 'btn-red'}" id="ewfpTurnBtn">${bad ? '⭐ MAKE GOOD GUY' : bm('MAKE BAD GUY')}</button>
       </div>
@@ -1843,6 +1866,7 @@
     load, save, isBad, moodOf, getRel, setRel, relsOf, deed, castStory, applyStory, onMatchResult, afterBout, maybeBackstage,
     tick, onRunIn, pickRunIn, playTurn, renderSuperstarsTab, MOODS, _live: live,
     // test helpers
+    _scene: scene, _update: update, _closeScene2: closeScene, _sfx: sfx, _flash: flash, _shake: shake, _bookMatch: bookMatch, _whenButtons: whenButtons, _blackout: blackoutStrobe,
     _runCallout: runCallout, _runAngle: runAngle, _runBackstage: runBackstage, _runExile: runExile, _nudge: nudgeBadGuy, _fakeOut: fakeOut, _cheat: cheatBanner, _alliance: runAlliance, _closeScene: closeScene
   };
 

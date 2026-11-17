@@ -10,6 +10,24 @@ How we work:
 
 ---
 
+## Batch 13 - Stephanie, tendencies, new ladder, code-card presents, text size (17 Nov 2026)
+
+| # | Item | Status |
+|---|------|--------|
+| 1 | Stephanie McMahon (Attitude era) as the Level 12 reward (see item 5), NOT on the roster: EWF Commissioner. Full unlock moment (lights out, her music, "STEPHANIE McMAHON IS THE NEW EWF COMMISSIONER!", gift from Dad line). Her photo in the GM Office next to the commentary booth. "STEPHANIE'S ORDERS" cutscene: after 3 completed shows, about 1 in 5 chance between Book a Show bouts; in quick matches at most once every 10 matches (counter resets after she appears). Orders: handicap match for a bad guy, make the main event a title match, force two superstars to team up, slap a superstar (they go FURIOUS). Can be picked as Special Guest Referee. Bret cut-in the first time: "Uh oh, GM... the boss's daughter is here!". Assets: stephanie.png and stephanie_pose.png in the folder (17 Nov), entrance video https://www.youtube.com/watch?v=K6ycDLE16Bc | ✅ Done |
+| 2 | Stephanie's favourite is TRIPLE H (McMahon-Helmsley era): her orders lean his way (title shots for him, tough matches for whoever he's feuding with, she never slaps him), she can run in to help him in his matches, and their relationship shows as a special "💍 POWER COUPLE" bond in the SUPERSTARS tab | ✅ Done |
+| 3 | Bad guy tendency per superstar. LIKELY: Triple H, Roman Reigns, Kane (turn bad after fewer bad deeds ~3, harder to win back ~4 good deeds, cast as the villain in stories more often, first picks for "The EWF needs a bad guy"). NEUTRAL: Undertaker, CM Punk (as now: ~4 bad / ~3 good). UNLIKELY: John Cena, The Rock, Stone Cold, Mankind (need ~6 bad deeds, win the fans back after ~2 good deeds, rarely cast as the villain). Everyone still starts as a Good Guy and GM buttons still override. Future superstars get a tendency in their contract data; figures added manually get a "Good guy or bad guy at heart?" choice (default neutral). Bret's profile shows it subtly (e.g. "Born villain" / "Fan favourite") | ✅ Done |
+| 4 | Titantron screen (mounted 10.5" or 12" tablet): TEXT SIZE setting in the GM Office (Normal / Large / Extra Large), saved on that tablet only and kept through Reset Universe. Large sets a minimum readable size for the small text (badges, scorecards, labels, Bret's tips, cutscene text) without touching the big titles and banners. Screenshot check of every main screen at both tablet sizes and every setting so nothing overlaps or cuts off | ✅ Done |
+| 5 | New unlock ladder (XP thresholds unchanged, prizes shifted down): 1 standard matches (fix the old "5-Man Core Roster" text), 2 championship belts (500), 3 Medical Ward (1,100), 4 THE UNDERTAKER (1,800), 5 TLC match (2,600), 6 King of the Ring (3,500), 7 Royal Rumble (4,500), 8 Kane (5,600), 9 Bad Blood (6,800), 10 Create Your Own Show (8,200), 11 Judgment Day (9,800), 12 STEPHANIE McMAHON (11,600), 13 No Mercy (13,600), 14-20 free for future figures (Seth Rollins is one Nicko already has). Mystery tiles, roadmap and Bret's tips follow the new levels automatically | ✅ Done |
+| 6 | Christmas presents unlock by CODE CARD, not by level: MONEY IN THE BANK (show, ladder match format) and the SLAMBULANCE (Ambulance match) come off the level ladder. Nicko writes a code card in each box (from the grandparents on Christmas Day / Boxing Day); Ellis types it in the + card like a figure code and gets the full unlock moment (lights out, OH MY GOD, showcase, "a gift from Grandma and Grandad"). Until then they show as mystery tiles: "🔒 ??? Needs a special code". Codes agreed with Nicko (kept out of this file). Nicko can test any time on the test tablet | ✅ Done |
+
+Codes: CASHIN = Money in the Bank, NEENAW = the Slambulance (the gift line says "A present from Grandma & Grandad", change EWF_GIFT_FROM in js/1 if needed).
+New file js/9-commissioner.js (Stephanie, gift reveals, text size). Bonus: format and match type carousels now show ??? for locked items too; KOTR hub lock follows the new ladder.
+
+Suggested commit message: "Batch 13: Stephanie McMahon commissioner, bad guy tendencies, new unlock ladder, CASHIN/NEENAW present codes, titantron text size"
+
+---
+
 ## Batch 12 - Create Your Own Show (16 Nov 2026)
 
 | # | Item | File | Status |

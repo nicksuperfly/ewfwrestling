@@ -328,9 +328,9 @@ function setKotrHolder(id) {
 }
 
 function openKotrHub() {
-  const currentLvl = typeof getGMLevel === 'function' ? getGMLevel() : 1;
-  if (currentLvl < 7) {
-    alert("🔒 King of the Ring Tournament is locked! Reach Level 8 (Tournament Director) to unlock.");
+  const kotrLock = typeof isFormatLocked === 'function' ? isFormatLocked('kotr') : { locked: false };
+  if (kotrLock.locked) {
+    alert(`🔒 TOP SECRET!\n\nThis unlocks at Level ${kotrLock.req}. What could it be?`);
     return;
   }
   if (typeof turnOffOtherModes === 'function') turnOffOtherModes('');

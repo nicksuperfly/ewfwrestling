@@ -1,6 +1,6 @@
 /* ==========================================================================
    ELLIS'S MAIN EVENT (EWF UNIVERSE) - MODULE 8: js/8-create-show.js
-   BATCH 12: CREATE YOUR OWN SHOW (unlocks at Level 12)
+   BATCH 12: CREATE YOUR OWN SHOW (unlocks at Level 10 since Batch 13)
    - Name it, photo or drawn logo, YouTube intro, weekly or pay-per-view
    - Arena colours, build the whole card, main event last
    - Bret and Corbin welcome everyone to the show
@@ -11,7 +11,7 @@
 
 (function () {
   const KEY = 'ewf_custom_shows';
-  const UNLOCK_LEVEL = 12;
+  const UNLOCK_LEVEL = (window.EWF_UNLOCK_LEVELS && window.EWF_UNLOCK_LEVELS.custom) || 10;
   const MAX_SHOWS = 8;
 
   const COLOURS = [

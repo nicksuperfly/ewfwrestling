@@ -2646,6 +2646,12 @@
         <label>Icon Image:</label><input type="file" id="wrestlerImage" accept="image/*" required>
         <label>Entrance YouTube Link:</label><input type="url" id="youtubeUrl" required>
         <label>Promo Video Link(s) (Optional):</label><input type="text" id="promoUrlInput">
+        <label>Good guy or bad guy at heart?</label>
+        <select id="heelTendencyInput">
+          <option value="unlikely">😇 Good guy at heart (rarely turns bad)</option>
+          <option value="neutral" selected>⚖️ Could go either way</option>
+          <option value="likely">😈 Bad guy at heart (turns bad easily)</option>
+        </select>
         <div class="modal-buttons"><button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button><button type="submit" class="btn-submit">Save</button></div>
       </form>
     </div>
@@ -3002,5 +3008,6 @@
   <script src="js/6-tutorial.js"></script>
   <script src="js/7-personality.js"></script>
   <script src="js/8-create-show.js"></script>
+  <script src="js/9-commissioner.js"></script>
 </body>
 </html>
