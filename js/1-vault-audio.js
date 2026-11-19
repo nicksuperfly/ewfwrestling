@@ -133,7 +133,7 @@ const defaultWrestlers = [
     image: "triplehicon.png", 
     poseImage: "tripleh_pose.png", 
     youtubeUrl: "https://www.youtube.com/watch?v=dFzSXbjV054, https://youtu.be/onNEHdWX3qY?si=CYf6hE8yIJd4idA-", 
-    promoUrl: "https://www.youtube.com/watch?v=QtpcMHdOwUE,https://www.youtube.com/watch?v=NzMxsqu78YI", 
+    promoUrl: "https://www.youtube.com/watch?v=QtpcMHdOwUE,https://www.youtube.com/watch?v=NzMxsqu78YI,https://www.youtube.com/watch?v=Y0aFlijwmB0,https://www.youtube.com/watch?v=X2grkF7b9l8,https://www.youtube.com/watch?v=b6PcALI682c,https://www.youtube.com/watch?v=Jo4Ku-6TVec,https://www.youtube.com/watch?v=By5R4qdcQZA,https://www.youtube.com/watch?v=PR4CMmENSPw,https://www.youtube.com/watch?v=1_D7Y6SJKek,https://www.youtube.com/watch?v=DABm-CsF6Fc,https://www.youtube.com/watch?v=uRGQugQpjz8,https://www.youtube.com/watch?v=3bwh529rFgk", 
     isDefault: true,
     unlockLevel: 1,
     requiresCode: true, // BATCH 7 ITEM 14: signed on Christmas Day with a contract code
@@ -149,7 +149,7 @@ const defaultWrestlers = [
     image: "therock.png", 
     poseImage: "therock_pose.png", 
     youtubeUrl: "https://www.youtube.com/watch?v=ZcIYOgcCcnM", 
-    promoUrl: "https://youtu.be/jNyerPRUfNo?t=59,https://www.youtube.com/watch?v=I7v7_o2UP10,https://www.youtube.com/watch?v=zdLj_ZOL_YM,https://www.youtube.com/watch?v=WU9yTHjpkJw,https://www.youtube.com/watch?v=nL0MuSunn30,https://youtu.be/OAskS_mdKFU?t=211,https://www.youtube.com/watch?v=e74wxxtlgI8,https://www.youtube.com/watch?v=LY4YcbyDxJw,https://www.youtube.com/watch?v=wAFSBjXoDMA", 
+    promoUrl: "https://youtu.be/jNyerPRUfNo?t=59,https://www.youtube.com/watch?v=I7v7_o2UP10,https://www.youtube.com/watch?v=zdLj_ZOL_YM,https://www.youtube.com/watch?v=WU9yTHjpkJw,https://www.youtube.com/watch?v=nL0MuSunn30,https://youtu.be/OAskS_mdKFU?t=211,https://www.youtube.com/watch?v=e74wxxtlgI8,https://www.youtube.com/watch?v=LY4YcbyDxJw,https://www.youtube.com/watch?v=wAFSBjXoDMA,https://www.youtube.com/watch?v=n_b4y-ObpUo,https://www.youtube.com/watch?v=3bwh529rFgk", 
     isDefault: true,
     unlockLevel: 1,
     requiresCode: true, // BATCH 7 ITEM 14: signed on Christmas Day with a contract code
@@ -165,7 +165,7 @@ const defaultWrestlers = [
     image: "stonecold.png", 
     poseImage: "stonecold_pose.png", 
     youtubeUrl: "https://www.youtube.com/watch?v=MOzjBO2dsmY, https://www.youtube.com/watch?v=cOsqdghHcIk", 
-    promoUrl: "https://www.youtube.com/watch?v=nL0MuSunn30,https://youtu.be/OAskS_mdKFU?t=211,https://youtu.be/JFEjVNN5VH8,https://www.youtube.com/watch?v=oPJ37mJi2XE,https://www.youtube.com/watch?v=tjWPoQWdmjg,https://www.youtube.com/watch?v=2kTIuvD_7QU,https://www.youtube.com/watch?v=pgyt7ok7Ojg,https://www.youtube.com/watch?v=sr8Rwf5RAMU,https://www.youtube.com/watch?v=E3eXEd-hmro,https://www.youtube.com/watch?v=_O89Y0VwdPs,https://www.youtube.com/watch?v=eIRVxrNDvJs?t=64", 
+    promoUrl: "https://www.youtube.com/watch?v=nL0MuSunn30,https://youtu.be/OAskS_mdKFU?t=211,https://youtu.be/JFEjVNN5VH8,https://www.youtube.com/watch?v=oPJ37mJi2XE,https://www.youtube.com/watch?v=tjWPoQWdmjg,https://www.youtube.com/watch?v=2kTIuvD_7QU,https://www.youtube.com/watch?v=pgyt7ok7Ojg,https://www.youtube.com/watch?v=sr8Rwf5RAMU,https://www.youtube.com/watch?v=E3eXEd-hmro,https://www.youtube.com/watch?v=_O89Y0VwdPs,https://www.youtube.com/watch?v=eIRVxrNDvJs&t=64,https://www.youtube.com/watch?v=3bwh529rFgk", 
     isDefault: true,
     unlockLevel: 1,
     requiresCode: true, // BATCH 7 ITEM 14: signed on Christmas Day with a contract code
@@ -181,7 +181,7 @@ const defaultWrestlers = [
     image: "mankind.png", 
     poseImage: "mankind_pose.png", 
     youtubeUrl: "https://www.youtube.com/watch?v=wiftmVaf0eA", 
-    promoUrl: "", 
+    promoUrl: "https://www.youtube.com/watch?v=3bwh529rFgk", 
     isDefault: true,
     unlockLevel: 1,
     requiresCode: true, // BATCH 7 ITEM 14: signed on Christmas Day with a contract code
@@ -197,9 +197,9 @@ const defaultWrestlers = [
     image: "theundertaker.png", 
     poseImage: "theundertaker_pose.png", 
     youtubeUrl: "https://www.youtube.com/watch?v=8dcY9LDdRIk", 
-    promoUrl: "", 
+    promoUrl: "https://www.youtube.com/watch?v=By5R4qdcQZA,https://www.youtube.com/watch?v=TQweBUtJVNw,https://www.youtube.com/watch?v=D9ZC8kvatqs,https://www.youtube.com/watch?v=69h-qJZHfvM,https://www.youtube.com/watch?v=ArgqFEqqb-I,https://www.youtube.com/watch?v=r9Qo64l6Se0,https://www.youtube.com/watch?v=iaqhAixiENg,https://www.youtube.com/watch?v=Pc4Ybq5dc-E,https://www.youtube.com/watch?v=nlIqOxxQPqM,https://www.youtube.com/watch?v=HQAcJqsJcfM,https://www.youtube.com/watch?v=sV49FdblNZw,https://www.youtube.com/watch?v=3bwh529rFgk", 
     isDefault: true,
-    unlockLevel: 6 
+    unlockLevel: 5 // BATCH 14: Level 5 (was 4)
   },
   { 
     id: 'default-kane', 
@@ -208,9 +208,24 @@ const defaultWrestlers = [
     image: "kane.png", 
     poseImage: "kane_pose.png", 
     youtubeUrl: "https://youtu.be/pN0rmWh6nkE", 
-    promoUrl: "", 
+    promoUrl: "https://www.youtube.com/watch?v=iaqhAixiENg,https://www.youtube.com/watch?v=Pc4Ybq5dc-E,https://www.youtube.com/watch?v=ACFvfIzvmbU,https://www.youtube.com/watch?v=nlIqOxxQPqM,https://www.youtube.com/watch?v=jPGL1s0ajCw,https://www.youtube.com/watch?v=HQAcJqsJcfM,https://www.youtube.com/watch?v=sV49FdblNZw,https://www.youtube.com/watch?v=3bwh529rFgk", 
     isDefault: true,
-    unlockLevel: 10 
+    unlockLevel: 9 // BATCH 14: Level 9 (was 8)
+  },
+  { 
+    // BATCH 14 ITEM 2: Seth Rollins, the Level 15 reward
+    id: 'default-sethrollins', 
+    heelTendency: 'likely', // BATCH 13: likely / neutral / unlikely to turn bad guy
+    name: "Seth Rollins", 
+    image: "sethrollins.png", 
+    poseImage: "sethrollins_pose.png", 
+    youtubeUrl: "https://www.youtube.com/watch?v=2djndgbr33o", 
+    promoUrl: "https://www.youtube.com/watch?v=2djndgbr33o", 
+    isDefault: true,
+    unlockLevel: 15,
+    debutBanner: "🔥 BURN IT DOWN! THE ARCHITECT SETH ROLLINS HAS ARRIVED! 🔥",
+    bannerBg: "linear-gradient(180deg, #c62828 0%, #1a0000 100%)",
+    bannerShadow: "0 0 45px #ff1744, 0 0 25px #ffffff"
   }
 ];
 

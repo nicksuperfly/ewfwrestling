@@ -11,7 +11,7 @@
 
 (function () {
   const KEY = 'ewf_custom_shows';
-  const UNLOCK_LEVEL = (window.EWF_UNLOCK_LEVELS && window.EWF_UNLOCK_LEVELS.custom) || 10;
+  const UNLOCK_LEVEL = (window.EWF_UNLOCK_LEVELS && window.EWF_UNLOCK_LEVELS.custom) || 11;
   const MAX_SHOWS = 8;
 
   const COLOURS = [

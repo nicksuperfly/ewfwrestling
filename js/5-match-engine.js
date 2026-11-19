@@ -946,7 +946,7 @@ window.shuffleBout = function(idx) {
   
   if (isTv) {
     if (stipRoll > 0.90) newStip = 'Special Guest Referee';
-    else if (stipRoll > 0.85 && gmLevel >= 4) newStip = 'Tables Match';
+    else if (stipRoll > 0.85 && !isMatchTypeLocked('Tables Match').locked) newStip = 'Tables Match';
     else if (stipRoll > 0.80) newStip = 'Submission Match';
   } else if (isBig) {
     if (stipRoll > 0.80 && !isMatchTypeLocked('TLC Match').locked) newStip = 'TLC Match';
@@ -957,7 +957,7 @@ window.shuffleBout = function(idx) {
   } else {
     if (stipRoll > 0.70) newStip = 'Falls Count Anywhere';
     else if (stipRoll > 0.40) newStip = 'No Disqualification';
-    else if (stipRoll > 0.20 && gmLevel >= 4) newStip = 'Tables Match';
+    else if (stipRoll > 0.20 && !isMatchTypeLocked('Tables Match').locked) newStip = 'Tables Match';
   }
   
   const wasTitleMatch = !!bout.isTitleMatch;
@@ -1536,9 +1536,10 @@ window.navGoToStep = navGoToStep;
    3. CAROUSEL CONTROLS, SELECTION & GATING
    -------------------------------------------------------------------------- */
 /* BATCH 13: ONE PLACE FOR EVERY UNLOCK
-   Levels: 4 Undertaker, 5 TLC, 6 King of the Ring, 7 Royal Rumble, 8 Kane, 9 Bad Blood, 10 Create Your Own Show,
-   11 Judgment Day, 12 Stephanie McMahon, 13 No Mercy. Money in the Bank and the Slambulance unlock with code cards. */
-window.EWF_UNLOCK_LEVELS = { undertaker: 4, tlc: 5, kotr: 6, rumble: 7, kane: 8, badblood: 9, custom: 10, judgmentday: 11, stephanie: 12, nomercy: 13 };
+   BATCH 14: Levels: 4 Tables Match, 5 Undertaker, 6 TLC, 7 King of the Ring, 8 Royal Rumble, 9 Kane, 10 Bad Blood,
+   11 Create Your Own Show, 12 Judgment Day, 13 Stephanie McMahon, 14 No Mercy, 15 Seth Rollins.
+   Money in the Bank and the Slambulance unlock with code cards. */
+window.EWF_UNLOCK_LEVELS = { tables: 4, undertaker: 5, tlc: 6, kotr: 7, rumble: 8, kane: 9, badblood: 10, custom: 11, judgmentday: 12, stephanie: 13, nomercy: 14, sethrollins: 15 };
 window.ewfHasGift = function(id) { try { return (typeof getUnlockedVaultIds === 'function' ? getUnlockedVaultIds() : []).includes(id); } catch (e) { return false; } };
 const EWF_GIFT_LOCKS = { mitb: { gift: 'gift-mitb', name: 'Money in the Bank' }, 'Ambulance Match': { gift: 'gift-slambulance', name: 'Slambulance Match' } };
 function ewfLevelLock(key, name) {
@@ -1572,6 +1573,7 @@ function isFormatLocked(formatKey) {
 function isMatchTypeLocked(matchType) {
   const lvl = (typeof getGMLevel === 'function') ? getGMLevel() : 1;
   if (matchType === 'TLC Match') return ewfLevelLock('tlc', "TLC Match");
+  if (matchType === 'Tables Match') return ewfLevelLock('tables', "Tables Match");
   if (matchType === 'Ambulance Match') return ewfGiftLock('Ambulance Match');
   return { locked: false };
 }

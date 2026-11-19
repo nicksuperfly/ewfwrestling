@@ -17,7 +17,7 @@
   const HHH = 'default-tripleh';
 
   const level = () => (typeof getGMLevel === 'function' ? getGMLevel() : 1);
-  const unlocked = () => level() >= ((window.EWF_UNLOCK_LEVELS || {}).stephanie || 12);
+  const unlocked = () => level() >= ((window.EWF_UNLOCK_LEVELS || {}).stephanie || 13);
   const P = () => window.EWFP || {};
   const roster = () => (typeof getUnlockedWrestlers === 'function' ? getUnlockedWrestlers() : []).filter(Boolean);
   const injured = (id) => typeof getInjuryRecord === 'function' && !!getInjuryRecord(id);

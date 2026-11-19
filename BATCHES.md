@@ -10,6 +10,20 @@ How we work:
 
 ---
 
+## Batch 14 - Tables at Level 4, Seth Rollins, promos, Right Here Right Now, MIDI pad, smaller images (17-19 Nov 2026)
+
+| # | Item | Status |
+|---|------|--------|
+| 1 | Present codes name different grandparents: NEENAW (Slambulance) says "🎁 A PRESENT FROM GRANNY & GRANDAD", CASHIN (Money in the Bank) says "🎁 A PRESENT FROM NANNY & GRANDAD" | No change: Nicko happy with the wording (19 Nov) |
+| 2 | Seth Rollins as a new superstar: a reward somewhere in Levels 15 to 20 or a code card (Nicko to decide), bad guy tendency Likely. Assets in the folder (19 Nov): sethrollins.png (1254 square), sethrollins_pose.png (828x1167, transparent). Entrance video https://www.youtube.com/watch?v=2djndgbr33o | ✅ Done (19 Nov): Level 15 reward (Lvl 15 title "The Architect"), bad guy tendency Likely, entrance video also used as his promo for now, "BURN IT DOWN!" debut banner. "Pick up your gift from Dad" line on his unlock (Nicko has the figure) |
+| 3 | Swap in the compressed images (485 MB down to 139 MB, ready in "Claude outputs/compressed"), check every image still loads and looks sharp on the tablet | ✅ Done (19 Nov): 218 images swapped, 507 MB down to 144 MB. Newer images compressed too (Seth, Stephanie, new poses, Bad Blood/Judgment Day/No Mercy/custom highlights and logos). raw_highlights_bg.png and the app icons left as they were. Originals are in the git history. Check on the tablet |
+| 4 | New Level 4 reward: TABLES MATCH, with the "collect your gift from Dad" moment. Tables is locked (❓ TOP SECRET) until then, including storylines and Mystery Match. Everything from Undertaker onwards moves up one level, XP unchanged: Undertaker 5, TLC 6, King of the Ring 7, Rumble 8, Kane 9, Bad Blood 10, Create Your Own Show 11, Judgment Day 12, Stephanie 13, No Mercy 14, bragging rights 15 to 20 | ✅ Done (19 Nov): ladder shifted, rank titles moved with their rewards (Level 4 is "Table Breaker"). Tables locked until Level 4 everywhere; Book a Show swaps it for No DQ until then |
+| 5 | More promos for Promo Mode (Nicko's links, 18 Nov). Triple H +8: Y0aFlijwmB0, X2grkF7b9l8, b6PcALI682c, Jo4Ku-6TVec, By5R4qdcQZA, PR4CMmENSPw, 1_D7Y6SJKek, DABm-CsF6Fc. Undertaker +11: By5R4qdcQZA, TQweBUtJVNw, D9ZC8kvatqs, 69h-qJZHfvM, ArgqFEqqb-I, r9Qo64l6Se0, iaqhAixiENg, Pc4Ybq5dc-E, nlIqOxxQPqM, HQAcJqsJcfM, sV49FdblNZw. Kane +7: iaqhAixiENg, Pc4Ybq5dc-E, ACFvfIzvmbU, nlIqOxxQPqM, jPGL1s0ajCw, HQAcJqsJcfM, sV49FdblNZw. The Rock +1: n_b4y-ObpUo. Triple H also gets uRGQugQpjz8 (his 2002 return). All Attitude Era superstars (Triple H, The Rock, Stone Cold, Mankind, Undertaker, Kane) get 3bwh529rFgk ("My Sacrifice" montage). Cena, Reigns and CM Punk only have entrance videos as promos: Nicko sending real promo links. Also fix Stone Cold's broken start time link (eIRVxrNDvJs?t=64 should be &t=64) | ✅ Done (19 Nov), Stone Cold link fixed. Cena, Reigns and CM Punk still waiting for real promo links |
+| 6 | "RIGHT HERE, RIGHT NOW!": after a promo that features two superstars, a cutscene ("THE DEADMAN HAS A MESSAGE FOR KANE!") with FIGHT RIGHT HERE, RIGHT NOW (books it, straight to entrances), SAVE IT FOR THE NEXT SHOW, or SQUASH IT. Fights add a little BAD BLOOD. Promos where two superstars stand together offer TEAM THEM UP (tag match) and add MATES. Tags worked out from the YouTube titles (18 Nov). FIGHTS: Y0aFlijwmB0 CM Punk v Triple H; By5R4qdcQZA Undertaker v Triple H; 1_D7Y6SJKek, n_b4y-ObpUo, I7v7_o2UP10, WU9yTHjpkJw, OAskS_mdKFU The Rock v Triple H; NzMxsqu78YI, JFEjVNN5VH8 Stone Cold v Triple H; HQAcJqsJcfM Kane v Triple H; 69h-qJZHfvM Undertaker v Roman Reigns; iaqhAixiENg, Pc4Ybq5dc-E, jPGL1s0ajCw Undertaker v Kane; nL0MuSunn30, pgyt7ok7Ojg Stone Cold v The Rock. TOGETHER: r9Qo64l6Se0, nlIqOxxQPqM, sV49FdblNZw Undertaker & Kane; ACFvfIzvmbU Kane & The Rock. All others are solo promos (no follow-up) | ✅ Done (19 Nov): in Promo Mode, when a tagged promo finishes or is closed. The superstar Ellis tapped does the talking, nicknames in the title. Only appears if both superstars are signed and fit (no spoilers). Fight/save adds BAD BLOOD, team-up adds MATES (unless they already have a relationship) |
+| 7 | MIDI sound pad (Donner Starrypad Mini) via Web MIDI in Chrome: js/10-midi-pads.js plus /sounds folder (renamed by type, e.g. "pin - kickout 1.mp3"). Rows: pins, submissions, Rumble/MITB, effects; left column = random pad. Kick-out/rope break/tap out/etc. banners, MATCH DRAMA line on the summary, star rating pre-set from drama (max 4), headline says how it ended. Rumble pads 9-10 waiting for sounds | ✅ Done (19 Nov), needs testing on laptop and tablet |
+
+---
+
 ## Batch 13 - Stephanie, tendencies, new ladder, code-card presents, text size (17 Nov 2026)
 
 | # | Item | Status |
@@ -77,9 +91,9 @@ Bonus fixes: Sim Match could leave a hidden screen stuck in fullscreen (fixed in
 | # | Item | Status |
 |---|------|--------|
 | 1 | "OH MY GOD!" (ohmygod.mp3) plays over superstar arrival banners (code signings and level-up debuts) | ✅ Done |
-| 2 | App icon fix: manifest.json pointed at the wide logo (bullet-shaped icon). Use square icon-192/512 + padded maskable icons; index.html favicon line | Logged (zip sent, apply in batch) |
+| 2 | App icon fix: manifest.json pointed at the wide logo (bullet-shaped icon). Use square icon-192/512 + padded maskable icons; index.html favicon line | ✅ Resolved (Nicko, 19 Nov) |
 | 3 | Good Guys and Bad Guys: everyone starts Good Guy; turns earned through stories (bad/good deed tally from Nicko's 79 stories, which stay unchanged), losing runs, betrayals, title losses; "EWF needs a bad guy" nudge (max ~1/3 bad guys); bad guys cheat, attack after the bell, crowd boos; red name + 😈 on cards (Option B); casting leans bad guys into villain roles in stories; MAKE GOOD GUY / BAD GUY in Universe. Assets: crowd_boo.mp3, bad_guy_turn_bg.png, good_guy_turn_bg.png | ✅ Done |
-| 4 | Compress all images (same names, same look, 60-80% smaller); check samples with Nicko first | ⏳ Ready in "Claude outputs/compressed", waiting for Nicko to OK the samples |
+| 4 | Compress all images (same names, same look, 60-80% smaller); check samples with Nicko first | ✅ Done in Batch 14 item 3 |
 | 5 | Superstars remember each other: hidden relationships per pair: 🤝 MATES, 💢 BAD BLOOD, 😒 JEALOUS OF, 🫡 RESPECT, built from tag wins, saves, betrayals, run-ins, title changes, 5-star matches. Lead to alliance offers, betrayals, revenge, rematches. New SUPERSTARS tab in EWF Universe (profile: good/bad, form, mood, relationships with reasons, GM buttons MAKE THEM MATES / START BAD BLOOD / SQUASH IT, "Hottest in the EWF"). Tapping cards still plays intros. Asset: relationships_bg.png | ✅ Done |
 | 6 | Moods and callouts: mood badge bottom right of cards (👑 COCKY gold, 💪 HUNGRY green, 🥱 FED UP grey, 😒 JEALOUS purple, 😡 FURIOUS red); 🔥/❄️ stay top right for form. Callouts max every 5 matches: I WANT MY SHOT, SAT IN CATERING, BIG MATCH OR I'M WALKING, ANYONE ANY TIME (open challenge), I WANT THE GUY WHO PUT ME OUT. Choices feed moods, relationships, turns. Assets: gm_office_bg.png, open_challenge_bg.png, door_slam.mp3, microphone.png | ✅ Done |
 | 7 | Backstage segments in Book a Show (~40% between bouts, never after another cutscene, SKIP button, Bret/Corbin commentary): loser storms off, winner interview call-out, car park ambush, locker room row, mates celebrate, mystery attacker + security footage reveal. Assets: backstage_corridor_bg, interview_bg, car_park_bg, locker_room_bg, catering_bg, crime_scene_bg, security_office_bg; steel_chair, trash_bin, security_guards, cameraman, briefcase_shadow; bin_crash, car_alarm, locker_slam, mic_feedback, cctv_static, locker_cheer | ✅ Done |
@@ -132,7 +146,7 @@ Replay: GM Office > REPLAY TUTORIAL. Reset Universe also resets the tutorial.
 
 | # | File | Change | Status |
 |---|------|--------|--------|
-| 1 | Netlify settings | "Powered by Netlify" badge covered the Skip to Summary button. Turn off in Project configuration > General > Powered by Netlify badge (no code change). | Nicko to do |
+| 1 | Netlify settings | "Powered by Netlify" badge covered the Skip to Summary button. Turn off in Project configuration > General > Powered by Netlify badge (no code change). | ✅ Resolved (Nicko, 19 Nov) |
 | 2 | js/4-tournaments-rumble.js, js/5-match-engine.js | Missing `ellis.png` fallback image replaced with `ellis_avatar.png` (and guarded so a failed image can't retry forever). | Done |
 | 3 | js/1-vault-audio.js | Broken promo YouTube link fixed (`watch?e74wxxtlgI8` to `watch?v=e74wxxtlgI8`). | Done |
 | 4 | js/2-achievements-gm.js | `achievement_unlock.mp3` now plays when the "You Have Unlocked" showcase screen appears (`showUnlockShowcase`). | Done |
@@ -213,4 +227,4 @@ So new ideas build on what exists rather than repeat it.
 - Simple one-tap Quick Match mode
 - Idle titantron mode (loops logos, champions, promos when not in use)
 - Christmas morning first-launch reveal for GM Ellis
-- MIDI pad: kept separate from the app on purpose (Nicko's call)
+- MIDI pad: now built into the app (19 Nov), see Batch 14 item 7

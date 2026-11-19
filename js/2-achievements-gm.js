@@ -12,18 +12,18 @@ const LEVEL_LADDER = [
   { level: 1,  xpReq: 0,     title: "Rookie Booker",             unlockType: "none",     unlockKey: "none",                  unlockName: "Your first superstars & standard matches", unlockImg: "logo_notext.png" },
   { level: 2,  xpReq: 500,   title: "TV Coordinator",            unlockType: "titles",   unlockKey: "titles",                unlockName: "Championship Belts",                   unlockImg: "whc.png" },
   { level: 3,  xpReq: 1100,  title: "Chief Medical Officer",     unlockType: "injuries", unlockKey: "injuries",              unlockName: "Medical Ward & Injuries",              unlockImg: "story_26.png" },
-  { level: 4,  xpReq: 1800,  title: "Lord of Darkness",          unlockType: "wrestler", unlockKey: "default-theundertaker", unlockName: "The Undertaker",                       unlockImg: "theundertaker_pose.png" },
-  { level: 5,  xpReq: 2600,  title: "Hardcore Coordinator",      unlockType: "match",    unlockKey: "TLC Match",             unlockName: "TLC (Tables, Ladders & Chairs) Match", unlockImg: "tlc.png" },
-  { level: 6,  xpReq: 3500,  title: "Tournament Director",       unlockType: "show",     unlockKey: "kotr",                  unlockName: "King of the Ring Tournament",          unlockImg: "kotr_crown.png" },
-  { level: 7,  xpReq: 4500,  title: "Main Event Chairman",       unlockType: "show",     unlockKey: "rumble",                unlockName: "The 30-Man Royal Rumble Match",        unlockImg: "rumble_logo.png" },
-  { level: 8,  xpReq: 5600,  title: "Director of Chaos",         unlockType: "wrestler", unlockKey: "default-kane",          unlockName: "Kane",                                 unlockImg: "kane_pose.png" },
-  { level: 9,  xpReq: 6800,  title: "Senior Vice President",     unlockType: "show",     unlockKey: "badblood",              unlockName: "Bad Blood: Grudge Night",              unlockImg: "badblood_logo.png" },
-  { level: 10, xpReq: 8200,  title: "Executive Producer",        unlockType: "show",     unlockKey: "custom",                unlockName: "Create Your Own Show",                 unlockImg: "logo_notext.png" },
-  { level: 11, xpReq: 9800,  title: "Managing Director",         unlockType: "show",     unlockKey: "judgmentday",           unlockName: "Judgment Day: Good vs Bad",            unlockImg: "judgmentday_logo.png" },
-  { level: 12, xpReq: 11600, title: "Head of Creative",          unlockType: "commissioner", unlockKey: "stephanie",         unlockName: "Stephanie McMahon, EWF Commissioner",  unlockImg: "stephanie_pose.png" },
-  { level: 13, xpReq: 13600, title: "Corporate Titan",           unlockType: "show",     unlockKey: "nomercy",               unlockName: "No Mercy: Anything Goes",              unlockImg: "nomercy_logo.png" },
-  { level: 14, xpReq: 15800, title: "Franchise Architect",       unlockType: "none",     unlockKey: "none",                  unlockName: "Bragging Rights: Level 14 GM",         unlockImg: "logo_notext.png" },
-  { level: 15, xpReq: 18200, title: "Industry Icon",             unlockType: "none",     unlockKey: "none",                  unlockName: "Bragging Rights: Level 15 GM",         unlockImg: "logo_notext.png" },
+  { level: 4,  xpReq: 1800,  title: "Table Breaker",             unlockType: "match",    unlockKey: "Tables Match",          unlockName: "Tables Match",                         unlockImg: "tables.png" },
+  { level: 5,  xpReq: 2600,  title: "Lord of Darkness",          unlockType: "wrestler", unlockKey: "default-theundertaker", unlockName: "The Undertaker",                       unlockImg: "theundertaker_pose.png" },
+  { level: 6,  xpReq: 3500,  title: "Hardcore Coordinator",      unlockType: "match",    unlockKey: "TLC Match",             unlockName: "TLC (Tables, Ladders & Chairs) Match", unlockImg: "tlc.png" },
+  { level: 7,  xpReq: 4500,  title: "Tournament Director",       unlockType: "show",     unlockKey: "kotr",                  unlockName: "King of the Ring Tournament",          unlockImg: "kotr_crown.png" },
+  { level: 8,  xpReq: 5600,  title: "Main Event Chairman",       unlockType: "show",     unlockKey: "rumble",                unlockName: "The 30-Man Royal Rumble Match",        unlockImg: "rumble_logo.png" },
+  { level: 9,  xpReq: 6800,  title: "Director of Chaos",         unlockType: "wrestler", unlockKey: "default-kane",          unlockName: "Kane",                                 unlockImg: "kane_pose.png" },
+  { level: 10, xpReq: 8200,  title: "Senior Vice President",     unlockType: "show",     unlockKey: "badblood",              unlockName: "Bad Blood: Grudge Night",              unlockImg: "badblood_logo.png" },
+  { level: 11, xpReq: 9800,  title: "Executive Producer",        unlockType: "show",     unlockKey: "custom",                unlockName: "Create Your Own Show",                 unlockImg: "logo_notext.png" },
+  { level: 12, xpReq: 11600, title: "Managing Director",         unlockType: "show",     unlockKey: "judgmentday",           unlockName: "Judgment Day: Good vs Bad",            unlockImg: "judgmentday_logo.png" },
+  { level: 13, xpReq: 13600, title: "Head of Creative",          unlockType: "commissioner", unlockKey: "stephanie",         unlockName: "Stephanie McMahon, EWF Commissioner",  unlockImg: "stephanie_pose.png" },
+  { level: 14, xpReq: 15800, title: "Corporate Titan",           unlockType: "show",     unlockKey: "nomercy",               unlockName: "No Mercy: Anything Goes",              unlockImg: "nomercy_logo.png" },
+  { level: 15, xpReq: 18200, title: "The Architect",             unlockType: "wrestler", unlockKey: "default-sethrollins",   unlockName: "Seth Rollins",                         unlockImg: "sethrollins_pose.png" },
   { level: 16, xpReq: 20800, title: "Living Legend",             unlockType: "none",     unlockKey: "none",                  unlockName: "Bragging Rights: Level 16 GM",         unlockImg: "logo_notext.png" },
   { level: 17, xpReq: 23600, title: "Board of Directors",        unlockType: "none",     unlockKey: "none",                  unlockName: "Bragging Rights: Level 17 GM",         unlockImg: "logo_notext.png" },
   { level: 18, xpReq: 26600, title: "Hall of Fame Booker",       unlockType: "none",     unlockKey: "none",                  unlockName: "Bragging Rights: Level 18 GM",         unlockImg: "logo_notext.png" },
@@ -779,6 +779,8 @@ function showUnlockShowcase(tier, wrestler = null, onClaimCallback = null) {
     assetPath = 'ambulance.png';
   } else if (tier.unlockKey === 'TLC Match') {
     assetPath = 'tlc.png';
+  } else if (tier.unlockKey === 'Tables Match') {
+    assetPath = 'tables.png';
   } else if (tier.unlockType === 'injuries') {
     assetPath = tier.unlockImg || 'story_26.png';
   }
@@ -806,9 +808,11 @@ function showUnlockShowcase(tier, wrestler = null, onClaimCallback = null) {
     tier.unlockType === 'titles' ||
     tier.unlockType === 'injuries' ||
     tier.unlockType === 'commissioner' ||
+    tier.unlockKey === 'Tables Match' ||
     tier.unlockKey === 'default-theundertaker' ||
     tier.unlockKey === 'default-kane' ||
-    (wrestler && (wrestler.id === 'default-theundertaker' || wrestler.id === 'default-kane'))
+    tier.unlockKey === 'default-sethrollins' ||
+    (wrestler && (wrestler.id === 'default-theundertaker' || wrestler.id === 'default-kane' || wrestler.id === 'default-sethrollins'))
   );
 
   if (dadGiftEl) {

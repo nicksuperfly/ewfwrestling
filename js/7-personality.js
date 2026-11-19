@@ -1035,7 +1035,7 @@
   }
 
   /* ---------- Batch 11 items 6 & 7: lock-safe match types and the new shows' themes ---------- */
-  const LOCK_SWAP = { 'TLC Match': 'Ladder Match', 'Ambulance Match': 'Last Man Standing' };
+  const LOCK_SWAP = { 'TLC Match': 'Ladder Match', 'Ambulance Match': 'Last Man Standing', 'Tables Match': 'No Disqualification' };
   function safeType(t) {
     try { if (t && typeof isMatchTypeLocked === 'function' && isMatchTypeLocked(t).locked) return LOCK_SWAP[t] || 'Normal Match'; } catch (e) {}
     return t;
@@ -1861,13 +1861,155 @@
     if (typeof EWF_BACKUP_KEYS !== 'undefined' && Array.isArray(EWF_BACKUP_KEYS) && !EWF_BACKUP_KEYS.includes(KEY)) EWF_BACKUP_KEYS.push(KEY);
   } catch (e) {}
 
+  /* ---------- Batch 14 item 6: "RIGHT HERE, RIGHT NOW!" after a promo ---------- */
+  // Promo videos that feature two superstars. FIGHT = they want a piece of each other, TOGETHER = side by side.
+  const PROMO_TAGS = (() => {
+    const T = {}, add = (kind, a, b, ids) => ids.forEach(id => { T[id] = { kind, a, b }; });
+    const HHH = 'default-tripleh', ROCK = 'default-therock', SC = 'default-stonecold', TAKER = 'default-theundertaker', KANE = 'default-kane', PUNK = 'vault-cmpunk', ROMAN = 'vault-romanreigns';
+    add('fight', PUNK, HHH, ['Y0aFlijwmB0']);
+    add('fight', TAKER, HHH, ['By5R4qdcQZA']);
+    add('fight', ROCK, HHH, ['1_D7Y6SJKek', 'n_b4y-ObpUo', 'I7v7_o2UP10', 'WU9yTHjpkJw', 'OAskS_mdKFU']);
+    add('fight', SC, HHH, ['NzMxsqu78YI', 'JFEjVNN5VH8']);
+    add('fight', KANE, HHH, ['HQAcJqsJcfM']);
+    add('fight', TAKER, ROMAN, ['69h-qJZHfvM']);
+    add('fight', TAKER, KANE, ['iaqhAixiENg', 'Pc4Ybq5dc-E', 'jPGL1s0ajCw']);
+    add('fight', SC, ROCK, ['nL0MuSunn30', 'pgyt7ok7Ojg']);
+    add('together', TAKER, KANE, ['r9Qo64l6Se0', 'nlIqOxxQPqM', 'sV49FdblNZw']);
+    add('together', KANE, ROCK, ['ACFvfIzvmbU']);
+    return T;
+  })();
+  const NICK = {
+    'default-theundertaker': 'THE DEADMAN', 'default-kane': 'THE BIG RED MACHINE', 'default-tripleh': 'THE GAME',
+    'default-therock': 'THE PEOPLE\'S CHAMP', 'default-stonecold': 'THE RATTLESNAKE', 'vault-cmpunk': 'THE BEST IN THE WORLD',
+    'vault-romanreigns': 'THE TRIBAL CHIEF', 'default-romanreigns': 'THE TRIBAL CHIEF'
+  };
+  const onRoster = (id) => {
+    const r = roster();
+    return r.find(w => w.id === id) || (id === 'vault-romanreigns' ? r.find(w => w.id === 'default-romanreigns') : null);
+  };
+  let pendingPromo = null;
+
+  function runRightHereRightNow(p) {
+    const tag = PROMO_TAGS[p.vid];
+    if (!tag) return;
+    let A = onRoster(tag.a), B = onRoster(tag.b);
+    if (!A || !B || injured(A.id) || injured(B.id)) return; // no spoilers, no hospital call-outs
+    // the superstar Ellis tapped does the talking
+    if (p.speakerId && B.id === p.speakerId) { const t = A; A = B; B = t; }
+    const st0 = load();
+    const rel = getRel(A.id, B.id, st0);
+    const inShow = !!window.activeShowSession;
+
+    if (tag.kind === 'fight') {
+      const addHeat = () => {
+        const st = load();
+        const r = getRel(A.id, B.id, st);
+        if (!r || r.t === 'respect') { setRel(A.id, B.id, 'badblood', 'traded words in a promo', null, st); save(st); }
+      };
+      log(`🎤 RIGHT HERE, RIGHT NOW: ${NM(A)} had a message for ${NM(B)}!`, 'match');
+      scene({
+        bg: 'interview_bg.png', title: `🎤 ${NICK[A.id] || NM(A)} HAS A MESSAGE FOR ${NM(B)}!`, titleBg: 'linear-gradient(180deg,#d32f2f,#3a0000)',
+        left: A, right: B,
+        text: `<b>${A.name}</b> wants <b>${B.name}</b>, and the crowd is going wild! What's it going to be, GM?`,
+        buttons: [
+          { label: inShow ? '⚔️ FIGHT TONIGHT!' : '⚔️ FIGHT RIGHT HERE, RIGHT NOW!', cls: 'red', fn: () => {
+            addHeat(); closeScene();
+            bookMatch(A, B, { stake: '🎤 RIGHT HERE, RIGHT NOW!', origin: 'Promo call-out' }, 'now', () => {});
+          } },
+          { label: '📋 SAVE IT FOR THE NEXT SHOW', cls: 'gold', fn: () => {
+            addHeat();
+            bookMatch(A, B, { origin: 'Promo call-out' }, 'next', () => update(`It's booked! <b>${A.name}</b> vs <b>${B.name}</b> is on the <b>NEXT SHOW</b>. The tension is building...`, cont(() => {})));
+          } },
+          { label: '✋ SQUASH IT', cls: '', fn: () => { closeScene(); } }
+        ]
+      });
+      sfx('crowd.mp3', 0.6);
+      flash();
+    } else {
+      log(`🎤 ${NM(A)} & ${NM(B)} stood side by side on the mic!`, 'match');
+      scene({
+        bg: 'interview_bg.png', title: `🤝 ${NM(A)} & ${NM(B)}: SIDE BY SIDE!`, titleBg: 'linear-gradient(180deg,#00897b,#00332d)',
+        left: A, right: B,
+        text: `<b>${A.name}</b> and <b>${B.name}</b> are standing together${rel && rel.t === 'badblood' ? '... even though there\'s <b>BAD BLOOD</b> between them!' : '!'} Shall we team them up, GM?`,
+        buttons: [
+          { label: '🤝 TEAM THEM UP!', cls: 'green', fn: () => {
+            const st = load();
+            const r = getRel(A.id, B.id, st);
+            if (!r || r.t === 'respect') { setRel(A.id, B.id, 'mates', 'stood side by side in a promo', null, st); save(st); }
+            closeScene();
+            const opp = fit().filter(w => w.id !== A.id && w.id !== B.id).sort(() => Math.random() - 0.5).slice(0, 2);
+            if (opp.length < 2) return;
+            const ps = [A, B, opp[0], opp[1]];
+            if (inShow && typeof window.queueCutsceneBoutIntoShow === 'function') {
+              window.queueCutsceneBoutIntoShow({ participants: ps, matchType: 'Normal Match', formatKey: 'tag', isTitleMatch: false, storyBypass: true, feudStake: '🤝 TEAMED UP AFTER THEIR PROMO' });
+              return;
+            }
+            try {
+              activeStoryline = { id: 0, type: 'alliance', matchMatch: 'Normal Match', formatKey: 'tag', isTitle: false, logText: '' };
+              activeStoryWrestlerA = A; activeStoryWrestlerB = B;
+              if (typeof launchStorylineMatch === 'function') launchStorylineMatch();
+              // launchStorylineMatch picks random opponents; use the fit ones we chose
+              if (activeBookedMatch && activeBookedMatch.formatKey === 'tag') {
+                activeBookedMatch.participants = ps;
+                storyBypassIds = ps.map(w => w.id);
+                quickMatchQueue = [...ps];
+                const list = document.getElementById('qmWrestlersList');
+                if (list) list.innerHTML = ps.map((w, i) => `<div class="vs-wrestler"><img src="${w.image}" alt="${w.name}" onerror="handleImgError(this, '${w.id}')"><div>${w.name}</div></div>${i < 3 ? `<div class="vs-divider">${i === 1 ? 'VS (TAG TEAM)' : 'VS'}</div>` : ''}`).join('');
+              }
+            } catch (e) { console.warn(e); }
+          } },
+          { label: 'NOT TONIGHT', cls: '', fn: () => { closeScene(); } }
+        ]
+      });
+      sfx('locker_cheer.mp3', 0.7);
+    }
+  }
+
+  function wrapPromos() {
+    const vidOf = (u) => { const m = String(u || '').match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/); return m ? m[1] : null; };
+    if (typeof window.loadAndPlayYouTube === 'function' && !window.loadAndPlayYouTube._rhrn) {
+      const orig = window.loadAndPlayYouTube;
+      window.loadAndPlayYouTube = function (url, isCashIn, hideMITB) {
+        const out = orig.apply(this, arguments);
+        pendingPromo = null;
+        try {
+          const vid = (typeof currentVideoId !== 'undefined' && currentVideoId) || vidOf(url);
+          const speaker = (typeof currentPlayingWrestler !== 'undefined') ? currentPlayingWrestler : null;
+          if (window.isPromoMode && hideMITB && vid && PROMO_TAGS[vid]) pendingPromo = { vid, speakerId: speaker && speaker.id };
+        } catch (e) {}
+        return out;
+      };
+      window.loadAndPlayYouTube._rhrn = true;
+      try { loadAndPlayYouTube = window.loadAndPlayYouTube; } catch (e) {}
+    }
+    if (typeof window.closeVideoModal === 'function' && !window.closeVideoModal._rhrn) {
+      const origClose = window.closeVideoModal;
+      window.closeVideoModal = function () {
+        const p = pendingPromo; pendingPromo = null;
+        const out = origClose.apply(this, arguments);
+        if (p) setTimeout(() => { try { runRightHereRightNow(p); } catch (e) { console.warn(e); } }, 450);
+        return out;
+      };
+      window.closeVideoModal._rhrn = true;
+      try { closeVideoModal = window.closeVideoModal; } catch (e) {}
+    }
+    // when the promo video finishes by itself, close it and go straight to the cutscene
+    window.addEventListener('message', (e) => {
+      if (!pendingPromo) return;
+      try {
+        const d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+        if (d && d.event === 'onStateChange' && d.info === 0) window.closeVideoModal();
+      } catch (_) {}
+    });
+  }
+
   /* ---------- Public API ---------- */
   window.EWFP = {
     load, save, isBad, moodOf, getRel, setRel, relsOf, deed, castStory, applyStory, onMatchResult, afterBout, maybeBackstage,
     tick, onRunIn, pickRunIn, playTurn, renderSuperstarsTab, MOODS, _live: live,
     // test helpers
     _scene: scene, _update: update, _closeScene2: closeScene, _sfx: sfx, _flash: flash, _shake: shake, _bookMatch: bookMatch, _whenButtons: whenButtons, _blackout: blackoutStrobe,
-    _runCallout: runCallout, _runAngle: runAngle, _runBackstage: runBackstage, _runExile: runExile, _nudge: nudgeBadGuy, _fakeOut: fakeOut, _cheat: cheatBanner, _alliance: runAlliance, _closeScene: closeScene
+    _runCallout: runCallout, _runAngle: runAngle, _runBackstage: runBackstage, _runExile: runExile, _nudge: nudgeBadGuy, _fakeOut: fakeOut, _cheat: cheatBanner, _alliance: runAlliance, _closeScene: closeScene, _rhrn: runRightHereRightNow, PROMO_TAGS
   };
 
   function init() {
@@ -1891,6 +2033,7 @@
     wrapGMOffice();
     wrapShowCard();
     wrapUniverseTabs();
+    wrapPromos();
     ensureTab();
     try { if (typeof renderGrid === 'function') renderGrid(); } catch (e) {}
   }

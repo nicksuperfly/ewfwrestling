@@ -560,8 +560,9 @@ function getUnlockedWrestlers() {
     }
     // BATCH 7 ITEM 14: code-signed superstars only appear once their contract code has been redeemed
     if (w.requiresCode) return unlockedVaultIds.includes(w.id);
-    if (w.id === 'default-theundertaker' && currentLvl < ((window.EWF_UNLOCK_LEVELS || {}).undertaker || 4)) return false;
-    if (w.id === 'default-kane' && currentLvl < ((window.EWF_UNLOCK_LEVELS || {}).kane || 8)) return false;
+    if (w.id === 'default-theundertaker' && currentLvl < ((window.EWF_UNLOCK_LEVELS || {}).undertaker || 5)) return false;
+    if (w.id === 'default-kane' && currentLvl < ((window.EWF_UNLOCK_LEVELS || {}).kane || 9)) return false;
+    if (w.id === 'default-sethrollins' && currentLvl < ((window.EWF_UNLOCK_LEVELS || {}).sethrollins || 15)) return false;
     return !w.unlockLevel || w.unlockLevel <= currentLvl;
   });
 
