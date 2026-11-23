@@ -298,7 +298,7 @@
       winners.forEach(w => { const f = st.furious[w.id]; if (f && (!f.vs || loserIds.includes(f.vs))) delete st.furious[w.id]; });
 
       // tag partners who win together become MATES
-      if (winners.length === 2 && match && match.formatKey === 'tag') {
+      if (winners.length === 2 && match && (match.formatKey === 'tag' || match.formatKey === 'handicap')) {
         const k = rk(winners[0].id, winners[1].id);
         const r = st.rel[k] || { t: null, mate: 0 };
         r.mate = (r.mate || 0) + 1;
@@ -404,6 +404,8 @@
       .ewfp-obj.slideR { animation: ewfpInRight .7s ease-out both; }
       .ewfp-obj.spin { animation: ewfpSpin .8s ease-out both; }
       .ewfp-obj.pop { animation: ewfpPop .5s ease-out both; }
+      .ewfp-obj.still { animation: ewfpFade .4s ease-out both; }
+      .ewfp-obj.placing { opacity: 0; animation: none; }
       .ewfp-panel { position: relative; z-index: 5; margin: 0 auto 22px auto; width: min(880px, 94%); background: rgba(8,8,14,0.9); border: 2px solid #ffd700;
         box-shadow: 0 0 30px rgba(0,0,0,0.9); padding: 14px 18px; text-align: center; }
       .ewfp-text { font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: clamp(1rem, 2.2vw, 1.25rem); line-height: 1.4; }
@@ -517,13 +519,15 @@
     addPose(opts.center, 'center', false);
     (opts.objects || []).forEach(o => {
       const img = document.createElement('img');
-      img.className = `ewfp-obj ${o.cls || 'pop'}`;
+      img.className = `ewfp-obj ${o.cls || 'pop'}${o.anchor ? ' placing' : ''}`;
       img.src = o.src;
       img.style.cssText = o.style || '';
       if (o.delay) img.style.animationDelay = o.delay + 'ms';
       img.onerror = function () { this.remove(); };
+      if (o.anchor) img.__anchor = o.anchor;
       stage.appendChild(img);
     });
+    setTimeout(() => placeAnchored(el), 0);
     el.querySelector('.ewfp-text').innerHTML = opts.text || '';
     setButtons(el, opts.buttons);
     if (opts.skip) {
@@ -536,6 +540,115 @@
     sceneEl = el;
     return el;
   }
+  // BATCH 15 ITEMS 10, 21: props sized and placed against the superstar they belong to.
+  // anchor: { to: 'left'|'right'|'center', kind: 'mic'|'cameraman'|'bin' }
+  const loaded = img => new Promise(res => { if (img.complete && img.naturalWidth) return res(); img.addEventListener('load', res, { once: true }); img.addEventListener('error', res, { once: true }); setTimeout(res, 2500); });
+  function poseBox(stage, to) {
+    const p = stage.querySelector(`.ewfp-pose.${to}`);
+    if (!p) return null;
+    const sr = stage.getBoundingClientRect(), r = p.getBoundingClientRect();
+    // object-fit: contain, so work out the picture's real box inside the element
+    const nw = p.naturalWidth || 2, nh = p.naturalHeight || 3;
+    const scale = Math.min(r.width / nw, r.height / nh);
+    const w = nw * scale, h = nh * scale;
+    return { x: r.left - sr.left + (r.width - w) / 2, y: r.top - sr.top + (r.height - h), w, h, el: p, sw: sr.width, sh: sr.height };
+  }
+  async function placeAnchored(el) {
+    const stage = el.querySelector('.ewfp-stage');
+    if (!stage) return;
+    const objs = [...stage.querySelectorAll('.ewfp-obj')].filter(o => o.__anchor);
+    if (!objs.length) return;
+    await Promise.all([...stage.querySelectorAll('img')].map(loaded));
+    await new Promise(r => setTimeout(r, 650)); // let the superstars finish sliding in
+    objs.forEach(img => {
+      const a = img.__anchor;
+      const b = poseBox(stage, a.to);
+      img.classList.remove('placing');
+      if (!b) { img.classList.add('still'); return; }
+      img.style.left = img.style.right = img.style.top = img.style.bottom = '';
+      if (a.kind === 'mic') {
+        // the mic head sits just in front of their mouth, held up from the interviewer's side
+        const h = b.h * 0.36, w = h * (img.naturalWidth / img.naturalHeight || 0.67);
+        const side = a.side || 1; // 1 = interviewer on their right
+        const mouthX = b.x + b.w * (side > 0 ? 0.66 : 0.34), mouthY = b.y + b.h * 0.2;
+        img.style.height = h + 'px';
+        // the mic head is at (69%, 25%) of the picture
+        img.style.left = (mouthX - w * (side > 0 ? 0.69 : 0.31)) + 'px';
+        img.style.top = (mouthY - h * 0.25) + 'px';
+        img.style.rotate = (side > 0 ? '-12deg' : '12deg');
+        if (side < 0) img.style.transform = 'scaleX(-1)';
+        img.style.zIndex = '4';
+      } else if (a.kind === 'cameraman') {
+        // big, in the foreground, filming the superstar (camera pointing at them)
+        const h = b.sh * 0.96, w = h * (img.naturalWidth / img.naturalHeight || 0.9);
+        img.style.height = h + 'px';
+        img.style.bottom = '0px';
+        img.style.left = Math.min(b.sw - w * 0.78, b.x + b.w * 1.15) + 'px';
+        img.style.transform = 'scaleX(-1)';
+        img.style.zIndex = '6';
+      } else if (a.kind === 'bin') {
+        // a real-size bin at their feet
+        const h = b.h * 0.42;
+        img.style.height = h + 'px';
+        img.style.bottom = '2%';
+        img.style.left = (b.x + b.w * 0.78) + 'px';
+        img.style.zIndex = '3';
+      }
+      img.classList.add('still');
+    });
+  }
+  // BATCH 15 ITEMS 11, 21: a prop flies from one superstar and smacks into the other
+  function throwProp(el, src, from, to, opts) {
+    opts = opts || {};
+    const stage = el && el.querySelector('.ewfp-stage');
+    if (!stage) return;
+    const A = poseBox(stage, from), B = poseBox(stage, to);
+    if (!A || !B) return;
+    const img = document.createElement('img');
+    img.className = 'ewfp-obj';
+    img.src = src;
+    const h = (opts.size || 0.5) * B.h;
+    img.style.height = h + 'px';
+    img.style.zIndex = '6';
+    stage.appendChild(img);
+    loaded(img).then(() => {
+      const w = h * (img.naturalWidth / img.naturalHeight || 1);
+      const dir = B.x > A.x ? 1 : -1;
+      const sx = A.x + A.w * (dir > 0 ? 0.75 : 0.25) - w / 2, sy = A.y + A.h * 0.12;
+      const ex = B.x + B.w * 0.5 - w / 2, ey = B.y + B.h * 0.10;
+      const fx = B.x + B.w * (dir > 0 ? 0.15 : 0.85) - w / 2, fy = stage.getBoundingClientRect().height - h * 0.9;
+      img.style.left = '0px'; img.style.top = '0px';
+      const anim = img.animate([
+        { transform: `translate(${sx}px, ${sy}px) rotate(0deg)`, opacity: 1 },
+        { transform: `translate(${(sx + ex) / 2}px, ${Math.min(sy, ey) - B.h * 0.18}px) rotate(${dir * 280}deg)`, offset: 0.5 },
+        { transform: `translate(${ex}px, ${ey}px) rotate(${dir * 540}deg)` }
+      ], { duration: opts.ms || 650, easing: 'ease-in', fill: 'forwards' });
+      anim.onfinish = () => {
+        if (opts.sound) sfx(opts.sound, 0.95);
+        shake(el); flash(el);
+        B.el.classList.add('hurt');
+        img.animate([
+          { transform: `translate(${ex}px, ${ey}px) rotate(${dir * 540}deg)` },
+          { transform: `translate(${fx}px, ${fy}px) rotate(${dir * 640}deg)` }
+        ], { duration: 450, easing: 'cubic-bezier(.3,1.4,.6,1)', fill: 'forwards' });
+        if (opts.onHit) opts.onHit();
+      };
+    });
+  }
+  // kick an object (already in the scene) across the floor
+  function kickProp(el, img, dir) {
+    if (!el || !img) return;
+    const stage = el.querySelector('.ewfp-stage');
+    const sw = stage.getBoundingClientRect().width;
+    const dist = Math.max(200, sw * 0.42) * (dir || 1);
+    img.classList.remove('still');
+    img.animate([
+      { transform: 'translate(0,0) rotate(0deg)' },
+      { transform: `translate(${dist * 0.55}px, -${stage.getBoundingClientRect().height * 0.18}px) rotate(${(dir || 1) * 200}deg)`, offset: 0.45 },
+      { transform: `translate(${dist}px, 0px) rotate(${(dir || 1) * 450}deg)` }
+    ], { duration: 900, easing: 'ease-out', fill: 'forwards' });
+  }
+
   function setButtons(el, buttons) {
     const box = el.querySelector('.ewfp-btns');
     box.innerHTML = '';
@@ -709,8 +822,8 @@
     if (c.type === 'return') st.pendingReturn = st.pendingReturn.filter(p => p.id !== c.w.id);
     save(st);
     const w = c.w;
-    const mic = { src: 'microphone.png', style: 'left: 55%; top: 10%; height: 44%; rotate: -24deg; z-index: 4;', cls: 'slideR', delay: 300 };
-    const micLeft = { src: 'microphone.png', style: 'left: 35%; top: 10%; height: 44%; rotate: -24deg; z-index: 4;', cls: 'slideR', delay: 300 };
+    const mic = { src: 'microphone.png', style: '', cls: 'still', anchor: { to: 'center', kind: 'mic' } };
+    const micLeft = { src: 'microphone.png', style: '', cls: 'still', anchor: { to: 'left', kind: 'mic' } };
     const bookFlow = (vs, cfg, when, okText) => {
       if (when === 'no') return;
       closeScene();
@@ -833,14 +946,11 @@
         : (a.sore ? `<b>${att.name}</b> can't handle losing! The bell has rung but they're beating down <b>${vic.name}</b>!` : `<b>${att.name}</b> won the match but they're not finished. They're still laying into <b>${vic.name}</b>!`);
       const el = scene({
         bg: 'show_bg.png', title, left: att, right: vic,
-        objects: [{ src: 'steel_chair.png', style: 'left: 40%; top: 4%; height: 62%; z-index: 6;', cls: 'spin', delay: 300 }],
         text: why, buttons: []
       });
       if (isBad(att.id)) sfx('crowd_boo.mp3', 0.8);
-      setTimeout(() => {
-        sfx('table_crash.mp3', 0.6); shake(el); flash(el);
-        const v = el.querySelector('.ewfp-pose.right'); if (v) v.classList.add('hurt');
-      }, 1100);
+      // BATCH 15: the chair flies from the attacker and smacks the victim
+      setTimeout(() => { if (sceneEl === el) throwProp(el, 'steel_chair.png', 'left', 'right', { size: 0.5, ms: 500, sound: 'sounds/' + encodeURIComponent('fx - chair shot.mp3') }); }, 650);
       const s2 = load();
       deed(att.id, -1, a.jealous ? 'Attacked their own mate out of jealousy' : 'Attacked a superstar after the bell', s2);
       log(`💥 POST-MATCH ATTACK: ${NM(att)} attacked ${NM(vic)}${a.type === 'jump' ? ' during the celebration' : ' after the bell'}!`, 'interference');
@@ -1269,9 +1379,14 @@
     const first = () => bret('backstage', `We're going <b>BACKSTAGE</b>! Things happen behind the scenes too. Sometimes you get to decide what happens next. Tap <b>SKIP</b> if you just want the next match.`);
     if (seg === 'stormOff') {
       scene({ bg: 'backstage_corridor_bg.png', title: `🎥 BACKSTAGE: ${NM(L)} STORMS OFF`, left: L, skip,
-        objects: [{ src: 'trash_bin.png', style: 'right: 22%; bottom: 4%; height: 38%;', cls: 'drop', delay: 900 }],
+        objects: [{ src: 'trash_bin.png', style: '', cls: 'still', anchor: { to: 'left', kind: 'bin' } }],
         text: `A furious <b>${L.name}</b> marches up the corridor after losing to <b>${W ? W.name : 'their opponent'}</b>... and boots a bin across the hallway!`, buttons: cont(done) });
-      setTimeout(() => { sfx('bin_crash.mp3', 0.9); shake(); }, 1200);
+      const binScene = sceneEl;
+      setTimeout(() => {
+        if (sceneEl !== binScene) return;
+        kickProp(binScene, binScene.querySelector('.ewfp-obj'), 1);
+        sfx('bin_crash.mp3', 0.9); shake();
+      }, 1500);
       setTimeout(() => sfx('locker_slam.mp3', 0.7), 2600);
       if (W) { const st = load(); setRel(L.id, W.id, 'badblood', `lost to them and stormed off`, null, st); save(st); }
       log(`🎥 BACKSTAGE: ${NM(L)} stormed off after the loss and trashed the corridor!`, 'match');
@@ -1282,8 +1397,8 @@
       const ivEl = scene({ bg: 'interview_bg.png', title: `🎤 BACKSTAGE INTERVIEW: ${NM(W)}`, titleBg: 'linear-gradient(180deg,#1565c0,#0d2a5c)', left: W, skip,
         leftStyle: 'left: 20%; height: 92%;',
         objects: [
-          { src: 'microphone.png', style: 'left: 41%; top: 12%; height: 44%; rotate: -24deg; z-index: 4;', cls: 'slideR', delay: 500 },
-          { src: 'cameraman.png', style: 'right: -1%; bottom: 0; height: 84%; z-index: 6;', cls: 'slideR', delay: 150 }
+          { src: 'microphone.png', style: '', cls: 'still', anchor: { to: 'left', kind: 'mic' } },
+          { src: 'cameraman.png', style: '', cls: 'still', anchor: { to: 'left', kind: 'cameraman' } }
         ],
         text: `<b>${W.name}</b> grabs the interviewer's mic: <i>"I just won, and I'm only getting started. <b>${target.name}</b>, you're NEXT!"</i><br>Does <b>${target.name}</b> accept?`,
         buttons: [
@@ -1335,10 +1450,10 @@
     } else if (seg === 'row') {
       const pair = rowPair.length ? pick(rowPair) : outs.sort(() => Math.random() - 0.5).slice(0, 2);
       const [a, b] = pair;
-      scene({ bg: 'locker_room_bg.png', title: `🥊 LOCKER ROOM ROW!`, left: a, right: b, skip,
-        objects: [{ src: 'steel_chair.png', style: 'left: 42%; top: 30%; height: 34%;', cls: 'drop', delay: 1200 }],
-        text: `Shouting in the locker room! <b>${a.name}</b> and <b>${b.name}</b> are nose to nose, and a chair's just gone flying!`, buttons: cont(done) });
-      setTimeout(() => { sfx('locker_slam.mp3', 0.9); shake(); }, 900);
+      const rowEl = scene({ bg: 'locker_room_bg.png', title: `🥊 LOCKER ROOM ROW!`, left: a, right: b, skip,
+        text: `Shouting in the locker room! <b>${a.name}</b> and <b>${b.name}</b> are nose to nose... then <b>${a.name}</b> launches a chair at <b>${b.name}</b>!`, buttons: cont(done) });
+      setTimeout(() => { sfx('locker_slam.mp3', 0.9); shake(); }, 600);
+      setTimeout(() => { if (sceneEl === rowEl) throwProp(rowEl, 'steel_chair.png', 'left', 'right', { size: 0.5, sound: 'sounds/' + encodeURIComponent('fx - chair shot.mp3') }); }, 1300);
       const s2 = load(); setRel(a.id, b.id, 'badblood', 'had a row in the locker room', null, s2); save(s2);
       safeRivalry(a.id, b.id, 'Locker Room Row');
       log(`🥊 LOCKER ROOM ROW: ${NM(a)} and ${NM(b)} had to be pulled apart backstage!`, 'match');
@@ -1749,7 +1864,7 @@
         <div id="ewfPinDots" style="font-size:2rem; letter-spacing:12px; margin:8px 0 10px 0; min-height:2.4rem;">○○○○</div>
         <div id="ewfPinKeys" style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; max-width:280px; margin:0 auto;"></div>
         <div style="display:flex; gap:10px; justify-content:center; margin-top:14px;">
-          <button type="button" id="ewfPinCancel" class="ewfp-btn" style="background:linear-gradient(180deg,#00a152,#004d26);">✋ NO, KEEP EVERYTHING</button>
+          <button type="button" id="ewfPinCancel" class="ewfp-btn" style="background:linear-gradient(180deg,#00a152,#004d26);">${opts.cancelLabel || '✋ NO, KEEP EVERYTHING'}</button>
         </div>
       </div>`;
     host().appendChild(ov);
@@ -2009,7 +2124,7 @@
     tick, onRunIn, pickRunIn, playTurn, renderSuperstarsTab, MOODS, _live: live,
     // test helpers
     _scene: scene, _update: update, _closeScene2: closeScene, _sfx: sfx, _flash: flash, _shake: shake, _bookMatch: bookMatch, _whenButtons: whenButtons, _blackout: blackoutStrobe,
-    _runCallout: runCallout, _runAngle: runAngle, _runBackstage: runBackstage, _runExile: runExile, _nudge: nudgeBadGuy, _fakeOut: fakeOut, _cheat: cheatBanner, _alliance: runAlliance, _closeScene: closeScene, _rhrn: runRightHereRightNow, PROMO_TAGS
+    _runCallout: runCallout, _runAngle: runAngle, _runBackstage: runBackstage, _runExile: runExile, _nudge: nudgeBadGuy, _fakeOut: fakeOut, _cheat: cheatBanner, _alliance: runAlliance, _closeScene: closeScene, _rhrn: runRightHereRightNow, PROMO_TAGS, pinPad: pinPad
   };
 
   function init() {

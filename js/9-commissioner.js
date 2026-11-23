@@ -38,7 +38,7 @@
   window.ewfRevealGift = function (gift) {
     try { if (typeof stopBGMForAction === 'function') stopBGMForAction(); } catch (e) {}
     const done = () => {
-      const tier = { level: 0, unlockType: gift.unlockType, unlockKey: gift.unlockKey, unlockName: gift.name, unlockImg: gift.img, giftFrom: window.EWF_GIFT_FROM || 'Grandma & Grandad' };
+      const tier = { level: 0, unlockType: gift.unlockType, unlockKey: gift.unlockKey, unlockName: gift.name, unlockImg: gift.img, giftFrom: gift.from || window.EWF_GIFT_FROM || 'Nanny & Grandad' };
       window.activeShowcaseTier = tier;
       if (typeof showUnlockShowcase === 'function') {
         showUnlockShowcase(tier, null, () => {
@@ -59,7 +59,7 @@
         done();
       }, gift.id === 'gift-slambulance' ? '#ff1744' : '#ffd700');
     } else done();
-    log(`🎁 PRESENT UNLOCKED: ${gift.name.toUpperCase()} (a present from ${window.EWF_GIFT_FROM || 'Grandma & Grandad'})!`, 'match');
+    log(`🎁 PRESENT UNLOCKED: ${gift.name.toUpperCase()} (a present from ${gift.from || window.EWF_GIFT_FROM || 'Nanny & Grandad'})!`, 'match');
   };
 
   /* ======================================================================
@@ -270,7 +270,7 @@
 
     const p = P();
     const scene = (text, buttons, extra) => p._scene(Object.assign({
-      bg: 'gm_office_bg.png', title: "👑 STEPHANIE'S ORDERS! 👑", titleBg: 'linear-gradient(180deg,#8e24aa,#1a0026)', center: STEPH, text, buttons
+      bg: 'stephanie_office_bg.png', title: "👑 STEPHANIE'S ORDERS! 👑", titleBg: 'linear-gradient(180deg,#8e24aa,#1a0026)', center: STEPH, text, buttons
     }, extra || {}));
     const cont = (fn) => [{ label: '😬 YES, MA\'AM! ➔', cls: 'gold', fn: () => { p._closeScene2(); fn(); } }];
     try { if (p._sfx) { const a = p._sfx('crowd_boo.mp3', 0.45); setTimeout(() => { try { a && a.pause(); } catch (e) {} }, 2500); } } catch (e) {}
@@ -290,7 +290,7 @@
         cont(() => {
           log(`👑 STEPHANIE'S ORDERS: ${NM(o.target)} faces ${NM(o.pair[0])} & ${NM(o.pair[1])} in a handicap match!`, 'match');
           if (typeof window.queueCutsceneBoutIntoShow === 'function' && window.activeShowSession) {
-            window.queueCutsceneBoutIntoShow({ participants: [o.target, o.pair[0], o.pair[1]], formatKey: 'triple', matchType: 'No Disqualification', storyBypass: true, feudStake: "👑 STEPHANIE'S ORDERS: 1 VS 2 HANDICAP MATCH" });
+            window.queueCutsceneBoutIntoShow({ participants: [o.target, o.pair[0], o.pair[1]], formatKey: 'handicap', matchType: 'No Disqualification', storyBypass: true, feudStake: "👑 STEPHANIE'S ORDERS: 1 VS 2 HANDICAP MATCH" }); // BATCH 15 ITEM 22: a real handicap match
           } else done();
         }));
     } else if (o.type === 'teamup') {
@@ -313,8 +313,17 @@
       const el = scene(`<b>${o.victim.name}</b> has a go at Stephanie on the mic: <i>"You only got the job because of your dad!"</i>`, [], { left: STEPH, right: o.victim, center: null });
       setTimeout(() => {
         if (!el || !document.body.contains(el) && !(host() && host().contains(el))) return;
-        try { p._flash(el); p._shake(el); p._sfx('ambush_hit.mp3', 0.9); } catch (e) {}
-        const v = el.querySelector('.ewfp-pose.right'); if (v) v.classList.add('hurt');
+        // BATCH 15 ITEM 15: Stephanie winds up with her slap pose, then the real slap sound
+        const sp = el.querySelector('.ewfp-pose.left');
+        if (sp) {
+          sp.src = 'stephanie_slap_pose.png';
+          sp.style.height = '112%'; sp.style.bottom = '-22%'; sp.style.maxWidth = '48%';
+          try { sp.animate([{ translate: '0 0' }, { translate: '14% 0' }], { duration: 220, easing: 'ease-in', fill: 'forwards' }); } catch (e) {}
+        }
+        setTimeout(() => {
+          try { p._flash(el); p._shake(el); p._sfx('slap.mp3', 1); } catch (e) {}
+          const v = el.querySelector('.ewfp-pose.right'); if (v) v.classList.add('hurt');
+        }, 230);
         try {
           const st = p.load();
           st.furious[o.victim.id] = { vs: null, why: 'Slapped by Stephanie McMahon', until: (st.matchNo || 0) + 4 };

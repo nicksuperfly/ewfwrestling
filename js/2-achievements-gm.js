@@ -19,12 +19,12 @@ const LEVEL_LADDER = [
   { level: 8,  xpReq: 5600,  title: "Main Event Chairman",       unlockType: "show",     unlockKey: "rumble",                unlockName: "The 30-Man Royal Rumble Match",        unlockImg: "rumble_logo.png" },
   { level: 9,  xpReq: 6800,  title: "Director of Chaos",         unlockType: "wrestler", unlockKey: "default-kane",          unlockName: "Kane",                                 unlockImg: "kane_pose.png" },
   { level: 10, xpReq: 8200,  title: "Senior Vice President",     unlockType: "show",     unlockKey: "badblood",              unlockName: "Bad Blood: Grudge Night",              unlockImg: "badblood_logo.png" },
-  { level: 11, xpReq: 9800,  title: "Executive Producer",        unlockType: "show",     unlockKey: "custom",                unlockName: "Create Your Own Show",                 unlockImg: "logo_notext.png" },
+  { level: 11, xpReq: 9800,  title: "Cage Master",               unlockType: "match",    unlockKey: "Steel Cage Match",      unlockName: "Steel Cage Match",                     unlockImg: "cagematch.png" }, // BATCH 15 ITEM 24 (swapped with Create Your Own Show)
   { level: 12, xpReq: 11600, title: "Managing Director",         unlockType: "show",     unlockKey: "judgmentday",           unlockName: "Judgment Day: Good vs Bad",            unlockImg: "judgmentday_logo.png" },
   { level: 13, xpReq: 13600, title: "Head of Creative",          unlockType: "commissioner", unlockKey: "stephanie",         unlockName: "Stephanie McMahon, EWF Commissioner",  unlockImg: "stephanie_pose.png" },
   { level: 14, xpReq: 15800, title: "Corporate Titan",           unlockType: "show",     unlockKey: "nomercy",               unlockName: "No Mercy: Anything Goes",              unlockImg: "nomercy_logo.png" },
   { level: 15, xpReq: 18200, title: "The Architect",             unlockType: "wrestler", unlockKey: "default-sethrollins",   unlockName: "Seth Rollins",                         unlockImg: "sethrollins_pose.png" },
-  { level: 16, xpReq: 20800, title: "Living Legend",             unlockType: "none",     unlockKey: "none",                  unlockName: "Bragging Rights: Level 16 GM",         unlockImg: "logo_notext.png" },
+  { level: 16, xpReq: 20800, title: "Executive Producer",        unlockType: "show",     unlockKey: "custom",                unlockName: "Create Your Own Show",                 unlockImg: "logo_notext.png" },
   { level: 17, xpReq: 23600, title: "Board of Directors",        unlockType: "none",     unlockKey: "none",                  unlockName: "Bragging Rights: Level 17 GM",         unlockImg: "logo_notext.png" },
   { level: 18, xpReq: 26600, title: "Hall of Fame Booker",       unlockType: "none",     unlockKey: "none",                  unlockName: "Bragging Rights: Level 18 GM",         unlockImg: "logo_notext.png" },
   { level: 19, xpReq: 29800, title: "Chairman of the Board",     unlockType: "none",     unlockKey: "none",                  unlockName: "Bragging Rights: Level 19 GM",         unlockImg: "logo_notext.png" },
@@ -65,11 +65,13 @@ const SECRET_ACHIEVEMENTS = [
   { id: 'double_trouble',      tier: 'tier-gold',    icon: '🤝', title: "Double Trouble",     xp: 150, desc: "Crown new World Tag Team Champions." },
   { id: 'crown_the_king',      tier: 'tier-gold',    icon: '👑', title: "Crown the King",     xp: 300, desc: "Win the King of the Ring Tournament." },
   { id: 'contract_in_hand',    tier: 'tier-gold',    icon: '💼', title: "Contract in Hand",   xp: 300, desc: "Win a Money in the Bank Ladder Match." },
+  { id: 'legends_reunited',    tier: 'tier-gold',    icon: '🤝', title: "Legends Reunited",   xp: 150, desc: "Get one of the legendary tag teams back together." }, // BATCH 15 ITEM 13
+  { id: 'tag_historian',       tier: 'tier-purple',  icon: '🏆', title: "Hall of Fame Tag Historian", xp: 500, desc: "Reunite all five legendary tag teams: The Shield, Rock 'n' Sock, The Power Trip, the Brothers of Destruction and The Bloodline." },
   { id: 'megalomaniac',        tier: 'tier-gold',    icon: '👑', title: "Megalomaniac",       xp: 300, desc: "Score an A+ (4.5+ ★) Overall Show Grade on SummerSlam or WrestleMania." },
 
   // 💀 CRIMSON: BLOOD FEUDS & VIOLENCE
   { id: 'sparks_flying',       tier: 'tier-crimson', icon: '🔥', title: "Sparks Flying",      xp: 75,  desc: "Have a rivalry ignite or escalate after a heated match." },
-  { id: 'grudge_settler',      tier: 'tier-crimson', icon: '💀', title: "Grudge Settler",     xp: 250, desc: "Defeat a rival in a Tier 3 Blood Feud blowoff match." },
+  { id: 'grudge_settler',      tier: 'tier-crimson', icon: '💀', title: "Grudge Settler",     xp: 250, desc: "Win a Blood Feud final showdown." },
   { id: 'hardcore_havoc',      tier: 'tier-crimson', icon: '🩸', title: "Hardcore Havoc",     xp: 125, desc: "Crown a new Hardcore Champion." },
   { id: 'broken_furniture',    tier: 'tier-crimson', icon: '🪵', title: "Broken Furniture",   xp: 150, desc: "Complete 3 weapon-destruction bouts (Tables, Ladder, or TLC matches)." },
   { id: 'calling_backup',      tier: 'tier-crimson', icon: '🚨', title: "Calling for Backup", xp: 125, desc: "Trigger a manual run-in or call for a Slambulance during a match." },
@@ -809,6 +811,7 @@ function showUnlockShowcase(tier, wrestler = null, onClaimCallback = null) {
     tier.unlockType === 'injuries' ||
     tier.unlockType === 'commissioner' ||
     tier.unlockKey === 'Tables Match' ||
+    tier.unlockKey === 'Steel Cage Match' || // BATCH 15 ITEM 24: Dad has the cage
     tier.unlockKey === 'default-theundertaker' ||
     tier.unlockKey === 'default-kane' ||
     tier.unlockKey === 'default-sethrollins' ||

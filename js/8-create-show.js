@@ -11,7 +11,7 @@
 
 (function () {
   const KEY = 'ewf_custom_shows';
-  const UNLOCK_LEVEL = (window.EWF_UNLOCK_LEVELS && window.EWF_UNLOCK_LEVELS.custom) || 11;
+  const UNLOCK_LEVEL = (window.EWF_UNLOCK_LEVELS && window.EWF_UNLOCK_LEVELS.custom) || 16;
   const MAX_SHOWS = 8;
 
   const COLOURS = [
@@ -26,7 +26,8 @@
     { key: '1v1', label: '1 VS 1', n: 2 },
     { key: 'triple', label: 'TRIPLE THREAT', n: 3 },
     { key: 'fatal', label: 'FATAL 4-WAY', n: 4 },
-    { key: 'tag', label: 'TAG TEAM (2 VS 2)', n: 4 }
+    { key: 'tag', label: 'TAG TEAM (2 VS 2)', n: 4 },
+    { key: 'handicap', label: 'HANDICAP (1 VS 2)', n: 3 } // BATCH 15 ITEM 22
   ];
   const TITLES = [
     { code: 'whc', name: 'World Heavyweight Championship', img: 'whc.png' },
@@ -254,14 +255,17 @@
       const fmt = FORMATS.find(f => f.key === m.formatKey) || FORMATS[0];
       const types = matchTypesFor(m.formatKey);
       if (!types.includes(m.matchType)) m.matchType = types[0] || 'Normal Match';
-      const slots = Array.from({ length: fmt.n }, (_, k) => `<div><span>${m.formatKey === 'tag' ? (k < 2 ? `TEAM 1 · PARTNER ${k + 1}` : `TEAM 2 · PARTNER ${k - 1}`) : `SUPERSTAR ${k + 1}`}</span><select data-m="${i}" data-slot="${k}">${wOpts(m.participants[k])}</select></div>`).join('');
-      const titleOpts = TITLES.filter(t => (t.code === 'tag') === (m.formatKey === 'tag')).map(t => `<option value="${t.code}" ${m.titleCode === t.code ? 'selected' : ''}>🏆 ${t.name}</option>`).join('');
+      const slotLabel = k => m.formatKey === 'tag' ? (k < 2 ? `TEAM 1 · PARTNER ${k + 1}` : `TEAM 2 · PARTNER ${k - 1}`)
+        : m.formatKey === 'handicap' ? (k === 0 ? 'ON THEIR OWN' : `THE PAIR · PARTNER ${k}`) : `SUPERSTAR ${k + 1}`;
+      const slots = Array.from({ length: fmt.n }, (_, k) => `<div><span>${slotLabel(k)}</span><select data-m="${i}" data-slot="${k}">${wOpts(m.participants[k])}</select></div>`).join('');
+      if (m.titleCode && !titleAllowed(m, m.titleCode)) m.titleCode = '';
+      const titleOpts = titleOptions(m);
       return `<div class="ewf-cs-match ${i === d.matches.length - 1 ? 'main' : ''}">
         <h4>${orderName(i, d.matches.length)}</h4>
         <div class="ewf-cs-grid">
           <div><span>MATCH STYLE</span><select data-m="${i}" data-f="format">${FORMATS.map(f => `<option value="${f.key}" ${f.key === m.formatKey ? 'selected' : ''}>${f.label}</option>`).join('')}</select></div>
           <div><span>MATCH TYPE</span><select data-m="${i}" data-f="type">${types.map(t => `<option ${t === m.matchType ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
-          ${titlesOk ? `<div><span>TITLE ON THE LINE?</span><select data-m="${i}" data-f="title"><option value="">No title</option>${titleOpts}</select></div>` : ''}
+          ${titlesOk && m.formatKey !== 'handicap' ? `<div><span>TITLE ON THE LINE?</span><select data-m="${i}" data-f="title"><option value="">No title</option>${titleOpts}</select><div class="ewf-cs-tnote" data-tnote="${i}" style="color:#ffb300; font-size:0.72rem; margin-top:3px;"></div></div>` : ''}
         </div>
         <div class="ewf-cs-grid" style="margin-top:8px;">${slots}</div>
       </div>`;
@@ -340,6 +344,17 @@
       if (f === 'type') { m.matchType = sel.value; return; }
       if (f === 'title') { m.titleCode = sel.value; return; }
       m.participants[+sel.getAttribute('data-slot')] = sel.value;
+      // BATCH 15 ITEM 19: only belts held by someone in this match (or empty belts) can be on the line
+      const ti = +sel.getAttribute('data-m');
+      const tSel = ov.querySelector(`select[data-m="${ti}"][data-f="title"]`);
+      const note = ov.querySelector(`[data-tnote="${ti}"]`);
+      if (tSel) {
+        const had = m.titleCode;
+        if (had && !titleAllowed(m, had)) m.titleCode = '';
+        tSel.innerHTML = `<option value="">No title</option>${titleOptions(m)}`;
+        tSel.value = m.titleCode || '';
+        if (note) note.textContent = (had && !m.titleCode) ? 'The champion isn\'t in this match any more, so the title came off.' : '';
+      }
     });
     ov.querySelector('#csFill').onclick = () => { keepFields(); fillGaps(d); renderBuilder(); };
     ov.querySelector('#csCancel').onclick = () => { draft = null; closeOverlay(); };
@@ -358,6 +373,29 @@
       if (typeof window.openBookShowModal === 'function') window.openBookShowModal();
       openShowMenu(saved.id);
     };
+  }
+
+  // BATCH 15 ITEM 19: which belts can be on the line in this match
+  function titleAllowed(m, code) {
+    const h = (typeof getTitleHolders === 'function' ? getTitleHolders() : {}) || {};
+    const n = (FORMATS.find(f => f.key === m.formatKey) || FORMATS[0]).n;
+    const ps = (m.participants || []).slice(0, n).filter(Boolean);
+    if (m.formatKey === 'handicap') return false;
+    if (code === 'tag') {
+      if (m.formatKey !== 'tag') return false;
+      if (!h.tag1 && !h.tag2) return true;
+      return ps.includes(h.tag1) || ps.includes(h.tag2);
+    }
+    if (m.formatKey === 'tag') return false;
+    if (!h[code]) return true;
+    return ps.includes(h[code]);
+  }
+  function titleOptions(m) {
+    const h = (typeof getTitleHolders === 'function' ? getTitleHolders() : {}) || {};
+    return TITLES.filter(t => titleAllowed(m, t.code)).map(t => {
+      const empty = t.code === 'tag' ? (!h.tag1 && !h.tag2) : !h[t.code];
+      return `<option value="${t.code}" ${m.titleCode === t.code ? 'selected' : ''}>🏆 ${t.name}${empty ? ' (EMPTY: UP FOR GRABS)' : ''}</option>`;
+    }).join('');
   }
 
   function fillGaps(d) {
@@ -446,6 +484,7 @@
     }).filter(b => b.participants.filter(Boolean).length >= 2).map(b => Object.assign(b, { participants: b.participants.filter(Boolean) }));
     // a tag match needs 4
     bouts.forEach(b => { if (b.formatKey === 'tag' && b.participants.length < 4) b.formatKey = b.participants.length === 3 ? 'triple' : '1v1'; });
+    bouts.forEach(b => { if (b.formatKey === 'handicap' && b.participants.length < 3) b.formatKey = '1v1'; if (b.formatKey === 'handicap') { b.isTitleMatch = false; b.titleCode = null; b.titleName = null; b.titleImg = null; } });
     return { bouts, swaps };
   }
 
@@ -483,7 +522,7 @@
     const ov = document.createElement('div');
     ov.className = 'ewf-cs-hype';
     ov.style.backgroundImage = `radial-gradient(ellipse at center, ${c.primary}55, rgba(0,0,0,0.95) 70%), url('commentary_desk_bg.png'), url('show_bg.png')`;
-    const vs = main && main.formatKey === 'tag' && names.length === 4 ? `${names[0]} & ${names[1]} vs ${names[2]} & ${names[3]}` : names.join(' vs ');
+    const vs = main && main.formatKey === 'tag' && names.length === 4 ? `${names[0]} & ${names[1]} vs ${names[2]} & ${names[3]}` : (main && main.formatKey === 'handicap' && names.length === 3 ? `${names[0]} vs ${names[1]} & ${names[2]}` : names.join(' vs '));
     ov.innerHTML = `
       <div class="desk"><img src="brethart.png" onerror="this.style.display='none'"><img src="corbin.png" onerror="this.style.display='none'"></div>
       ${st.soldOut ? '<div class="soldout">🎟️ SOLD OUT TONIGHT! 🎟️</div>' : ''}
@@ -516,9 +555,12 @@
     try { if (document.fonts && document.fonts.load) await Promise.all([document.fonts.load('60px "Russo One"'), document.fonts.load('700 30px "DM Sans"')]); } catch (e) {}
     const font = (px, bold) => `${bold ? '' : ''}${px}px "Russo One", "Arial Black", sans-serif`;
     // background
-    const bg = await loadImg('show_bg.png');
+    // BATCH 15 ITEM 20: a random arena picture behind the superstars, with the show's colour over it
+    const ARENAS = ['show_bg.png', 'background.png', 'background2.png', 'badblood_highlights_bg.png', 'judgmentday_highlights_bg.png']; // no other show's branding
+    const bg = (await loadImg(ARENAS[Math.floor(Math.random() * ARENAS.length)])) || (await loadImg('show_bg.png'));
     x.fillStyle = '#000'; x.fillRect(0, 0, W, H);
-    if (bg) { const r = Math.max(W / bg.width, H / bg.height); x.globalAlpha = 0.55; x.drawImage(bg, (W - bg.width * r) / 2, (H - bg.height * r) / 2, bg.width * r, bg.height * r); x.globalAlpha = 1; }
+    if (bg) { const r = Math.max(W / bg.width, H / bg.height); x.globalAlpha = 0.7; x.drawImage(bg, (W - bg.width * r) / 2, (H - bg.height * r) / 2, bg.width * r, bg.height * r); x.globalAlpha = 1; }
+    x.globalAlpha = 0.45; x.fillStyle = c.primary; x.fillRect(0, 0, W, H); x.globalAlpha = 1;
     let g = x.createRadialGradient(W / 2, H * 0.45, 50, W / 2, H * 0.45, H * 0.8);
     g.addColorStop(0, c.primary + '99'); g.addColorStop(1, '#000000ee');
     x.fillStyle = g; x.fillRect(0, 0, W, H);
@@ -546,7 +588,7 @@
     x.fillStyle = c.primary; x.fillRect(0, y, W, 120);
     x.fillStyle = '#000'; x.globalAlpha = 0.35; x.fillRect(0, y + 100, W, 20); x.globalAlpha = 1;
     x.textAlign = 'center'; x.fillStyle = '#fff'; x.font = font(28); x.fillText('⭐ MAIN EVENT ⭐', W / 2, y + 36);
-    const vs = main && main.formatKey === 'tag' && mains.length === 4 ? `${mains[0].name} & ${mains[1].name}  VS  ${mains[2].name} & ${mains[3].name}` : mains.map(w => w.name).join('  VS  ');
+    const vs = main && main.formatKey === 'tag' && mains.length === 4 ? `${mains[0].name} & ${mains[1].name}  VS  ${mains[2].name} & ${mains[3].name}` : (main && main.formatKey === 'handicap' && mains.length === 3 ? `${mains[0].name}  VS  ${mains[1].name} & ${mains[2].name}` : mains.map(w => w.name).join('  VS  '));
     let size = 56; x.font = font(size); while (x.measureText(vs.toUpperCase()).width > W - 60 && size > 26) { size -= 2; x.font = font(size); }
     x.fillText(vs.toUpperCase(), W / 2, y + 92);
     // undercard
@@ -555,7 +597,7 @@
     x.font = font(30); x.fillStyle = '#fff';
     s.matches.slice(0, -1).forEach(m => {
       const ns = m.participants.map(wById).filter(Boolean).map(w => w.name.toUpperCase());
-      const t = m.formatKey === 'tag' && ns.length === 4 ? `${ns[0]} & ${ns[1]} VS ${ns[2]} & ${ns[3]}` : ns.join(' VS ');
+      const t = m.formatKey === 'tag' && ns.length === 4 ? `${ns[0]} & ${ns[1]} VS ${ns[2]} & ${ns[3]}` : (m.formatKey === 'handicap' && ns.length === 3 ? `${ns[0]} VS ${ns[1]} & ${ns[2]}` : ns.join(' VS '));
       let fs = 30; x.font = font(fs); while (x.measureText(t).width > W - 80 && fs > 18) { fs -= 2; x.font = font(fs); }
       x.fillText(t, W / 2, y); y += 44;
     });
@@ -563,6 +605,10 @@
     x.fillStyle = c.primary; x.fillRect(0, H - 90, W, 90);
     x.fillStyle = '#fff'; x.font = font(40); x.fillText(s.type === 'weekly' ? 'LIVE THIS WEEK' : 'LIVE ON PAY-PER-VIEW', W / 2, H - 50);
     x.font = font(20); x.fillText('ELLIS WRESTLING FEDERATION', W / 2, H - 18);
+    // BATCH 15 ITEM 20: EWF and WWE logos either side of the footer
+    const [ewfLogo, wweLogo] = await Promise.all([loadImg('logo.png'), loadImg('wwe_logo.png')]);
+    const putLogo = (im, cx) => { if (!im) return; const r = Math.min(150 / im.width, 70 / im.height); const lw = im.width * r, lh = im.height * r; x.drawImage(im, cx - lw / 2, H - 45 - lh / 2, lw, lh); };
+    putLogo(ewfLogo, 95); putLogo(wweLogo, W - 95);
     let url;
     try { url = cv.toDataURL('image/png'); } catch (e) { alert("Sorry, the poster couldn't be made on this device."); return; }
     showPoster(s, url);

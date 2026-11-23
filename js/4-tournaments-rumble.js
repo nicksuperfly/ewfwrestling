@@ -383,7 +383,7 @@ function startKotrRandomDraw() {
     ? window.wrestlers.filter(w => !(typeof getInjuryRecord === 'function' && getInjuryRecord(w.id)))
     : (typeof getUnlockedWrestlers === 'function' ? getUnlockedWrestlers().filter(w => !(typeof getInjuryRecord === 'function' && getInjuryRecord(w.id))) : (typeof defaultWrestlers !== 'undefined' ? defaultWrestlers : []));
 
-  if (allWrestlers.length < window.kotrSize) { alert(`Need at least ${window.kotrSize} available superstars!`); return; }
+  if (allWrestlers.length < window.kotrSize) { alert(`You need ${window.kotrSize} fit superstars for this!`); return; }
   const entrants = [...allWrestlers].sort(() => Math.random() - 0.5).slice(0, window.kotrSize);
   buildKotrBracketTreeFromEntrants(entrants);
 }
@@ -393,7 +393,7 @@ function startKotrHandPickSeeds() {
     ? window.wrestlers.filter(w => !(typeof getInjuryRecord === 'function' && getInjuryRecord(w.id)))
     : (typeof getUnlockedWrestlers === 'function' ? getUnlockedWrestlers().filter(w => !(typeof getInjuryRecord === 'function' && getInjuryRecord(w.id))) : (typeof defaultWrestlers !== 'undefined' ? defaultWrestlers : []));
 
-  if (allWrestlers.length < window.kotrSize) { alert(`Need at least ${window.kotrSize} available superstars!`); return; }
+  if (allWrestlers.length < window.kotrSize) { alert(`You need ${window.kotrSize} fit superstars for this!`); return; }
   window.kotrCustomEntrants = new Array(window.kotrSize).fill(null);
   openKotrSlotPicker(0);
 }

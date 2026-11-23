@@ -289,11 +289,12 @@ function ensureRosterReady(minNeeded = 2) {
 window.ensureRosterReady = ensureRosterReady;
 
 // BATCH 13: code cards that come with presents (not superstars)
-window.EWF_GIFT_FROM = 'Grandma & Grandad';
+// BATCH 15 ITEM 17: each present says who it's from
+window.EWF_GIFT_FROM = 'Nanny & Grandad'; // fallback only
 window.EWF_GIFT_CODES = {
-  CASHIN: { id: 'gift-mitb', name: 'Money in the Bank', unlockType: 'show', unlockKey: 'mitb', img: 'mitb_briefcase.png',
+  CASHIN: { id: 'gift-mitb', name: 'Money in the Bank', from: 'Nanny & Grandad', unlockType: 'show', unlockKey: 'mitb', img: 'mitb_briefcase.png',
     blurb: 'The MONEY IN THE BANK show and the briefcase ladder match are now open!' },
-  NEENAW: { id: 'gift-slambulance', name: 'The Slambulance', unlockType: 'match', unlockKey: 'Ambulance Match', img: 'ambulance.png',
+  NEENAW: { id: 'gift-slambulance', name: 'The Slambulance', from: 'Granny & Grandad', unlockType: 'match', unlockKey: 'Ambulance Match', img: 'ambulance.png',
     blurb: 'SLAMBULANCE MATCHES are now open. Load your opponent in the back to win!' }
 };
 
@@ -414,16 +415,16 @@ function getShowLogo(key) {
   return key + '_logo.png';
 }
 
-const formatKeys = ["1v1", "triple", "fatal", "tag", "rumble", "mitb", "kotr"];
-const formatLabels = ["1 VS 1 MATCH", "TRIPLE THREAT (3-WAY)", "FATAL 4-WAY", "TAG TEAM MATCH", "ROYAL RUMBLE", "MONEY IN THE BANK", "KING OF THE RING"];
-const formatLogos = ["1v1.png", "triple_threat.png", "fatal_4way.png", "tag_team.png", "rumble_logo.png", "mitb_logo.png", "kotr_logo.png"];
-const mysteryFormatLogos = ["1v1.png", "triple_threat.png", "fatal_4way.png"];
+const formatKeys = ["1v1", "triple", "fatal", "tag", "handicap", "rumble", "mitb", "kotr"];
+const formatLabels = ["1 VS 1 MATCH", "TRIPLE THREAT (3-WAY)", "FATAL 4-WAY", "TAG TEAM MATCH", "HANDICAP MATCH (1 VS 2)", "ROYAL RUMBLE", "MONEY IN THE BANK", "KING OF THE RING"];
+const formatLogos = ["1v1.png", "triple_threat.png", "fatal_4way.png", "tag_team.png", "handicap.png", "rumble_logo.png", "mitb_logo.png", "kotr_logo.png"];
+const mysteryFormatLogos = ["1v1.png", "triple_threat.png", "fatal_4way.png", "handicap.png"];
 var currentFormatIdx = 0;
 
 const allMatchTypes = [
   "Normal Match", "Ambulance Match", "Tables Match", "TLC Match", "Ladder Match", "No Disqualification", 
   "Submission Match", "Last Man Standing", "Falls Count Anywhere", "2 out of 3 Falls", 
-  "Special Guest Referee", "Lumberjack Match"
+  "Special Guest Referee", "Lumberjack Match", "Steel Cage Match"
 ];
 
 const tagMatchTypes = ["Normal Match", "TLC Match", "Tables Match", "Ladder Match", "No Disqualification"];
@@ -435,7 +436,7 @@ const matchTypeLogos = {
   "TLC Match": "tlc.png", "Ladder Match": "ladder.png", "No Disqualification": "no_dq.png",
   "Submission Match": "submission.png", "Last Man Standing": "last_man.png", "Falls Count Anywhere": "falls_anywhere.png",
   "2 out of 3 Falls": "two_out_of_three.png", "Special Guest Referee": "special_referee.png",
-  "Lumberjack Match": "lumberjack.png", "Money in the Bank": "mitb_logo.png", "MITB Cash-In Match": "mitb_logo.png",
+  "Lumberjack Match": "lumberjack.png", "Steel Cage Match": "cagematch.png", "Money in the Bank": "mitb_logo.png", "MITB Cash-In Match": "mitb_logo.png",
   "King of the Ring": "kotr_logo.png"
 };
 

@@ -188,25 +188,25 @@ window.generateShowCard = function(showKey) {
   // so it could never be booked. It now needs 4 (the tournament); the opener is added when there are 6+.
   if (isKotr && activeW.length < 4) {
     if (!window.activeShowSession) setElDisplay('gmHeaderHomeBtn', 'flex');
-    alert("King of the Ring requires at least 4 active, uninjured superstars for the tournament. Check the Medical Ward.");
+    alert("King of the Ring needs 4 fit superstars! Too many are hurt, so check the Medical Ward.");
     return;
   }
   
   if (isMitb && activeW.length < 4) {
     if (!window.activeShowSession) setElDisplay('gmHeaderHomeBtn', 'flex');
-    alert("Money in the Bank requires at least 4 active superstars to generate the card.");
+    alert("Money in the Bank needs 4 fit superstars!");
     return;
   }
   
   if (isRumble && activeW.length < 4) {
     if (!window.activeShowSession) setElDisplay('gmHeaderHomeBtn', 'flex');
-    alert("The Royal Rumble requires at least 4 active, uninjured superstars. Check the Medical Ward.");
+    alert("The Royal Rumble needs 4 fit superstars! Too many are hurt, so check the Medical Ward.");
     return;
   }
 
   if (actualMatchCount < 1) {
     if (!window.activeShowSession) setElDisplay('gmHeaderHomeBtn', 'flex');
-    alert("Not enough active superstars to book a show! Check the Medical Ward.");
+    alert("Not enough fit superstars for a show! Too many are hurt, so check the Medical Ward.");
     return;
   }
 
@@ -457,7 +457,7 @@ window.generateShowCard = function(showKey) {
       let mitbSize = Math.min(6, pool.length);
       if (mitbSize < 3) {
         if (!window.activeShowSession) setElDisplay('gmHeaderHomeBtn', 'flex');
-        alert("Not enough uninjured superstars to book the Money in the Bank match. Consider healing some roster members.");
+        alert("Too many superstars are hurt! Check the Medical Ward.");
         return;
       }
       const shuffled = [...pool].sort(() => Math.random() - 0.5);
@@ -621,7 +621,7 @@ window.generateShowCard = function(showKey) {
             p1 = pool.find(w => w.id === (cornerRoll ? riv.w1 : riv.w2));
             p2 = pool.find(w => w.id === (cornerRoll ? riv.w2 : riv.w1));
             
-            if (riv.heat === 3) bout.feudStake = '💀 TIER 3 BLOOD FEUD BLOWOFF';
+            if (riv.heat === 3) bout.feudStake = '💀 BLOOD FEUD: FINAL SHOWDOWN';
             else bout.feudStake = '🔥 GRUDGE MATCH';
           }
         }
@@ -874,6 +874,18 @@ window.renderBookShowCardModal = function() {
         <div class="bsb-vs-badge" style="font-size:0.9rem;">VS</div>
         <div class="bsb-fighter-thumb-wrap">${p4Status}<img src="${bout.participants[3].image}" class="bsb-fighter-thumb" style="${isCompleted && bout.winnerId !== bout.participants[3].id ? 'filter:grayscale(1) brightness(0.4);' : ''}"></div>
       `;
+    } else if (bout.formatKey === 'handicap' && hasW3) {
+      // BATCH 15 ITEM 22: one on their own vs a pair
+      const lost15 = i => isCompleted && !(bout.winnerObjs || [bout.winnerObj]).some(w => w && bout.participants[i] && w.id === bout.participants[i].id);
+      const dim15 = i => lost15(i) ? 'filter:grayscale(1) brightness(0.4);' : '';
+      avatarsHtml = `
+        <div class="bsb-fighter-thumb-wrap">${p1Status}<img src="${bout.participants[0].image}" class="bsb-fighter-thumb" style="${dim15(0)}"></div>
+        <div class="bsb-vs-badge" style="margin: 0 4px; font-size:0.8rem;">1 VS 2</div>
+        <div class="bsb-fighter right-side" style="margin-left:-8px;">
+          <div class="bsb-fighter-thumb-wrap" style="z-index:2;">${p2Status}<img src="${bout.participants[1].image}" class="bsb-fighter-thumb" style="${dim15(1)}"></div>
+          <div class="bsb-fighter-thumb-wrap" style="margin-right:-25px; z-index:1;">${p3Status}<img src="${bout.participants[2].image}" class="bsb-fighter-thumb" style="${dim15(2)}"></div>
+        </div>
+      `;
     } else if (bout.formatKey === 'triple' && hasW3) {
       avatarsHtml = `
         <div class="bsb-fighter-thumb-wrap">${p1Status}<img src="${bout.participants[0].image}" class="bsb-fighter-thumb" style="${isCompleted && bout.winnerId !== bout.participants[0].id ? 'filter:grayscale(1) brightness(0.4);' : ''}"></div>
@@ -951,6 +963,7 @@ window.shuffleBout = function(idx) {
   } else if (isBig) {
     if (stipRoll > 0.80 && !isMatchTypeLocked('TLC Match').locked) newStip = 'TLC Match';
     else if (stipRoll > 0.60 && !isMatchTypeLocked('Ambulance Match').locked) newStip = 'Ambulance Match';
+    else if (stipRoll > 0.50 && !isMatchTypeLocked('Steel Cage Match').locked) newStip = 'Steel Cage Match'; // BATCH 15 ITEM 24
     else if (stipRoll > 0.40) newStip = 'Last Man Standing';
     else if (stipRoll > 0.20) newStip = 'Ladder Match';
     else newStip = '2 out of 3 Falls';
@@ -1094,7 +1107,7 @@ window.shuffleBout = function(idx) {
     const p2Id = bout.participants[1].id;
     const riv = rivalries.find(r => (r.w1 === p1Id && r.w2 === p2Id) || (r.w2 === p1Id && r.w1 === p2Id));
     if (riv) {
-      bout.feudStake = (riv.heat >= 3) ? '💀 TIER 3 BLOOD FEUD BLOWOFF' : '🔥 GRUDGE MATCH';
+      bout.feudStake = (riv.heat >= 3) ? '💀 BLOOD FEUD: FINAL SHOWDOWN' : '🔥 GRUDGE MATCH';
     }
   }
 
@@ -1124,6 +1137,12 @@ function simWeight(w) {
 
 function simSides(bout) {
   const p = bout.participants.filter(Boolean);
+  if (bout.formatKey === 'handicap' && p.length === 3) { // BATCH 15 ITEM 22
+    return [
+      { members: [p[0]], label: p[0].name, result: { isTagTeam: true, isHandicap: true, teamIndex: 1, winners: [p[0]], losers: [p[1], p[2]], teamName: p[0].name } },
+      { members: [p[1], p[2]], label: `${p[1].name} & ${p[2].name}`, result: { isTagTeam: true, isHandicap: true, teamIndex: 2, winners: [p[1], p[2]], losers: [p[0]], teamName: `${p[1].name} & ${p[2].name}` } }
+    ];
+  }
   if (bout.formatKey === 'tag' && p.length === 4) {
     return [
       { members: [p[0], p[1]], label: `${p[0].name} & ${p[1].name}`, result: { isTagTeam: true, teamIndex: 1, winners: [p[0], p[1]], losers: [p[2], p[3]], teamName: `${p[0].name} & ${p[1].name}` } },
@@ -1252,7 +1271,7 @@ window.launchActiveShowBout = function(idx) {
     if (sf1 && sf2 && sf1.winnerObj && sf2.winnerObj) {
       bout.participants = [sf1.winnerObj, sf2.winnerObj];
     } else {
-      alert("Error: Cannot start the Tournament Final until both Semi-Final matches have been completed!");
+      alert("Finish both semi-finals first, then it's time for the final!");
       return;
     }
   }
@@ -1346,7 +1365,7 @@ window.queueCutsceneBoutIntoShow = function(cfg) {
 };
 
 window.abandonActiveShow = function() {
-  if (confirm("Are you sure you want to abandon this broadcast? Unfinished matches will be discarded.")) {
+  if (confirm("End the show now? Any matches not played yet won't happen.")) {
     const container = document.getElementById('bookShowBoutsContainer');
     if (container) container.innerHTML = '';
     
@@ -1537,9 +1556,9 @@ window.navGoToStep = navGoToStep;
    -------------------------------------------------------------------------- */
 /* BATCH 13: ONE PLACE FOR EVERY UNLOCK
    BATCH 14: Levels: 4 Tables Match, 5 Undertaker, 6 TLC, 7 King of the Ring, 8 Royal Rumble, 9 Kane, 10 Bad Blood,
-   11 Create Your Own Show, 12 Judgment Day, 13 Stephanie McMahon, 14 No Mercy, 15 Seth Rollins.
+   11 Steel Cage Match, 12 Judgment Day, 13 Stephanie McMahon, 14 No Mercy, 15 Seth Rollins, 16 Create Your Own Show.
    Money in the Bank and the Slambulance unlock with code cards. */
-window.EWF_UNLOCK_LEVELS = { tables: 4, undertaker: 5, tlc: 6, kotr: 7, rumble: 8, kane: 9, badblood: 10, custom: 11, judgmentday: 12, stephanie: 13, nomercy: 14, sethrollins: 15 };
+window.EWF_UNLOCK_LEVELS = { tables: 4, undertaker: 5, tlc: 6, kotr: 7, rumble: 8, kane: 9, badblood: 10, cage: 11, judgmentday: 12, stephanie: 13, nomercy: 14, sethrollins: 15, custom: 16 };
 window.ewfHasGift = function(id) { try { return (typeof getUnlockedVaultIds === 'function' ? getUnlockedVaultIds() : []).includes(id); } catch (e) { return false; } };
 const EWF_GIFT_LOCKS = { mitb: { gift: 'gift-mitb', name: 'Money in the Bank' }, 'Ambulance Match': { gift: 'gift-slambulance', name: 'Slambulance Match' } };
 function ewfLevelLock(key, name) {
@@ -1574,6 +1593,7 @@ function isMatchTypeLocked(matchType) {
   const lvl = (typeof getGMLevel === 'function') ? getGMLevel() : 1;
   if (matchType === 'TLC Match') return ewfLevelLock('tlc', "TLC Match");
   if (matchType === 'Tables Match') return ewfLevelLock('tables', "Tables Match");
+  if (matchType === 'Steel Cage Match') return ewfLevelLock('cage', "Steel Cage Match"); // BATCH 15 ITEM 24
   if (matchType === 'Ambulance Match') return ewfGiftLock('Ambulance Match');
   return { locked: false };
 }
@@ -1620,7 +1640,7 @@ window.autoFillSuperstars = function() {
 
   const unlocked = getUnlockedWrestlers().filter(w => !getInjuryRecord(w.id));
   const count = activeBookedMatch.formatCount || 2;
-  if (unlocked.length < count) { alert(`Need at least ${count} uninjured, unlocked superstars to auto-fill!`); return; }
+  if (unlocked.length < count) { alert(`You need ${count} fit superstars for this match!`); return; }
 
   const shuffled = [...unlocked].sort(() => Math.random() - 0.5);
   pickedParticipants = shuffled.slice(0, count);
@@ -1747,6 +1767,9 @@ window.confirmFormatCarouselChoice = function() {
     } else if (selectedFormat === 'fatal') {
       activeMatchTypesList = [...allMatchTypes];
       activeBookedMatch.formatCount = 4;
+    } else if (selectedFormat === 'handicap') { // BATCH 15 ITEM 22
+      activeMatchTypesList = allMatchTypes.filter(t => !['Special Guest Referee', '2 out of 3 Falls'].includes(t));
+      activeBookedMatch.formatCount = 3;
     }
     currentTypeIdx = 0;
     updateTypeCarouselUI();
@@ -1863,7 +1886,7 @@ function renderTitleStakeModal() {
         btn.innerHTML = `<span>🔒 ${title.name}</span> <span style="font-size:0.7rem; color:#aaa;">(TAG MATCH ONLY)</span>`;
       } else if (isVacant) {
         btn.className = 'action-btn btn-blue'; btn.style.borderColor = '#00ff66';
-        btn.innerHTML = `<span>🏆 ${title.name}</span> <span style="font-size:0.7rem; color:#00ff66;">(VACANT - SANCTIONED)</span>`;
+        btn.innerHTML = `<span>🏆 ${title.name}</span> <span style="font-size:0.7rem; color:#00ff66;">(EMPTY: UP FOR GRABS)</span>`;
         btn.onclick = () => confirmTitleStake(title.code, title.name, title.img);
       } else if (champInMatch) {
         btn.className = 'action-btn btn-blue'; btn.style.borderColor = '#ffd700';
@@ -1881,7 +1904,7 @@ function renderTitleStakeModal() {
 
       if (isVacant) {
         btn.className = 'action-btn btn-blue'; btn.style.borderColor = '#00ff66';
-        btn.innerHTML = `<span>🏆 ${title.name}</span> <span style="font-size:0.7rem; color:#00ff66;">(VACANT - SANCTIONED)</span>`;
+        btn.innerHTML = `<span>🏆 ${title.name}</span> <span style="font-size:0.7rem; color:#00ff66;">(EMPTY: UP FOR GRABS)</span>`;
         btn.onclick = () => confirmTitleStake(title.code, title.name, title.img);
       } else if (champInMatch && isSanctioned) {
         btn.className = 'action-btn btn-blue'; btn.style.borderColor = '#ffd700';
@@ -1919,6 +1942,10 @@ function toggleTitleStakesInEngine() {
     return;
   }
 
+  if (activeBookedMatch.formatKey === 'handicap' && !activeBookedMatch.isTitleMatch) { // BATCH 15 ITEM 22
+    alert("⚖️ NO TITLES IN HANDICAP MATCHES!\n\nIt's not fair on a belt when it's 2 against 1.");
+    return;
+  }
   if (activeBookedMatch.isTitleMatch) {
     activeBookedMatch.isTitleMatch = false;
     activeBookedMatch.titleCode = null;
@@ -2135,7 +2162,7 @@ window.selectRumbleEntrantCount = function(count) {
 
   const safeCount = Math.min(count, unlockedWrestlers.length);
   if (safeCount < count) {
-    alert(`Your roster currently has ${safeCount} active superstars. Draft adjusted to ${safeCount} entrants!`);
+    alert(`Only ${safeCount} superstars are ready, so the Rumble will have ${safeCount}!`);
   }
 
   rumbleEntrantCount = safeCount;
@@ -2183,6 +2210,8 @@ function renderHandpickSlotsUI() {
     let labelText = `SLOT ${idx+1}`;
     if (activeBookedMatch.formatKey === 'tag') {
       labelText = idx < 2 ? `TEAM 1 - #${idx+1}` : `TEAM 2 - #${idx-1}`;
+    } else if (activeBookedMatch.formatKey === 'handicap') {
+      labelText = idx === 0 ? 'ON THEIR OWN' : `THE PAIR - #${idx}`;
     }
     if (w) {
       slot.className = 'handpick-slot-card filled';
@@ -2281,8 +2310,8 @@ window.openSuperstarPickerForRef = function() {
 window.closeSlotPickerModal = function() { setElDisplay('slotPickerModal', 'none'); };
 
 window.confirmHandpickLineup = function() {
-  if (pickedParticipants.some(w => w === null)) { alert("Please fill all superstar competitor slots!"); return; }
-  if (activeBookedMatch.matchType === 'Special Guest Referee' && !pickedReferee) { alert("Please assign a Special Guest Referee for this match!"); return; }
+  if (pickedParticipants.some(w => w === null)) { alert("Pick a superstar for every spot!"); return; }
+  if (activeBookedMatch.matchType === 'Special Guest Referee' && !pickedReferee) { alert("Pick a Special Guest Referee for this match!"); return; }
 
   activeBookedMatch.participants = [...pickedParticipants];
   activeBookedMatch.referee = pickedReferee;
@@ -2397,7 +2426,7 @@ function spinMysteryRouletteStaged() {
   const T = (fn, ms) => { const id = setTimeout(fn, ms); window.mysteryRouletteTimers.push(id); return id; };
   const gmLevel = (typeof getGMLevel === 'function') ? getGMLevel() : 1;
   const allWrestlers = typeof getUnlockedWrestlers === 'function' ? getUnlockedWrestlers().filter(w => typeof getInjuryRecord === 'function' && !getInjuryRecord(w.id)) : defaultWrestlers;
-  if (allWrestlers.length < 2) { alert("Add at least 2 active, uninjured wrestlers!"); window.closeVideoModal(); return; }
+  if (allWrestlers.length < 2) { alert("You need 2 fit superstars for a Mystery Match!"); window.closeVideoModal(); return; }
 
   const eligibleTypes = allMatchTypes.filter(type => {
     if (isMatchTypeLocked(type).locked) return false;
@@ -2458,6 +2487,8 @@ function spinMysteryRouletteStaged() {
     const randomCount = possibleFormats[Math.floor(Math.random() * possibleFormats.length)];
     activeBookedMatch.formatCount = randomCount;
     activeBookedMatch.formatKey = randomCount === 2 ? '1v1' : randomCount === 3 ? 'triple' : 'fatal';
+    // BATCH 15 ITEM 22: sometimes it's a 1 vs 2 handicap match
+    if (allWrestlers.length >= 3 && Math.random() < 0.18) { activeBookedMatch.formatCount = 3; activeBookedMatch.formatKey = 'handicap'; }
     const fIdx = formatKeys.indexOf(activeBookedMatch.formatKey);
     if (reelFormat) reelFormat.className = `roulette-reel locked-red`;
     if (formatText) formatText.innerHTML = `<img src="${formatLogos[fIdx]}" style="max-height: 56px; max-width: 90%; object-fit: contain;">`;
@@ -2712,7 +2743,8 @@ function launchMatchCardOverlay() {
 
     const isMitbMatrix = (format === 'mitb' || p.length >= 6) && format !== 'rumble';
     const isFatalQuad = !isMitbMatrix && (format === 'fatal' || (format !== 'tag' && p.length === 4));
-    const isTriple = !isMitbMatrix && !isFatalQuad && (format === 'triple' || p.length === 3);
+    const isHandicapCard = !isMitbMatrix && !isFatalQuad && format === 'handicap' && p.length === 3; // BATCH 15 ITEM 22
+    const isTriple = !isMitbMatrix && !isFatalQuad && !isHandicapCard && (format === 'triple' || p.length === 3);
     const isTagTeamDuo = !isMitbMatrix && !isFatalQuad && !isTriple && (format === 'tag' && p.length >= 4);
 
     const historyList = (typeof getHistory === 'function') ? getHistory() : [];
@@ -2756,7 +2788,7 @@ function launchMatchCardOverlay() {
     const stipBanner = document.getElementById('mcStipulationBanner');
     if (stipBanner) {
       const matchTypeStr = (activeBookedMatch.matchType || 'NORMAL MATCH').toUpperCase();
-      let formatHeader = isMitbMatrix ? `MITB LADDER // ` : (isFatalQuad ? 'FATAL 4-WAY // ' : (isTriple ? 'TRIPLE THREAT // ' : (isTagTeamDuo ? 'TAG TEAM // ' : '')));
+      let formatHeader = isMitbMatrix ? `MITB LADDER // ` : (isFatalQuad ? 'FATAL 4-WAY // ' : (isTriple ? 'TRIPLE THREAT // ' : (isTagTeamDuo ? 'TAG TEAM // ' : (isHandicapCard ? '1 VS 2 HANDICAP // ' : ''))));
       const careerHeader = activeBookedMatch.isCareerMatch ? 'LOSER LEAVES EWF: ' : '';
       stipBanner.innerText = `// EWF MAIN EVENT // ${formatHeader}${careerHeader}${matchTypeStr} //`;
     }
@@ -2838,6 +2870,40 @@ function launchMatchCardOverlay() {
       `;
       revealSteps = ['mcReveal1', 'mcReveal2', 'mcReveal3'];
 
+    } else if (isHandicapCard) {
+      stage.className = 'mc-stage';
+      const pairLabel15 = (typeof window.ewfTeamName === 'function' && window.ewfTeamName(p[1], p[2])) || '';
+      stage.innerHTML = `
+        <div class="mc-flank mc-flank-left mc-reveal" id="mcReveal1">
+          <div class="mc-pose-wrap"><img src="${resolvePose(p[0])}" class="mc-pose-img" alt="${p[0]?.name || ''}" onerror="handleImgError(this, '${p[0]?.id || ''}')"></div>
+          ${buildNameplateHTML(p[0])}
+        </div>
+        <div class="mc-center-col" style="z-index:25;">
+          <div class="mc-event-logo-box"><img src="${eventLogoSrc}" class="mc-event-logo" alt="Logo"></div>
+          ${titleImgHtml} ${refHtml}
+          <div class="mc-vs-badge">VS</div>
+          <div style="font-family:'Russo One'; color:#ffd700; font-size:0.95rem; letter-spacing:1px; text-shadow:0 0 10px #000;">1 VS 2 HANDICAP</div>
+        </div>
+        <div class="mc-flank mc-flank-right mc-reveal" id="mcReveal2">
+          <div class="mc-tag-team-flank" style="flex-direction:row-reverse;">
+            <img src="${resolvePose(p[1])}" class="mc-tag-partner-lead" alt="${p[1]?.name || ''}" onerror="handleImgError(this, '${p[1]?.id || ''}')">
+            <img src="${resolvePose(p[2])}" class="mc-tag-partner-trail" style="margin-right:-65px; margin-left:0;" alt="${p[2]?.name || ''}" onerror="handleImgError(this, '${p[2]?.id || ''}')">
+          </div>
+          <div class="mc-nameplate mc-nameplate-right mc-tag-dual-nameplate" style="flex-direction:row-reverse;">
+            <div style="display:flex; flex-direction:column; align-items:flex-start;">
+              <div class="mc-name" style="font-size:1.15rem;">${p[1]?.name?.toUpperCase() || ''}</div>
+              <div class="mc-substat">${pairLabel15 ? pairLabel15 : getWins(p[1]?.id) + ' WINS'}</div>
+            </div>
+            <div style="font-family:'Russo One'; font-size:1.2rem; color:#e50914; align-self:center;">&</div>
+            <div style="display:flex; flex-direction:column; align-items:flex-end;">
+              <div class="mc-name" style="font-size:1.15rem; color:#bbb;">${p[2]?.name?.toUpperCase() || ''}</div>
+              <div class="mc-substat">${getWins(p[2]?.id)} WINS</div>
+            </div>
+          </div>
+        </div>
+      `;
+      revealSteps = ['mcReveal1', 'mcReveal2'];
+
     } else if (isTagTeamDuo) {
       stage.className = 'mc-stage';
       stage.innerHTML = `
@@ -2849,7 +2915,7 @@ function launchMatchCardOverlay() {
           <div class="mc-nameplate mc-nameplate-left mc-tag-dual-nameplate">
             <div style="display:flex; flex-direction:column; align-items:flex-end;">
               <div class="mc-name" style="font-size:1.15rem;">${p[0]?.name?.toUpperCase() || ''}</div>
-              <div class="mc-substat">${getWins(p[0]?.id)} WINS</div>
+              <div class="mc-substat">${(typeof window.ewfTeamName === 'function' && window.ewfTeamName(p[0], p[1])) || (getWins(p[0]?.id) + ' WINS')}</div>
             </div>
             <div style="font-family:'Russo One'; font-size:1.2rem; color:#0070f3; align-self:center;">&</div>
             <div style="display:flex; flex-direction:column; align-items:flex-start;">
@@ -2873,7 +2939,7 @@ function launchMatchCardOverlay() {
           <div class="mc-nameplate mc-nameplate-right mc-tag-dual-nameplate" style="flex-direction:row-reverse;">
             <div style="display:flex; flex-direction:column; align-items:flex-start;">
               <div class="mc-name" style="font-size:1.15rem;">${p[2]?.name?.toUpperCase() || ''}</div>
-              <div class="mc-substat">${getWins(p[2]?.id)} WINS</div>
+              <div class="mc-substat">${(typeof window.ewfTeamName === 'function' && window.ewfTeamName(p[2], p[3])) || (getWins(p[2]?.id) + ' WINS')}</div>
             </div>
             <div style="font-family:'Russo One'; font-size:1.2rem; color:#e50914; align-self:center;">&</div>
             <div style="display:flex; flex-direction:column; align-items:flex-end;">
@@ -3488,7 +3554,8 @@ function populateMatchTelemetry() {
   if (titleStrip && activeBookedMatch.isTitleMatch) {
     if (beltImg) beltImg.src = activeBookedMatch.titleImg || 'whc.png';
     const defCount = typeof getTitleDefenseCount === 'function' ? getTitleDefenseCount(activeBookedMatch.titleCode) : 0;
-    const defTag = defCount > 0 ? ` (DEFENSE #${defCount + 1})` : ' (VACANT / FIRST DEFENSE)';
+    const holder15 = (typeof getTitleHolders === 'function' ? (getTitleHolders() || {}) : {})[activeBookedMatch.titleCode];
+    const defTag = defCount > 0 ? ` (DEFENCE #${defCount + 1})` : (holder15 ? ' (FIRST DEFENCE)' : ' (EMPTY: UP FOR GRABS)');
     if (titleName) titleName.innerText = `${(activeBookedMatch.titleName || 'CHAMPIONSHIP').toUpperCase()}${defTag}`;
     titleStrip.style.display = 'flex';
   } else if (titleStrip) {
@@ -3765,7 +3832,7 @@ window.triggerManualLightsOutAmbush = function() {
   const allWrestlers = typeof getUnlockedWrestlers === 'function' ? getUnlockedWrestlers().filter(w => typeof getInjuryRecord === 'function' && !getInjuryRecord(w.id)) : defaultWrestlers;
   const matchIds = (activeBookedMatch.participants || []).map(w => w.id);
   const freeWrestlers = allWrestlers.filter(w => !matchIds.includes(w.id));
-  if (freeWrestlers.length === 0) { alert("No outside superstars available for an ambush!"); return; }
+  if (freeWrestlers.length === 0) { alert("Nobody is free to run in right now!"); return; }
 
   const rivalries = typeof getRivalries === 'function' ? getRivalries() : [];
   let targetRival = null;
@@ -4064,6 +4131,10 @@ window.executeMitbCashInTarget = function(holder, titleObj, champObj) {
     window.dismissMatchCardOverlay();
     quickMatchQueue = [];
 
+    // BATCH 15 ITEM 18: a cash-in from the winner's celebration happens AFTER the bout was decided.
+    // Save that bout's result first, so the show moves on instead of replaying it.
+    try { if (typeof window.ewfCommitBoutBeforeCashIn === 'function') window.ewfCommitBoutBeforeCashIn(); } catch (e) { console.warn('cash-in commit', e); }
+
     const wasMidShow = !!window.activeShowSession;
     const existingLineup = Array.isArray(activeBookedMatch.participants)
       ? activeBookedMatch.participants.filter(Boolean)
@@ -4170,11 +4241,10 @@ function renderWinnerSelectionList() {
     const alliances = typeof getAlliances === 'function' ? getAlliances() : [];
     const customAl = (Array.isArray(alliances) && alliances.length > 0) ? alliances[0] : (typeof alliances === 'object' && alliances.name ? alliances : null);
 
-    const team1Name = (customAl && ((customAl.p1 === p[0].id && customAl.p2 === p[1].id) || (customAl.p1 === p[1].id && customAl.p2 === p[0].id)))
-      ? customAl.name.toUpperCase() : `${p[0].name.toUpperCase()} & ${p[1].name.toUpperCase()}`;
-
-    const team2Name = (customAl && ((customAl.p1 === p[2].id && customAl.p2 === p[3].id) || (customAl.p1 === p[3].id && customAl.p2 === p[2].id)))
-      ? customAl.name.toUpperCase() : `${p[2].name.toUpperCase()} & ${p[3].name.toUpperCase()}`;
+    // BATCH 15 ITEM 12: alliance name first, then the legendary team name, then their names
+    const tn15 = (a, b) => (typeof window.ewfTeamName === 'function' && window.ewfTeamName(a, b)) || `${a.name.toUpperCase()} & ${b.name.toUpperCase()}`;
+    const team1Name = tn15(p[0], p[1]);
+    const team2Name = tn15(p[2], p[3]);
 
     const team1Pod = document.createElement('div');
     team1Pod.style.cssText = `
@@ -4213,6 +4283,26 @@ function renderWinnerSelectionList() {
     `;
     team2Pod.onclick = () => window.declareMatchWinner({ isTagTeam: true, teamIndex: 2, winners: [p[2], p[3]], losers: [p[0], p[1]], teamName: team2Name });
     container.appendChild(team2Pod);
+
+  } else if (activeBookedMatch.formatKey === 'handicap' && p.length >= 3) {
+    // BATCH 15 ITEM 22: 1 VS 2 HANDICAP - two sides, the pair wins together
+    const pairName = (typeof window.ewfTeamName === 'function' && window.ewfTeamName(p[1], p[2])) || `${p[1].name.toUpperCase()} & ${p[2].name.toUpperCase()}`;
+    const mkPod = (members, label, colour, glow, corner, onPick) => {
+      const pod = document.createElement('div');
+      pod.style.cssText = `background: linear-gradient(135deg, ${colour}, rgba(5, 10, 25, 0.95)); border: 2px solid ${glow}; border-radius: 8px; padding: 14px; display: flex;
+        flex-direction: column; align-items: center; cursor: pointer; min-width: 220px; box-shadow: 0 0 20px ${glow}66;`;
+      pod.innerHTML = `
+        <div style="font-family:'Russo One', sans-serif; font-size:0.8rem; color:#ffd700; margin-bottom:8px;">★ ${corner} ★</div>
+        <div style="display:flex; gap:10px; margin-bottom:10px;">${members.map(m => `<img src="${m.image}" style="width:75px; height:75px; object-fit:cover; border-radius:4px; border:1.5px solid ${glow};" onerror="handleImgError(this, '${m.id}')">`).join('')}</div>
+        <div style="font-family:'Russo One', sans-serif; font-size:1.05rem; color:#fff; text-align:center;">${label}</div>
+        <div style="font-family:'Russo One', sans-serif; font-size:0.75rem; color:#ffd700; margin-top:6px;">TAP TO DECLARE ${members.length > 1 ? 'WINNERS' : 'WINNER'} ➔</div>`;
+      pod.onclick = onPick;
+      container.appendChild(pod);
+    };
+    mkPod([p[0]], p[0].name.toUpperCase(), 'rgba(100, 70, 0, 0.9)', '#ffd700', 'ON THEIR OWN',
+      () => window.declareMatchWinner({ isTagTeam: true, isHandicap: true, teamIndex: 1, winners: [p[0]], losers: [p[1], p[2]], teamName: p[0].name.toUpperCase() }));
+    mkPod([p[1], p[2]], pairName, 'rgba(100, 10, 20, 0.9)', '#e50914', 'THE PAIR',
+      () => window.declareMatchWinner({ isTagTeam: true, isHandicap: true, teamIndex: 2, winners: [p[1], p[2]], losers: [p[0]], teamName: pairName }));
 
   } else {
     p.forEach(w => {
@@ -4301,7 +4391,7 @@ window.triggerSlambulanceInterference = function() {
   const allWrestlers = typeof getUnlockedWrestlers === 'function' ? getUnlockedWrestlers().filter(w => typeof getInjuryRecord === 'function' && !getInjuryRecord(w.id)) : defaultWrestlers;
   const matchIds = (activeBookedMatch.participants || []).map(w => w.id);
   const availableAttackers = allWrestlers.filter(w => !matchIds.includes(w.id));
-  if (availableAttackers.length === 0) { alert("No outside superstars available!"); return; }
+  if (availableAttackers.length === 0) { alert("Nobody is free to run in right now!"); return; }
   const attacker = availableAttackers[Math.floor(Math.random() * availableAttackers.length)];
 
   if (typeof hideNameplate === 'function') hideNameplate();
@@ -4316,7 +4406,7 @@ window.triggerRandomInterference = function() {
   const allWrestlers = typeof getUnlockedWrestlers === 'function' ? getUnlockedWrestlers().filter(w => typeof getInjuryRecord === 'function' && !getInjuryRecord(w.id)) : defaultWrestlers;
   const matchIds = (activeBookedMatch.participants || []).map(w => w.id);
   const availableAttackers = allWrestlers.filter(w => !matchIds.includes(w.id));
-  if (availableAttackers.length === 0) { alert("No outside superstars available!"); return; }
+  if (availableAttackers.length === 0) { alert("Nobody is free to run in right now!"); return; }
   executeInterference(availableAttackers[Math.floor(Math.random() * availableAttackers.length)]);
 };
 
@@ -4326,7 +4416,7 @@ window.showChooseAttackerList = function() {
   const allWrestlers = typeof getUnlockedWrestlers === 'function' ? getUnlockedWrestlers().filter(w => typeof getInjuryRecord === 'function' && !getInjuryRecord(w.id)) : defaultWrestlers;
   const matchIds = (activeBookedMatch.participants || []).map(w => w.id);
   const availableAttackers = allWrestlers.filter(w => !matchIds.includes(w.id));
-  if (availableAttackers.length === 0) { alert("No outside superstars available!"); return; }
+  if (availableAttackers.length === 0) { alert("Nobody is free to run in right now!"); return; }
 
   if (container) {
     container.innerHTML = '';
@@ -4483,13 +4573,14 @@ window.declareMatchWinner = function(resultData) {
     const l2 = resultData.losers[1];
     primaryWinnerObj = w1;
     lastMatchLoser = l1;
+    const sideName = arr => arr.filter(Boolean).map(x => x.name.toUpperCase()).join(' & '); // BATCH 15: works for 1 vs 2 handicap too
 
     primaryWinnerImg = w1.image;
-    primaryWinnerName = `${w1.name.toUpperCase()} & ${w2.name.toUpperCase()}`;
-    winnerHeadline = `${w1.name.toUpperCase()} & ${w2.name.toUpperCase()} def. ${l1.name.toUpperCase()} & ${l2.name.toUpperCase()} by Pinfall / Decision`;
-    logText = `🤝 TAG MATCH: ${winnerHeadline} (${durationStr})`;
+    primaryWinnerName = sideName(resultData.winners);
+    winnerHeadline = `${sideName(resultData.winners)} def. ${sideName(resultData.losers)} by Pinfall / Decision`;
+    logText = `${resultData.isHandicap ? '⚖️ HANDICAP MATCH' : '🤝 TAG MATCH'}: ${winnerHeadline} (${durationStr})`;
 
-    if (activeBookedMatch.isTitleMatch && activeBookedMatch.titleCode === 'tag') {
+    if (activeBookedMatch.isTitleMatch && activeBookedMatch.titleCode === 'tag' && w2) {
       const holders = typeof getTitleHolders === 'function' ? getTitleHolders() : {};
       titleChangedHands = !([w1.id, w2.id].includes(holders.tag1) && [w1.id, w2.id].includes(holders.tag2));
       holders.tag1 = w1.id;
@@ -4913,15 +5004,12 @@ window.skipToMatchSummary = function() {
   const finalDefenseCount = (activeBookedMatch.isTitleMatch && typeof getTitleDefenseCount === 'function') ? getTitleDefenseCount(activeBookedMatch.titleCode) : 0;
   const loserNames = (s.losers && s.losers.length > 0) ? s.losers.map(l => l.name).join(' & ') : 'Opponents';
 
-  const isTag = activeBookedMatch && (activeBookedMatch.formatKey === 'tag');
+  const isTag = activeBookedMatch && (activeBookedMatch.formatKey === 'tag' || activeBookedMatch.formatKey === 'handicap');
   let winnersList = [s.winner];
   if (isTag && activeBookedMatch.participants) {
-    const parts = activeBookedMatch.participants;
-    if (s.winner.id === parts[0].id || s.winner.id === parts[1].id) {
-      winnersList = [parts[0], parts[1]];
-    } else {
-      winnersList = [parts[2], parts[3]];
-    }
+    const lids = (s.losers || []).map(l => l && l.id);
+    winnersList = activeBookedMatch.participants.filter(p => p && !lids.includes(p.id));
+    if (!winnersList.length) winnersList = [s.winner];
   }
 
   if (visualContainer) {
@@ -4932,6 +5020,7 @@ window.skipToMatchSummary = function() {
           <div class="tag-podium-amp">&</div>
           <img src="${winnersList[1].image}" class="tag-podium-photo" onerror="handleImgError(this, '${winnersList[1].id}')">
         </div>
+        ${(typeof window.ewfTeamName === 'function' && window.ewfTeamName(winnersList[0], winnersList[1])) ? `<div style="font-family:'Russo One', sans-serif; color:#ffd700; font-size:clamp(1rem, 2.4vw, 1.4rem); letter-spacing:1px;">${window.ewfTeamName(winnersList[0], winnersList[1])}</div>` : ''}
         <div style="font-family: 'Russo One', sans-serif; font-size: clamp(1.4rem, 3.5vw, 2.2rem); color: #ffffff; text-transform: uppercase; text-shadow: 0 4px 12px #000; margin-bottom: 2px;">
           ${winnersList[0].name.toUpperCase()} & ${winnersList[1].name.toUpperCase()}
         </div>
@@ -4958,7 +5047,7 @@ window.skipToMatchSummary = function() {
     beltImg.style.display = 'none';
   }
 
-  resultHeadline.innerText = `def. ${loserNames} by Pinfall / Decision`;
+  resultHeadline.innerText = `def. ${loserNames} by ${s.method || 'Pinfall / Decision'}`; // BATCH 15: pad / falls / cage set the method
 
   const careerHeader = activeBookedMatch.isCareerMatch ? 'LOSER LEAVES EWF: ' : '';
   let recapHTML = `
@@ -4974,10 +5063,42 @@ window.skipToMatchSummary = function() {
   if (s.interference) recapHTML += `<div style="color:#ff4444;">🚨 <strong>RINGSIDE INCIDENT:</strong> Ambush by ${s.interference.toUpperCase()}!</div>`;
   if (s.injuryInflicted) recapHTML += `<div style="color:#ff3333;">🚑 <strong>MEDICAL BULLETIN:</strong> ${s.injuryInflicted.victim.name.toUpperCase()} suffered ${s.injuryInflicted.severity.toUpperCase()} trauma (${s.injuryInflicted.matches} match shelf)!</div>`;
   if (s.feudStatus) recapHTML += `<div style="color:#ffd700;">🔥 <strong>FEUD UPDATE:</strong> ${s.feudStatus}</div>`;
+  if (s.padDrama) recapHTML += `<div style="color:#00e5ff;">🎹 <strong>MATCH DRAMA:</strong> ${s.padDrama}</div>`; // BATCH 15 ITEM 2
   if (activeBookedMatch.isCareerMatch) recapHTML += `<div style="color:#ff3333;">💀 <strong>CAREER OVER:</strong> ${loserNames} has been terminated from EWF!</div>`;
 
   recapBox.innerHTML = recapHTML;
   overlay.style.display = 'flex';
+};
+
+// BATCH 15 ITEM 18: record a decided-but-not-yet-logged bout (used when MITB is cashed in on the winner's celebration)
+window.ewfCommitBoutBeforeCashIn = function() {
+  const s = currentMatchSummary;
+  if (!isMatchPostScreenActive || !s || !s.winner || activeBookedMatch.__b15Committed) return false;
+  activeBookedMatch.__b15Committed = true;
+  try { if (window.EWFP) EWFP.onMatchResult(s, activeBookedMatch); } catch (e) {}
+  const savedLosers = Array.isArray(s.losers) ? [...s.losers] : [];
+  const loserNames = savedLosers.length ? savedLosers.map(l => l.name).join(' & ') : 'Opponents';
+  let winnerTeam = [s.winner];
+  if (['tag', 'handicap'].includes(activeBookedMatch.formatKey) && Array.isArray(activeBookedMatch.participants)) {
+    const lids = savedLosers.map(l => l && l.id);
+    const team = activeBookedMatch.participants.filter(p => p && !lids.includes(p.id));
+    if (team.length) winnerTeam = team;
+  }
+  const winnerName = winnerTeam.map(w => w.name.toUpperCase()).join(' & ');
+  const quality = s.rating || 0;
+  const timeTxt = s.matchTime ? ` (Time: ${s.matchTime})` : '';
+  if (typeof saveHistoryLog === 'function') saveHistoryLog(`🥊 ${winnerName} def. ${loserNames} [${s.matchType || 'Normal Match'}]${timeTxt}`, 'match', s.winner.id, quality);
+  const sess = window.activeShowSession;
+  if (sess && Array.isArray(sess.bouts)) {
+    const cur = sess.bouts[sess.currentBoutIdx];
+    if (cur && cur.status !== 'completed') {
+      Object.assign(cur, { winnerId: s.winner.id, winnerName, winnerObj: s.winner, winnerObjs: winnerTeam, titleWon: !!(s.titleName && s.titleWon), titleRetained: !!(s.titleName && !s.titleWon), loserName: loserNames, rating: quality, status: 'completed', matchTime: s.matchTime });
+      sess.cumulativeStars += quality;
+      sess.completedBouts++;
+      sess.currentBoutIdx++;
+    }
+  }
+  return true;
 };
 
 window.confirmAndLogMatchSummary = function() {
@@ -4988,15 +5109,22 @@ window.confirmAndLogMatchSummary = function() {
 
     const finalDefenseCount = (activeBookedMatch.isTitleMatch && typeof getTitleDefenseCount === 'function') ? getTitleDefenseCount(activeBookedMatch.titleCode) : 0;
     const savedLosers = Array.isArray(s.losers) ? [...s.losers] : [];
-    const loserNames = (savedLosers.length > 0) ? savedLosers.map(l => l.name).join(' & ') : 'Opponents';
+    let loserNames = (savedLosers.length > 0) ? savedLosers.map(l => l.name).join(' & ') : 'Opponents';
+    try { const ltn = savedLosers.length === 2 && typeof window.ewfTeamName === 'function' ? window.ewfTeamName(savedLosers[0], savedLosers[1]) : null; if (ltn) loserNames = `${ltn} (${loserNames})`; } catch (e) {}
     // BATCH 11 ITEM 4: tag team winners are both partners, not just the first one
     let winnerTeam = s.winner ? [s.winner] : [];
-    if (s.winner && activeBookedMatch && activeBookedMatch.formatKey === 'tag' && Array.isArray(activeBookedMatch.participants)) {
+    if (s.winner && activeBookedMatch && ['tag', 'handicap'].includes(activeBookedMatch.formatKey) && Array.isArray(activeBookedMatch.participants)) {
       const loserIdsT = savedLosers.map(l => l && l.id);
       const team = activeBookedMatch.participants.filter(p => p && !loserIdsT.includes(p.id));
       if (team.length === 2) winnerTeam = team.some(p => p.id === s.winner.id) ? [s.winner, team.find(p => p.id !== s.winner.id)] : team;
+      else if (team.length === 1) winnerTeam = team;
     }
-    const winnerName = winnerTeam.length ? winnerTeam.map(w => w.name.toUpperCase()).join(' & ') : 'A SUPERSTAR';
+    let winnerName = winnerTeam.length ? winnerTeam.map(w => w.name.toUpperCase()).join(' & ') : 'A SUPERSTAR';
+    // BATCH 15 ITEM 12: team names in the history
+    try {
+      const tn = winnerTeam.length === 2 && typeof window.ewfTeamName === 'function' ? window.ewfTeamName(winnerTeam[0], winnerTeam[1]) : null;
+      if (tn) winnerName = `${tn} (${winnerName})`;
+    } catch (e) {}
     const winnerId = s.winner ? s.winner.id : null;
     const matchDurationText = s.matchTime ? ` (Time: ${s.matchTime})` : '';
     const matchQuality = s.rating || 0;
@@ -5020,7 +5148,7 @@ window.confirmAndLogMatchSummary = function() {
     const refTag = s.referee ? ` (Ref: ${s.referee})` : '';
     const careerHeader = activeBookedMatch.isCareerMatch ? 'LOSER LEAVES EWF: ' : '';
     const stipulation = s.matchType || 'Normal Match';
-    if (typeof saveHistoryLog === 'function') saveHistoryLog(`🥊 ${winnerName} def. ${loserNames} [${careerHeader}${stipulation}]${refTag}${matchDurationText}`, 'match', winnerId, matchQuality);
+    if (typeof saveHistoryLog === 'function') saveHistoryLog(`🥊 ${winnerName} def. ${loserNames}${s.method ? ' by ' + s.method : ''} [${careerHeader}${stipulation}]${refTag}${matchDurationText}`, 'match', winnerId, matchQuality);
 
     // Clear 8-loss redemption seen flag if the winner snapped their slump
     if (winnerId) {
@@ -5462,7 +5590,7 @@ function triggerShowFinaleCelebration() {
 
   if (avgNum >= 4.5) {
     grade = 'A+';
-    desc = 'LEGENDARY SUPER-CARD! Promoters around the world are applauding Ellis’s masterpiece.';
+    desc = 'LEGENDARY SUPER-CARD! Promoters around the world are applauding your masterpiece, GM!';
     tierColor = '#00e5ff';
     tierGlow = 'rgba(0, 229, 255, 0.55)';
   } else if (avgNum >= 3.8) {

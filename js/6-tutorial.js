@@ -32,7 +32,7 @@
         transition: all 0.35s ease; animation: ewfTutPulse 1.6s infinite; }
       .ewf-tut-dim { position: fixed; inset: 0; z-index: 2147483600; background: rgba(0,0,0,0.78); }
       @keyframes ewfTutPulse { 0%,100% { box-shadow: 0 0 0 9999px rgba(0,0,0,0.78), 0 0 18px #ffd700; } 50% { box-shadow: 0 0 0 9999px rgba(0,0,0,0.78), 0 0 38px #ffd700; } }
-      .ewf-tut-bubble { position: fixed; z-index: 2147483647; max-width: 460px; width: calc(100vw - 40px);
+      .ewf-tut-bubble { position: fixed; z-index: 2147483647; max-width: 460px; width: calc(100vw - 40px); box-sizing: border-box;
         background: linear-gradient(160deg, #15151f, #08080c); border: 2px solid #ffd700; border-radius: 6px;
         box-shadow: 0 0 30px rgba(255,215,0,0.45); color: #fff; padding: 14px 16px; display: flex; gap: 12px;
         font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -45,7 +45,7 @@
       .ewf-tut-skip { background: none; border: none; color: #999; font-size: 0.8rem; text-decoration: underline; cursor: pointer; }
       .ewf-tut-step { color: #888; font-size: 0.7rem; font-family: 'Russo One', sans-serif; }
       .ewf-tut-tip { top: 16px; left: 50%; transform: translateX(-50%); }
-      .ewf-tut-tip.in-scene { top: 96px; left: auto; right: 16px; transform: none; max-width: 400px; }
+      .ewf-tut-tip.in-scene { top: 96px; left: auto; right: 16px; transform: none; max-width: min(400px, calc(100vw - 32px)); width: min(400px, calc(100vw - 32px)); }
       #ewfBroadcastIntro { position: fixed; inset: 0; z-index: 2147483500; display: flex; flex-direction: column; align-items: center;
         justify-content: center; padding: 24px; box-sizing: border-box; text-align: center;
         background: linear-gradient(rgba(5,5,10,0.55), rgba(5,5,10,0.85)), url('commentary_desk_bg.png') center/cover no-repeat, #000; }
@@ -138,6 +138,16 @@
 
   /* ---------- 1. Meet Your Broadcast Team ---------- */
   function openBroadcastIntro() {
+    // BATCH 15 ITEM 14: the commentator pack walk downs (js/11)
+    if (typeof window.ewfStartWalkDowns === 'function') {
+      try { if (typeof stopBGMForAction === 'function') stopBGMForAction(); } catch (e) {}
+      window.ewfStartWalkDowns(false, () => {
+        patchState({ broadcastIntroDone: true });
+        if (typeof resumeBGM === 'function') resumeBGM();
+        setTimeout(startTour, 400);
+      });
+      return;
+    }
     ensureStyles();
     let ov = document.getElementById('ewfBroadcastIntro');
     if (!ov) {

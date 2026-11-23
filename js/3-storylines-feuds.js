@@ -128,10 +128,6 @@ function processSlambulanceCasualty(wrestlerId) {
 }
 
 function clearInjury(wrestlerId) {
-  const target = getInjuries().find(i => i.id === wrestlerId);
-  if (target && target.severity === 'major') {
-    localStorage.setItem('ewf_pending_return_ambush', wrestlerId);
-  }
   let injuries = getInjuries().filter(i => i.id !== wrestlerId);
   saveInjuries(injuries);
   if (typeof renderGrid === 'function') renderGrid();
@@ -150,9 +146,7 @@ function tickDownInjuriesAfterMatch() {
       inj.remaining -= 1;
     }
 
-    if (inj.severity === 'major' && inj.remaining === 2) {
-      localStorage.setItem('ewf_pending_return_ambush', inj.id);
-    }
+    // BATCH 15 ITEM 27: the old shock return is replaced by the injury revenge interference (js/11)
 
     if (inj.remaining <= 0) {
       const w = allWrestlers.find(item => item.id === inj.id);
@@ -703,7 +697,7 @@ function promptResetUniverse() {
   try {
     const keysToRemove = [
       'championship_holders', 'championship_defenses', 'custom_alliances', 'ewf_rivalries',
-      'mitb_holder', 'kotr_holder', 'ewf_kotr_winner_id', 'ewf_injuries', 'ewf_pending_return_ambush',
+      'mitb_holder', 'kotr_holder', 'ewf_kotr_winner_id', 'ewf_injuries', 'ewf_pending_return_ambush', 'ewf_injury_attackers', 'ewf_legends_reunited', 'ewf_walkdown_xp',
       'kotr_ic_mandatory', 'rumble_whc_mandatory', 'main_event_history', 'ewf_show_history', 'ewf_milestones',
       'ewf_hof_inductees', 'ewf_gm_profile', 'ewf_unlocked_vault_ids', 'ewf_vault_banished',
       'ewf_ice_overrides', 'ewf_promo_plays', 'ewf_last_career_contract_match',
@@ -912,7 +906,7 @@ function logPromoPlay(wrestlerId) {
    -------------------------------------------------------------------------- */
 const EWF_BACKUP_KEYS = [
   'championship_holders', 'championship_defenses', 'custom_alliances', 'ewf_rivalries',
-  'mitb_holder', 'kotr_holder', 'ewf_kotr_winner_id', 'ewf_injuries', 'ewf_pending_return_ambush',
+  'mitb_holder', 'kotr_holder', 'ewf_kotr_winner_id', 'ewf_injuries', 'ewf_pending_return_ambush', 'ewf_injury_attackers', 'ewf_legends_reunited', 'ewf_walkdown_xp',
   'kotr_ic_mandatory', 'rumble_whc_mandatory', 'main_event_history', 'ewf_show_history', 'ewf_milestones',
   'ewf_hof_inductees', 'ewf_gm_profile', 'ewf_unlocked_vault_ids', 'custom_wrestlers',
   'ewf_ice_overrides', 'ewf_promo_plays', 'ewf_last_career_contract_match',
@@ -1166,7 +1160,7 @@ function renderFeudsListUI() {
     const heatIcons = r.heat === 1 ? '🔥 Simmering' : (r.heat === 2 ? '🔥🔥 Boiling' : '💀 BLOOD FEUD');
     const isBloodFeud = r.heat === 3;
     const cardClass = isBloodFeud ? 'feud-card blood-feud' : 'feud-card';
-    let blowoffBtn = isBloodFeud ? `<button class="action-btn btn-red" style="padding:4px 8px; font-size:0.65rem;" onclick="bookBloodFeudBlowoff('${r.id}')">💀 BOOK BLOWOFF ➔</button>` : '';
+    let blowoffBtn = isBloodFeud ? `<button class="action-btn btn-red" style="padding:4px 8px; font-size:0.65rem;" onclick="bookBloodFeudBlowoff('${r.id}')">💀 BOOK THE FINAL SHOWDOWN ➔</button>` : '';
 
     return `
       <div class="${cardClass}">
@@ -1187,7 +1181,7 @@ function igniteManualFeud() {
   const a = document.getElementById('newFeudASelect').value;
   const b = document.getElementById('newFeudBSelect').value;
   const heat = parseInt(document.getElementById('newFeudHeatSelect').value, 10);
-  if (!a || !b || a === b) { alert("Select two different superstars!"); return; }
+  if (!a || !b || a === b) { alert("Pick two different superstars!"); return; }
   addOrUpdateRivalry(a, b, "Manual Roster Feud", heat);
   renderFeudsListUI();
 }
@@ -1490,9 +1484,9 @@ window.executeCareerContractSanction = function() {
   localStorage.setItem('ewf_scheduled_story_match', JSON.stringify(scheduledMatch));
 
   if (typeof saveHistoryLog === 'function') {
-    saveHistoryLog(`📜 CAREER CONTRACT RATIFIED: ${wrestlerA.name.toUpperCase()} vs ${wrestlerB.name.toUpperCase()} Sanctioned for Next Broadcast!`, 'feud');
+    saveHistoryLog(`📜 CAREER CONTRACT RATIFIED: ${wrestlerA.name.toUpperCase()} vs ${wrestlerB.name.toUpperCase()} booked for the next show!`, 'feud');
   }
-  logShowFalloutEvent('signing', `✍️ CONTRACT RATIFIED: ${wrestlerA.name.toUpperCase()} vs ${wrestlerB.name.toUpperCase()} (Loser Leaves EWF) sanctioned!`);
+  logShowFalloutEvent('signing', `✍️ CONTRACT RATIFIED: ${wrestlerA.name.toUpperCase()} vs ${wrestlerB.name.toUpperCase()} (Loser Leaves EWF) booked for the next show!`);
 
   setTimeout(() => {
     const modal = document.getElementById('careerContractCutsceneModal');
@@ -1535,7 +1529,7 @@ window.executeCareerContractRefuse = function() {
   const modal = document.getElementById('careerContractCutsceneModal');
   if (modal) modal.style.display = 'none';
 
-  alert(`❌ CONTRACT REFUSED!\n\n${coward.name.toUpperCase()} balked at putting their career on the line! Their momentum has collapsed to ❄️ ICE COLD, and the feud simmers back down to Tier 1.`);
+  alert(`❌ CONTRACT REFUSED!\n\n${coward.name.toUpperCase()} balked at putting their career on the line! Their momentum has collapsed to ❄️ ICE COLD, and the feud calms down to a simmer.`);
   if (typeof renderGrid === 'function') renderGrid();
 };
 
@@ -1549,7 +1543,7 @@ function checkBloodFeudActivation(feud) {
   window.activeStagedFeud.wrestlerA = wA;
   window.activeStagedFeud.wrestlerB = wB;
 
-  logShowFalloutEvent('feud', `💀 BLOOD FEUD ERUPTED: ${wA.name.toUpperCase()} vs ${wB.name.toUpperCase()} reached maximum Tier 3 volatility!`);
+  logShowFalloutEvent('feud', `💀 BLOOD FEUD ERUPTED: ${wA.name.toUpperCase()} vs ${wB.name.toUpperCase()} can't stand each other any more!`);
 
   const showModal = () => {
     const modal = document.getElementById('bloodFeudAlertModal');
@@ -1567,10 +1561,12 @@ function checkBloodFeudActivation(feud) {
     }
   };
 
+  // BATCH 15 ITEM 9: wait until storylines, cutscenes and unlocks have finished
+  const whenFree15 = window.ewfWhenScreenFree || (f => f());
   if (window.enqueuePostMatchEvent && window.isMatchPostScreenActive) {
-    window.enqueuePostMatchEvent(showModal);
+    window.enqueuePostMatchEvent(() => whenFree15(showModal));
   } else {
-    showModal();
+    whenFree15(showModal);
   }
 }
 
@@ -1657,7 +1653,7 @@ function openBloodFeudShowdown(wrestlerA, wrestlerB, feudObj = null) {
 
     buttons[1].className = "action-btn btn-red";
     buttons[1].style.cssText = "box-shadow: 0 0 20px #ff0000; font-size: 0.95rem; font-weight: bold; flex: 1 1 220px;";
-    buttons[1].innerHTML = "🩸 FIGHT IN BLOWOFF MATCH ➔";
+    buttons[1].innerHTML = "🩸 FIGHT IT OUT ➔";
   }
 
   if (leftName) leftName.innerText = wrestlerA.name.toUpperCase();
@@ -1673,7 +1669,7 @@ function openBloodFeudShowdown(wrestlerA, wrestlerB, feudObj = null) {
   }
 
   if (desc) {
-    desc.innerHTML = `The animosity between <strong>${wrestlerA.name}</strong> and <strong>${wrestlerB.name}</strong> has reached maximum volatility (H2H Encounters: ${h2h.count}). Concluding this rivalry awards <strong>Grudge Settler (+250 XP)</strong>.`;
+    desc.innerHTML = `<strong>${wrestlerA.name}</strong> and <strong>${wrestlerB.name}</strong> have fought ${h2h.count} times and it's still not settled! Finish it once and for all to earn <strong>Grudge Settler (+250 XP)</strong>.`;
   }
 
   overlay.style.setProperty('z-index', '2147483646', 'important');
@@ -1711,7 +1707,7 @@ window.sanctionBloodFeudForNextBroadcast = function() {
   localStorage.setItem('ewf_scheduled_story_match', JSON.stringify(scheduledMatch));
 
   if (typeof saveHistoryLog === 'function') {
-    saveHistoryLog(`📋 BLOOD FEUD SANCTIONED: ${wrestlerA.name.toUpperCase()} vs ${wrestlerB.name.toUpperCase()} [${stip.toUpperCase()}] locked in for the Next Broadcast!`, 'feud');
+    saveHistoryLog(`📋 BLOOD FEUD BOOKED: ${wrestlerA.name.toUpperCase()} vs ${wrestlerB.name.toUpperCase()} [${stip.toUpperCase()}] locked in for the Next Broadcast!`, 'feud');
   }
 
   closeBloodFeudOverlay();
@@ -2171,7 +2167,7 @@ window.executeBoardroomStripTitle = function(champId, titleCode, titleName) {
 window.executeBoardroomGrantGrace = function(champId) {
   const modal = document.getElementById('boardroomDecreeCutsceneModal');
   if (modal) modal.style.display = 'none';
-  alert("⏳ GRACE PERIOD GRANTED: Champion retains gold for 2 additional shows.");
+  alert("⏳ The champion keeps the belt for 2 more shows!");
 };
 
 // --- CUTSCENE 4: MIDNIGHT SYNDICATE SUMMIT ---
@@ -2360,7 +2356,8 @@ window.checkSpecialAngleTriggers = function() {
     const isInjured = id => !!getInjuryRecord(id);
 
     // 🚑 HOSPITAL ESCAPE: a major injury (2+ matches left) with an active rival who's fit. 1 in 4.
-    const majors = getInjuries().filter(i => i && i.severity === 'major' && (i.remaining || 0) >= 2 && inRoster(i.id));
+    // BATCH 15 ITEM 27: the hospital escape now only happens as part of an injury revenge interference
+    const majors = [];
     for (const inj of majors) {
       const riv = getRivalries().find(r => r && (r.w1 === inj.id || r.w2 === inj.id));
       if (!riv) continue;
@@ -3017,6 +3014,21 @@ const storylines = [
   { id: 79, image: "story_79.png", text: "BLUDGEONED BY THE CONTRACT! {Superstar A} SMASHED THE CORNER OF THE HEAVY STEEL BRIEFCASE STRAIGHT INTO {Superstar B}'S TEMPLE, HANDING OVER THE CONTRACT AS THE BELL RANG!", type: "heist_demand", matchMatch: "No Disqualification", formatKey: "1v1", formatCount: 2, logText: "💼 BRUTAL CASH-IN: {Superstar A} clocked {Superstar B} with the briefcase to trigger a title bout!" }
 ];
 
+// BATCH 15 ITEM 8: storylines about "Superstar B's championship" need B to actually hold a belt,
+// and a storyline title match is for the belt B (or A) really holds, not always the World title.
+const EWF_CHAMP_B_STORIES = [2, 44, 62];
+function ewfBeltOf(id) {
+  if (!id) return null;
+  const h = (typeof getTitleHolders === 'function' ? getTitleHolders() : {}) || {};
+  const info = { whc: ['World Heavyweight Championship', 'whc.png'], ic: ['Intercontinental Championship', 'ic_title.png'], hardcore: ['Hardcore Championship', 'hardcore.png'] };
+  for (const code of ['whc', 'ic', 'hardcore']) if (h[code] === id) return { code, name: info[code][0], img: info[code][1] };
+  return null;
+}
+function ewfStoryTitleFor(wA, wB) {
+  return ewfBeltOf(wB && wB.id) || ewfBeltOf(wA && wA.id) || { code: 'whc', name: 'World Heavyweight Championship', img: 'whc.png' };
+}
+window.ewfBeltOf = ewfBeltOf;
+
 function openStorylineModal(forcedA = null, forcedB = null, isBreakingNews = false) {
   if (!forcedA && typeof ensureRosterReady === 'function' && !ensureRosterReady(2)) return; // BATCH 7 ITEM 14
   if (typeof turnOffOtherModes === 'function') turnOffOtherModes('');
@@ -3038,6 +3050,10 @@ function openStorylineModal(forcedA = null, forcedB = null, isBreakingNews = fal
     }
 
     if (story.type === 'injury_feud' && gmLevel < 3) return false;
+    if (EWF_CHAMP_B_STORIES.includes(story.id)) {
+      if (forcedA && forcedB) { if (!ewfBeltOf(forcedA.id) && !ewfBeltOf(forcedB.id)) return false; }
+      else if (!allWrestlers.some(w => ewfBeltOf(w.id))) return false;
+    }
     if (story.matchMatch && typeof isMatchTypeLocked === 'function' && isMatchTypeLocked(story.matchMatch).locked) return false;
     
     if (story.type === 'alliance' || story.type === 'alliance_only') {
@@ -3138,6 +3154,14 @@ function openStorylineModal(forcedA = null, forcedB = null, isBreakingNews = fal
   if (window.EWFP && typeof EWFP.castStory === 'function') {
     const cast = EWFP.castStory(activeStoryline, activeStoryWrestlerA, activeStoryWrestlerB, !!(forcedA && forcedB), allWrestlers);
     if (cast && cast[0] && cast[1] && cast[0].id !== cast[1].id) { activeStoryWrestlerA = cast[0]; activeStoryWrestlerB = cast[1]; }
+  }
+  if (EWF_CHAMP_B_STORIES.includes(activeStoryline.id) && !ewfBeltOf(activeStoryWrestlerB && activeStoryWrestlerB.id)) {
+    if (ewfBeltOf(activeStoryWrestlerA && activeStoryWrestlerA.id)) {
+      const t = activeStoryWrestlerA; activeStoryWrestlerA = activeStoryWrestlerB; activeStoryWrestlerB = t;
+    } else {
+      const champs = allWrestlers.filter(w => ewfBeltOf(w.id) && (!activeStoryWrestlerA || w.id !== activeStoryWrestlerA.id));
+      if (champs.length) activeStoryWrestlerB = champs[Math.floor(Math.random() * champs.length)];
+    }
   }
 
   setElDisplay('storylineModal', 'flex');
@@ -3358,7 +3382,7 @@ function proceedToStoryScreen2() {
     bookBtn.innerText = '⚔️ FIGHT RIGHT NOW ➔';
     showSanctionOption();
   } else if (activeStoryline.type === 'heist_demand') {
-    banner.innerText = `💼 MITB CASH-IN SANCTIONED: TITLE ON THE LINE!`;
+    banner.innerText = `💼 MITB CASH-IN: IT'S ON!`;
     banner.style.display = 'block';
     bookBtn.style.display = 'block';
     bookBtn.innerText = '⚔️ FIGHT RIGHT NOW ➔';
@@ -3412,13 +3436,13 @@ function sanctionStorylineForNextBroadcast() {
     matchType: matchType,
     formatKey: "1v1",
     isTitleMatch: isTitle,
-    titleCode: isTitle ? "whc" : null,
-    titleName: isTitle ? "World Heavyweight Championship" : null,
-    titleImg: isTitle ? "whc.png" : null,
+    titleCode: isTitle ? ewfStoryTitleFor(wA, wB).code : null,
+    titleName: isTitle ? ewfStoryTitleFor(wA, wB).name : null,
+    titleImg: isTitle ? ewfStoryTitleFor(wA, wB).img : null,
     isCareerMatch: false,
     storyType: story.type,
     storyId: story.id,
-    originText: story.logText ? story.logText.replace(/{Superstar A}/g, wA.name).replace(/{Superstar B}/g, wB.name) : "Sanctioned Storyline Bout"
+    originText: story.logText ? story.logText.replace(/{Superstar A}/g, wA.name).replace(/{Superstar B}/g, wB.name) : "Storyline match"
   };
 
   localStorage.setItem('ewf_scheduled_story_match', JSON.stringify(scheduledMatch));
@@ -3449,7 +3473,7 @@ function launchStorylineMatch() {
       if (others.length >= 2) ps = [wA, others[0], wB, others[1]];
     }
     setElDisplay('storylineModal', 'none');
-    if (window.queueCutsceneBoutIntoShow({ participants: ps, matchType: story.matchMatch || 'Normal Match', formatKey: (fmt === 'tag' && ps.length === 4) ? 'tag' : '1v1', isTitleMatch: isTitle, storyBypass: true, feudStake: '🎬 STORYLINE GRUDGE MATCH' })) return;
+    if (window.queueCutsceneBoutIntoShow({ participants: ps, matchType: story.matchMatch || 'Normal Match', formatKey: (fmt === 'tag' && ps.length === 4) ? 'tag' : '1v1', isTitleMatch: isTitle, titleCode: isTitle ? ewfStoryTitleFor(wA, wB).code : undefined, titleName: isTitle ? ewfStoryTitleFor(wA, wB).name : undefined, titleImg: isTitle ? ewfStoryTitleFor(wA, wB).img : undefined, storyBypass: true, feudStake: '🎬 STORYLINE GRUDGE MATCH' })) return;
   }
 
   closeStorylineModal();
@@ -3462,9 +3486,10 @@ function launchStorylineMatch() {
 
   if (story.isTitle || story.type === 'title_vacate' || story.type === 'heist_demand') {
     activeBookedMatch.isTitleMatch = true;
-    activeBookedMatch.titleCode = "whc";
-    activeBookedMatch.titleName = "World Heavyweight Championship";
-    activeBookedMatch.titleImg = "whc.png";
+    const belt15 = ewfStoryTitleFor(wA, wB);
+    activeBookedMatch.titleCode = belt15.code;
+    activeBookedMatch.titleName = belt15.name;
+    activeBookedMatch.titleImg = belt15.img;
     if (typeof updateTitleStakeBtnUI === 'function') updateTitleStakeBtnUI();
   }
 
@@ -3541,7 +3566,7 @@ function handleCardClick(wrestler) {
       if (typeof stopBGMForAction === 'function') stopBGMForAction();
       if (typeof loadAndPlayYouTube === 'function') loadAndPlayYouTube(selectedPromoUrl, false, true);
     } else {
-      alert(`No promo saved for ${wrestler.name} yet!\n\nAdd YouTube promo link(s) when creating custom wrestlers.`);
+      alert(`${wrestler.name} hasn't got a promo yet!`);
     }
   } else {
     currentPlayingWrestler = wrestler;

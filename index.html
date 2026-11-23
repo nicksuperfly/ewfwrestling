@@ -836,7 +836,7 @@
     .mitb-strobe-text { position: relative; z-index: 1; color: #ffffff; font-family: 'Russo One', sans-serif; font-size: clamp(2rem, 6vw, 4rem); text-transform: uppercase; text-shadow: 0 0 20px #000000, 0 0 10px #ff0000; letter-spacing: 2px; line-height: 1.3; animation: mitbStrobe 0.15s infinite; text-align: center; }
     .ambulance-strobe-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 220; flex-direction: column; align-items: center; justify-content: center; background: #000000; padding: 20px; }
     .ambulance-strobe-overlay::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; animation: ambulanceStrobe 0.2s infinite; pointer-events: none; z-index: 0; }
-    .ambush-banner { display: none; position: absolute; top: 25px; left: 50%; transform: translateX(-50%); background: linear-gradient(180deg, #d32f2f, #990000); border: 2px solid #ffffff; padding: 12px 24px; font-family: 'Russo One', sans-serif; font-size: clamp(1rem, 2.5vw, 1.4rem); color: #ffffff; text-transform: uppercase; text-shadow: 0 2px 8px #000; z-index: 250; box-shadow: 0 0 30px #ff0000; animation: popIn 0.5s ease-out forwards; white-space: nowrap; }
+    .ambush-banner { display: none; position: absolute; top: 25px; left: 0; right: 0; margin: 0 auto; background: linear-gradient(180deg, #d32f2f, #990000); border: 2px solid #ffffff; padding: 12px 24px; font-family: 'Russo One', sans-serif; font-size: clamp(1rem, 2.5vw, 1.4rem); color: #ffffff; text-transform: uppercase; text-shadow: 0 2px 8px #000; z-index: 250; box-shadow: 0 0 30px #ff0000; animation: popIn 0.5s ease-out forwards; white-space: normal; text-align: center; box-sizing: border-box; width: max-content; max-width: calc(100% - 30px); line-height: 1.25; cursor: pointer; }
     .rumble-holding-screen { display: none; position: absolute; font-family: 'Russo One', sans-serif; font-size: clamp(3rem, 10vw, 8rem); color: #ffffff; text-transform: uppercase; text-align: center; text-shadow: 0 8px 20px rgba(0, 0, 0, 0.9), 0 0 30px rgba(255, 0, 0, 0.8); width: 100%; height: 100%; top: 0; left: 0; z-index: 205; background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.8)), url('rumble_bg.png'); background-size: cover; background-position: center; align-items: center; justify-content: center; }
 
     .generator-title { font-family: 'Russo One', sans-serif; font-size: clamp(1.8rem, 4.5vw, 3.2rem); color: #ffffff; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 6px 16px rgba(0,0,0,0.9); }
@@ -926,7 +926,7 @@
     .story-entrant-card img { width: 70px; height: 70px; object-fit: cover; border: 2px solid #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.8); }
     .story-entrant-card.card-a img { border-color: #ff3333; box-shadow: 0 0 16px rgba(255, 51, 51, 0.95); }
     .story-entrant-card.card-b img { border-color: #0066ff; box-shadow: 0 0 16px rgba(0, 102, 255, 0.95); }
-    .story-entrant-card span { font-family: 'Russo One', sans-serif; font-size: 0.72rem; color: #ffffff; text-transform: uppercase; margin-top: 4px; max-width: 80px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .story-entrant-card span { font-family: 'Russo One', sans-serif; font-size: 0.72rem; color: #ffffff; text-transform: uppercase; margin-top: 4px; max-width: 110px; text-align: center; white-space: normal; line-height: 1.15;   }
 
     .universe-tabs { display: flex; gap: 6px; margin-bottom: 16px; width: 100%; }
     .universe-tab-btn { flex: 1; padding: 10px 6px; background: #22222a; border: 2px solid #555566; color: #bbbbcc; font-family: 'Russo One', sans-serif; font-size: 0.8rem; cursor: pointer; text-transform: uppercase; transition: all 0.2s; }
@@ -1943,7 +1943,7 @@
           💀 SETTLE RIVALRY & ARCHIVE SCORE
         </button>
         <button class="btn-feud-continue" onclick="proceedBloodFeudToMatch()">
-          🩸 FIGHT IN BLOWOFF MATCH ➔
+          🩸 FIGHT IT OUT ➔
         </button>
         <button class="btn-feud-continue" onclick="closeBloodFeudOverlay()">
           CANCEL
@@ -2692,7 +2692,7 @@
         <div style="font-family:'Russo One'; font-size:0.85rem; color:#fff; margin-bottom:6px;">IGNITE NEW FEUD:</div>
         <label>Superstar A:</label><select id="newFeudASelect"></select>
         <label>Superstar B:</label><select id="newFeudBSelect"></select>
-        <label>Initial Heat Level:</label><select id="newFeudHeatSelect"><option value="1">🔥 Simmering (Level 1)</option><option value="2">🔥🔥 Boiling (Level 2)</option><option value="3">💀 Blood Feud (Level 3)</option></select>
+        <label>How hot is it?</label><select id="newFeudHeatSelect"><option value="1">🔥 Simmering</option><option value="2">🔥🔥 Boiling</option><option value="3">💀 Blood Feud</option></select>
         <button type="button" class="action-btn btn-red" style="margin-top: 12px; width: 100%;" onclick="igniteManualFeud()">Ignite Rivalry 💥</button>
       </div>
 
@@ -2759,6 +2759,7 @@
           <div class="trophy-pedestal-card is-locked" id="trophyCard6" onclick="showTrophyDetail(6)"><img src="trophy_6.png" class="trophy-icon-img" alt="Giant Slayer" onerror="this.src='kotr_crown.png'"><div class="trophy-title-text">SLAYER OF GIANTS</div><div class="trophy-progress-label" id="trophyProg6">LOCKED</div></div>
           <div class="trophy-pedestal-card is-locked" id="trophyCard7" onclick="showTrophyDetail(7)"><img src="trophy_7.png" class="trophy-icon-img" alt="Tag Kings" onerror="this.src='whc.png'"><div class="trophy-title-text">TAG TEAM KINGS</div><div class="trophy-progress-label" id="trophyProg7">0 / 5 Defenses</div></div>
           <div class="trophy-pedestal-card is-locked" id="trophyCard8" onclick="showTrophyDetail(8)"><img src="trophy_8.png" class="trophy-icon-img" alt="Fan Fav" onerror="this.src='logo_notext.png'"><div class="trophy-title-text">FAN FAVOURITE</div><div class="trophy-progress-label" id="trophyProg8">0 / 30 Plays</div></div>
+          <div class="trophy-pedestal-card is-locked" id="trophyCard9" onclick="showTrophyDetail(9)"><img src="trophy_9.png" class="trophy-icon-img" alt="Tag Historian" onerror="this.src='logo_notext.png'"><div class="trophy-title-text" id="trophyTitle9">???</div><div class="trophy-progress-label" id="trophyProg9">???</div></div>
         </div>
 
         <div class="hof-candidates-drawer">
@@ -2813,14 +2814,14 @@
       <h2 style="color: #ff3344; font-family: 'Russo One', sans-serif; font-size: 1.6rem; letter-spacing: 2px; text-shadow: 0 0 15px rgba(255, 51, 68, 0.9); margin-bottom: 6px;">BLOOD FEUD ACTIVATED!</h2>
       <div id="bloodFeudAlertNames" style="font-family: 'Russo One', sans-serif; font-size: 1.15rem; color: #ffffff; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 1px;"></div>
       <div style="font-size: 0.88rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 20px;">
-        This rivalry has reached maximum hatred (Tier 3). Unforgiving bad blood has boiled over. Do you want Ellis to settle this war right here, right now?
+        These two can't stand each other any more! The bad blood has boiled over. Settle it right here, right now, GM?
       </div>
       <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
         <button class="btn-feud-settle" id="bloodFeudAlertSettleBtn" onclick="confirmAlertSettleNow()" style="width: 100%; font-size: 1.05rem; padding: 14px;">
           ⚔️ SETTLE RIGHT HERE, RIGHT NOW ➔
         </button>
         <button class="btn-feud-continue" onclick="closeBloodFeudAlertModal()" style="width: 100%;">
-          DECIDE LATER (KEEP SIMMERING)
+          NOT YET (LET IT SIMMER)
         </button>
       </div>
     </div>
@@ -2949,7 +2950,7 @@
         <div class="bsf-celebrate-eyebrow">🎉 BROADCAST SIGNED OFF THE AIR 🎉</div>
         <h1 id="bsfCelebrateShowName" class="bsf-celebrate-title">WRESTLEMANIA</h1>
         <div id="bsfCelebrateGradeBadge" class="bsf-grade-badge">A+ (4.8 ★)</div>
-        <div id="bsfCelebrateGradeDesc" class="bsf-grade-desc">LEGENDARY SUPER-CARD! Promoters around the world are applauding Ellis's masterpiece.</div>
+        <div id="bsfCelebrateGradeDesc" class="bsf-grade-desc">LEGENDARY SUPER-CARD! Promoters around the world are applauding your masterpiece, GM!</div>
         
         <div id="bsfCelebrateScorecardList" class="bsf-scorecard-list"></div>
 
@@ -3010,5 +3011,6 @@
   <script src="js/8-create-show.js"></script>
   <script src="js/9-commissioner.js"></script>
   <script src="js/10-midi-pads.js"></script>
+  <script src="js/11-batch15.js"></script>
 </body>
 </html>
