@@ -45,6 +45,8 @@
           if (typeof renderGrid === 'function') renderGrid();
           bret('gift_' + gift.id, gift.id === 'gift-mitb'
             ? `<b>MONEY IN THE BANK</b> is open, GM! Set up the ladder and hang the briefcase. Whoever grabs it can <b>cash in</b> for a title shot ANY time they like!`
+            : gift.id === 'gift-hardcore'
+            ? `<b>HARDCORE MATCHES</b> are here, GM! No rules: grab the chairs, the tables, the bin... anything goes, anywhere in the arena!`
             : `The <b>SLAMBULANCE</b> has arrived! In a Slambulance match you win by getting your opponent <b>into the back</b> and shutting the doors. Nee-naw!`, 700);
         });
       }
@@ -54,10 +56,11 @@
       P()._blackout(() => {
         try {
           if (gift.id === 'gift-slambulance' && typeof playSlambulanceAudio === 'function') playSlambulanceAudio();
+          else if (gift.id === 'gift-hardcore') { try { const a = new Audio('table_crash.mp3'); a.volume = 0.9; a.play().catch(() => {}); } catch (e) {} }
           else if (typeof window.playMitbSirenAudio === 'function') { window.playMitbSirenAudio(); setTimeout(() => { try { window.stopMitbSirenAudio(); } catch (e) {} }, 3000); }
         } catch (e) {}
         done();
-      }, gift.id === 'gift-slambulance' ? '#ff1744' : '#ffd700');
+      }, gift.id === 'gift-slambulance' ? '#ff1744' : gift.id === 'gift-hardcore' ? '#b71c1c' : '#ffd700');
     } else done();
     log(`🎁 PRESENT UNLOCKED: ${gift.name.toUpperCase()} (a present from ${gift.from || window.EWF_GIFT_FROM || 'Nanny & Grandad'})!`, 'match');
   };
@@ -290,7 +293,7 @@
         cont(() => {
           log(`👑 STEPHANIE'S ORDERS: ${NM(o.target)} faces ${NM(o.pair[0])} & ${NM(o.pair[1])} in a handicap match!`, 'match');
           if (typeof window.queueCutsceneBoutIntoShow === 'function' && window.activeShowSession) {
-            window.queueCutsceneBoutIntoShow({ participants: [o.target, o.pair[0], o.pair[1]], formatKey: 'handicap', matchType: 'No Disqualification', storyBypass: true, feudStake: "👑 STEPHANIE'S ORDERS: 1 VS 2 HANDICAP MATCH" }); // BATCH 15 ITEM 22: a real handicap match
+            window.queueCutsceneBoutIntoShow({ participants: [o.target, o.pair[0], o.pair[1]], formatKey: 'handicap', matchType: 'Hardcore Match', storyBypass: true, feudStake: "👑 STEPHANIE'S ORDERS: 1 VS 2 HANDICAP MATCH" }); // BATCH 15 ITEM 22: a real handicap match
           } else done();
         }));
     } else if (o.type === 'teamup') {

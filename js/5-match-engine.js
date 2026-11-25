@@ -123,7 +123,7 @@ window.openBookShowModal = function() {
     else if (key === 'rumble') tierText = '🥊 ROYAL RUMBLE (2 BOUTS)';
     else if (key === 'badblood') tierText = '💢 GRUDGE NIGHT (3 BOUTS)';
     else if (key === 'judgmentday') tierText = '⚖️ GOOD VS BAD (3 BOUTS)';
-    else if (key === 'nomercy') tierText = '🚫 NO DQ NIGHT (3 BOUTS)';
+    else if (key === 'nomercy') tierText = '🩸 HARDCORE NIGHT (3 BOUTS)';
     else tierText = '🌐 BIG EVENT (3 BOUTS)';
 
     const showLabel = (typeof getShowName === 'function') ? getShowName(key) : key;
@@ -229,53 +229,32 @@ window.generateShowCard = function(showKey) {
     } else if (isBig) {
       if (roll < 0.30) return Math.random() < 0.5 ? 'TLC Match' : 'Ladder Match';
       if (roll < 0.60) return Math.random() < 0.5 ? 'Ambulance Match' : 'Last Man Standing';
-      if (roll < 0.85) return Math.random() < 0.5 ? 'No Disqualification' : 'Falls Count Anywhere';
+      if (roll < 0.85) return Math.random() < 0.5 ? 'Hardcore Match' : 'Falls Count Anywhere';
       return '2 out of 3 Falls';
     } else {
       if (roll < 0.30) return 'Normal Match';
-      if (roll < 0.55) return 'No Disqualification';
+      if (roll < 0.55) return 'Hardcore Match';
       if (roll < 0.75) return 'Falls Count Anywhere';
       return 'Tables Match';
     }
   };
 
-  let scheduledStory = null;
+  // BATCH 16 ITEM 18: a LIST of matches booked for the next show (used to be one slot that each new
+  // booking overwrote). The biggest booking headlines, the rest fill the card, extras wait for the
+  // show after, and a booking with a hurt superstar waits until they're fit.
   let reservedStoryBout = null;
-  try {
-    const raw = localStorage.getItem('ewf_scheduled_story_match');
-    if (raw) scheduledStory = JSON.parse(raw);
-  } catch(e){}
-
+  const reservedStoryBouts = [];
   // BATCH 7 ITEM 9: With fewer than 6 superstars, KOTR and the Rumble skip the opener, so keep any
   // scheduled storyline contract for the next show instead of using it up here.
   const skipOpener = (isKotr || isRumble) && activeW.length < 6;
-  if (skipOpener) scheduledStory = null;
-
-  if (scheduledStory && scheduledStory.w1 && scheduledStory.w2) {
-    const sw1 = activeW.find(w => w.id === scheduledStory.w1.id);
-    const sw2 = activeW.find(w => w.id === scheduledStory.w2.id);
-    if (sw1 && sw2) {
-      draftedIds.push(sw1.id, sw2.id);
-      reservedStoryBout = {
-        order: 'MAIN EVENT',
-        matchType: scheduledStory.matchType || 'Normal Match',
-        formatKey: scheduledStory.formatKey || '1v1',
-        participants: [sw1, sw2],
-        isTitleMatch: !!scheduledStory.isTitleMatch,
-        titleCode: scheduledStory.isTitleMatch ? (scheduledStory.titleCode || 'whc') : null,
-        titleName: scheduledStory.isTitleMatch ? (scheduledStory.titleName || 'World Heavyweight Championship') : null,
-        titleImg: scheduledStory.isTitleMatch ? (scheduledStory.titleImg || 'whc.png') : null,
-        isCareerMatch: !!scheduledStory.isCareerMatch,
-        feudStake: scheduledStory.feudStake || '📋 STORYLINE GRUDGE MATCH',
-        isSanctionedContract: true,
-        referee: null,
-        status: 'pending',
-        rating: 0
-      };
-      localStorage.removeItem('ewf_scheduled_story_match');
-    } else {
-      localStorage.removeItem('ewf_scheduled_story_match');
-    }
+  if (!skipOpener && typeof window.ewfTakeBookingsForShow === 'function') {
+    const maxTake = (isRumble || isKotr) ? 1 : (isMitb ? Math.max(0, actualMatchCount - 1) : actualMatchCount);
+    const taken = window.ewfTakeBookingsForShow(activeW, maxTake);
+    taken.forEach(t => {
+      t.participants.forEach(p => draftedIds.push(p.id));
+      reservedStoryBouts.push(t);
+    });
+    reservedStoryBout = reservedStoryBouts[0] || null;
   }
 
   let surplus = Math.max(0, activeW.length - (actualMatchCount * 2));
@@ -483,15 +462,15 @@ window.generateShowCard = function(showKey) {
       };
     }
 
-    if (reservedStoryBout) {
+    reservedStoryBouts.forEach(rb => {
       for (let s = actualMatchCount - 1; s >= 0; s--) {
         if (!slotArray[s]) {
-          reservedStoryBout.order = getOrderLabel(s);
-          slotArray[s] = reservedStoryBout;
+          rb.order = getOrderLabel(s);
+          slotArray[s] = rb;
           break;
         }
       }
-    }
+    });
 
     for (let i = actualMatchCount - 1; i >= 0; i--) {
       if (slotArray[i]) continue;
@@ -961,17 +940,19 @@ window.shuffleBout = function(idx) {
     else if (stipRoll > 0.85 && !isMatchTypeLocked('Tables Match').locked) newStip = 'Tables Match';
     else if (stipRoll > 0.80) newStip = 'Submission Match';
   } else if (isBig) {
-    if (stipRoll > 0.80 && !isMatchTypeLocked('TLC Match').locked) newStip = 'TLC Match';
+    // BATCH 16 ITEM 17: this reroll takes the title off, so no TLC or Ladder (title only)
+    if (stipRoll > 0.80 && !isMatchTypeLocked('Tables Match').locked) newStip = 'Tables Match';
     else if (stipRoll > 0.60 && !isMatchTypeLocked('Ambulance Match').locked) newStip = 'Ambulance Match';
     else if (stipRoll > 0.50 && !isMatchTypeLocked('Steel Cage Match').locked) newStip = 'Steel Cage Match'; // BATCH 15 ITEM 24
     else if (stipRoll > 0.40) newStip = 'Last Man Standing';
-    else if (stipRoll > 0.20) newStip = 'Ladder Match';
+    else if (stipRoll > 0.20) newStip = 'Hardcore Match';
     else newStip = '2 out of 3 Falls';
   } else {
     if (stipRoll > 0.70) newStip = 'Falls Count Anywhere';
-    else if (stipRoll > 0.40) newStip = 'No Disqualification';
+    else if (stipRoll > 0.40) newStip = 'Hardcore Match';
     else if (stipRoll > 0.20 && !isMatchTypeLocked('Tables Match').locked) newStip = 'Tables Match';
   }
+  if (typeof window.ewfSafeMatchType === 'function') newStip = window.ewfSafeMatchType(newStip); // BATCH 16 ITEM 25
   
   const wasTitleMatch = !!bout.isTitleMatch;
   const origMatchType = bout.matchType;
@@ -1560,7 +1541,7 @@ window.navGoToStep = navGoToStep;
    Money in the Bank and the Slambulance unlock with code cards. */
 window.EWF_UNLOCK_LEVELS = { tables: 4, undertaker: 5, tlc: 6, kotr: 7, rumble: 8, kane: 9, badblood: 10, cage: 11, judgmentday: 12, stephanie: 13, nomercy: 14, sethrollins: 15, custom: 16 };
 window.ewfHasGift = function(id) { try { return (typeof getUnlockedVaultIds === 'function' ? getUnlockedVaultIds() : []).includes(id); } catch (e) { return false; } };
-const EWF_GIFT_LOCKS = { mitb: { gift: 'gift-mitb', name: 'Money in the Bank' }, 'Ambulance Match': { gift: 'gift-slambulance', name: 'Slambulance Match' } };
+const EWF_GIFT_LOCKS = { mitb: { gift: 'gift-mitb', name: 'Money in the Bank' }, 'Ambulance Match': { gift: 'gift-slambulance', name: 'Slambulance Match' }, 'Hardcore Match': { gift: 'gift-hardcore', name: 'Hardcore Match' } };
 function ewfLevelLock(key, name) {
   const lvl = (typeof getGMLevel === 'function') ? getGMLevel() : 1;
   const req = window.EWF_UNLOCK_LEVELS[key];
@@ -1595,6 +1576,7 @@ function isMatchTypeLocked(matchType) {
   if (matchType === 'Tables Match') return ewfLevelLock('tables', "Tables Match");
   if (matchType === 'Steel Cage Match') return ewfLevelLock('cage', "Steel Cage Match"); // BATCH 15 ITEM 24
   if (matchType === 'Ambulance Match') return ewfGiftLock('Ambulance Match');
+  if (matchType === 'Hardcore Match') return ewfGiftLock('Hardcore Match'); // BATCH 16 ITEM 25 (code XTREME)
   return { locked: false };
 }
 
@@ -1755,17 +1737,18 @@ window.confirmFormatCarouselChoice = function() {
     closeVideoModal();
     if (typeof openKotrHub === 'function') openKotrHub();
   } else {
+    // BATCH 16 ITEM 14: Elimination Match only for Tag, Triple Threat and Fatal 4-Way
     if (selectedFormat === 'tag') {
-      activeMatchTypesList = [...tagMatchTypes];
+      activeMatchTypesList = [...tagMatchTypes, 'Elimination Match'];
       activeBookedMatch.formatCount = 4;
     } else if (selectedFormat === '1v1') {
       activeMatchTypesList = [...allMatchTypes];
       activeBookedMatch.formatCount = 2;
     } else if (selectedFormat === 'triple') {
-      activeMatchTypesList = [...allMatchTypes];
+      activeMatchTypesList = [...allMatchTypes, 'Elimination Match'];
       activeBookedMatch.formatCount = 3;
     } else if (selectedFormat === 'fatal') {
-      activeMatchTypesList = [...allMatchTypes];
+      activeMatchTypesList = [...allMatchTypes, 'Elimination Match'];
       activeBookedMatch.formatCount = 4;
     } else if (selectedFormat === 'handicap') { // BATCH 15 ITEM 22
       activeMatchTypesList = allMatchTypes.filter(t => !['Special Guest Referee', '2 out of 3 Falls'].includes(t));
@@ -1824,10 +1807,39 @@ window.confirmTypeCarouselChoice = function() {
 /* --------------------------------------------------------------------------
    4. TITLE STAKE VERIFICATION & STIPULATION SANCTIONING
    -------------------------------------------------------------------------- */
+// BATCH 16 ITEM 20: an ICE COLD challenger hasn't earned a shot at a belt someone else holds.
+// Earned shots still count (MITB cash-in, Rumble/KOTR title shots, #1 contender). The champion can
+// always defend, and an EMPTY belt is up for grabs for anyone.
+window.ewfIceColdBlocksTitle = function (ids, titleCode, extra) {
+  try {
+    if (!titleCode || titleCode === 'tag') return false;
+    if (extra && (extra.isCashIn || /Cash-In/i.test(extra.matchType || ''))) return false;
+    const h = typeof getTitleHolders === 'function' ? (getTitleHolders() || {}) : {};
+    const champ = h[titleCode];
+    if (!champ) return false;
+    const challengers = (ids || []).filter(id => id && id !== champ);
+    if (!challengers.length) return false;
+    const locks = typeof getMandatoryLocks === 'function' ? getMandatoryLocks() : {};
+    const contender = typeof getContenderTitleShotLocks === 'function' ? getContenderTitleShotLocks() : [];
+    const earned = id => contender.includes(id) || (titleCode === 'whc' && locks.rumbleWhc === id) || (titleCode === 'ic' && locks.kotrIc === id);
+    const ice = id => typeof getWrestlerMomentum === 'function' && getWrestlerMomentum(id).status === 'ice';
+    return challengers.every(id => ice(id) && !earned(id));
+  } catch (e) { return false; }
+};
+window.ewfIceColdName = function (ids, titleCode) {
+  try {
+    const h = getTitleHolders() || {};
+    const id = (ids || []).find(x => x && x !== h[titleCode]);
+    const w = getUnlockedWrestlers().find(x => x.id === id);
+    return w ? w.name : 'That superstar';
+  } catch (e) { return 'That superstar'; }
+};
+
 function checkTitleChallengerEligibility(titleCode, participants, champId) {
   if (!champId) return true;
   if (titleCode === 'tag') return true;
   if (activeMatchMode === 'mitb-cashin' || (activeBookedMatch.matchType && activeBookedMatch.matchType.includes('Cash-In'))) return true;
+  if (window.ewfIceColdBlocksTitle((participants || []).map(p => p && p.id), titleCode)) return false; // BATCH 16 ITEM 20
 
   const locks = typeof getMandatoryLocks === 'function' ? getMandatoryLocks() : {};
   const contenderLocks = typeof getContenderTitleShotLocks === 'function' ? getContenderTitleShotLocks() : [];
@@ -1912,7 +1924,10 @@ function renderTitleStakeModal() {
         btn.onclick = () => confirmTitleStake(title.code, title.name, title.img);
       } else if (champInMatch && !isSanctioned) {
         btn.className = 'action-btn'; btn.disabled = true; btn.style.opacity = '0.5'; btn.style.cursor = 'not-allowed';
-        btn.innerHTML = `<span>🔒 ${title.name}</span> <span style="font-size:0.68rem; color:#ff4444;">(WRESTLER HAS NOT EARNED RIGHT TO TITLE SHOT)</span>`;
+        const iceBlocked = window.ewfIceColdBlocksTitle(participantIds, title.code); // BATCH 16 ITEM 20
+        btn.innerHTML = iceBlocked
+          ? `<span>🔒 ${title.name}</span> <span style="font-size:0.68rem; color:#4fc3f7;">(❄️ ${window.ewfIceColdName(participantIds, title.code).toUpperCase()} IS ICE COLD. HE HASN'T EARNED A TITLE SHOT!)</span>`
+          : `<span>🔒 ${title.name}</span> <span style="font-size:0.68rem; color:#ff4444;">(WRESTLER HAS NOT EARNED RIGHT TO TITLE SHOT)</span>`;
       } else {
         btn.className = 'action-btn'; btn.disabled = true; btn.style.opacity = '0.4'; btn.style.cursor = 'not-allowed';
         btn.innerHTML = `<span>🔒 ${title.name}</span> <span style="font-size:0.7rem; color:#ff6666;">(HELD BY ${holder ? holder.name.toUpperCase() : 'CHAMP'})</span>`;
@@ -4689,7 +4704,7 @@ window.declareMatchWinner = function(resultData) {
 
   let hardcoreInjury = null;
   const currentStip = (activeBookedMatch.matchType || '').toLowerCase();
-  if (allowInjuries && (currentStip === 'tlc match' || currentStip === 'no disqualification') && lastMatchLoser) {
+  if (allowInjuries && (currentStip === 'tlc match' || currentStip === 'hardcore match' || currentStip === 'no disqualification') && lastMatchLoser) {
     if (Math.random() < 0.50) {
       const isMajor = Math.random() < 0.50;
       let injResult = { severity: isMajor ? 'major' : 'minor', matchesRemaining: isMajor ? 5 : 1 };
@@ -6394,7 +6409,24 @@ function initEwfApp() {
       'survivor_highlights_bg.png', 'kotr_highlights_bg.png', 'mitb_highlights_bg.png', 
       'backlash_highlights_bg.png', 'mania_highlights_bg.png', 'rumble_highlights_bg.png'
     ];
-    preloadImages.forEach(fileName => { const img = new Image(); img.src = fileName; });
+    // BATCH 16 ITEM 12: fetch these two at a time in the background, starting a few seconds after
+    // the app opens and pausing during live matches, instead of ~80 big pictures all at once
+    // (Chrome locked up once on the laptop straight after a reset while everything was loading).
+    const queue16 = [...new Set(preloadImages)];
+    let running16 = 0;
+    const next16 = () => {
+      try { if (isMatchInProgressLooping) return setTimeout(next16, 3000); } catch (e) {}
+      while (running16 < 2 && queue16.length) {
+        const fileName = queue16.shift();
+        running16++;
+        const img = new Image();
+        img.decoding = 'async';
+        const fin = () => { running16--; img.onload = img.onerror = null; setTimeout(next16, 150); };
+        img.onload = fin; img.onerror = fin;
+        img.src = fileName;
+      }
+    };
+    setTimeout(next16, 4000);
   } catch (e) {}
 }
 

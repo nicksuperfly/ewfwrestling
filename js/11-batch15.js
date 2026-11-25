@@ -247,6 +247,8 @@
     }
   }
   window.ewfAddFall = addFall;
+  // BATCH 16: shared with js/12 (elimination matches, tables wins, banner styles)
+  window.EWF15 = { matchState, banner, overlay, crownYourWinner, crownOptions, playSfx: (f, v) => playSfx(f, v), host: () => host(), drawFalls };
 
   function drawFalls() {
     const list = document.getElementById('qmWinnerSelectionList');
@@ -466,8 +468,23 @@
     if ([...document.querySelectorAll('[id$="CutsceneModal"]')].some(vis)) return true;
     const lo = document.getElementById('lightsOutOverlay');
     if (vis(lo)) return true;
+    // BATCH 16 ITEMS 6-7: also wait for videos (unlock reveals, entrances, promos), coronations,
+    // the Hall of Fame and the other big overlays. The live match itself lives in the video
+    // modal, so that only counts as busy when no match is looping.
+    if (window.ewfVideoPlaying && window.ewfVideoPlaying()) return true;
+    if (vis(document.getElementById('debutSkipIntroBtn'))) return true;
+    if (['hofCeremonyOverlay', 'kotrCoronationOverlay', 'mitbCoronationOverlay', 'rumbleCoronationOverlay',
+      'bloodFeudAlertModal', 'universeBulletinOverlay', 'contractSigningModal', 'ambulanceStrobeOverlay',
+      'mitbStrobeOverlay', 'stingerOverlay', 'beltEntranceOverlay', 'bookShowFinaleOverlay', 'ewfTease16', 'ewfStephMic16', 'ewfTrophy16']
+      .some(id => vis(document.getElementById(id)))) return true;
     return false;
   }
+  window.ewfVideoPlaying = function () {
+    const vm = document.getElementById('videoModal');
+    if (!vm || getComputedStyle(vm).display === 'none') return false;
+    try { if (isMatchInProgressLooping) return false; } catch (e) {}
+    return true;
+  };
   window.ewfScreenBusy = screenBusy;
   window.ewfWhenScreenFree = function (fn, maxMs) {
     const started = Date.now();
@@ -731,6 +748,13 @@
   const saveAttackers = m => { try { localStorage.setItem(ATT_KEY, JSON.stringify(m)); } catch (e) {} };
   const wById = id => (typeof getUnlockedWrestlers === 'function' ? getUnlockedWrestlers() : []).find(w => w.id === id) || null;
   window.ewfInjuryAttackers = attackers;
+  // BATCH 16 ITEM 9: each injury only gets ONE interference, whichever way it goes
+  const DONE_KEY = 'ewf_injury_interfered';
+  const interfered = () => { try { return JSON.parse(localStorage.getItem(DONE_KEY) || '{}'); } catch (e) { return {}; } };
+  const markInterfered = id => { const m = interfered(); m[id] = Date.now(); try { localStorage.setItem(DONE_KEY, JSON.stringify(m)); } catch (e) {} };
+  window.ewfInjuryInterfered = interfered;
+  // BATCH 16 ITEM 8: what happened is revealed after the match, back on the home screen
+  const REVEAL_KEY = 'ewf_injury_reveal';
 
   function wrapInflict() {
     const orig = window.inflictInjury;
@@ -743,6 +767,7 @@
           if (!att && window.EWFP) { try { att = (EWFP.load().injuredBy || {})[victimId] || null; } catch (e) {} }
           if (!att && typeof activeStoryWrestlerB !== 'undefined' && activeStoryWrestlerB && activeStoryWrestlerB.id === victimId && typeof activeStoryWrestlerA !== 'undefined' && activeStoryWrestlerA) att = activeStoryWrestlerA.id;
           if (att && att !== victimId) { const m = attackers(); m[victimId] = att; saveAttackers(m); }
+          { const d = interfered(); if (d[victimId]) { delete d[victimId]; try { localStorage.setItem(DONE_KEY, JSON.stringify(d)); } catch (e) {} } } // a new injury, a new story
         }
       } catch (e) {}
       return r;
@@ -754,14 +779,17 @@
 
   let plan = null;   // { victim, attacker, at, rogue, match }
   function arm() {
-    if (typeof activeBookedMatch === 'undefined' || !activeBookedMatch || activeBookedMatch.__b15Interf) return;
-    activeBookedMatch.__b15Interf = true;
+    // BATCH 16: the quick-match object is reused, so remember which match was armed (not just "armed once")
+    const serial16 = window.__ewfMatchSerial || 0;
+    if (typeof activeBookedMatch === 'undefined' || !activeBookedMatch || activeBookedMatch.__b15Interf === serial16) return;
+    activeBookedMatch.__b15Interf = serial16;
     plan = null;
     if (fmt() === 'rumble') return;
     const ids = (activeBookedMatch.participants || []).filter(Boolean).map(p => p.id);
     const map = attackers();
     const injuries = (typeof getInjuries === 'function' ? getInjuries() : []) || [];
-    const cands = injuries.filter(i => i && i.severity === 'major' && map[i.id] && ids.includes(map[i.id]) && !ids.includes(i.id) && CHANCE[i.remaining]);
+    const doneMap = interfered();
+    const cands = injuries.filter(i => i && i.severity === 'major' && map[i.id] && ids.includes(map[i.id]) && !ids.includes(i.id) && CHANCE[i.remaining] && !doneMap[i.id]); // BATCH 16 ITEM 9: once per injury
     for (const inj of cands.sort(() => Math.random() - 0.5)) {
       if (Math.random() < CHANCE[inj.remaining]) {
         plan = { victimId: inj.id, attackerId: map[inj.id], remaining: inj.remaining, at: 30 + Math.floor(Math.random() * 31), rogue: Math.random() < ROGUE[inj.remaining], match: activeBookedMatch };
@@ -811,30 +839,72 @@
     const v = wById(pl.victimId), a = wById(pl.attackerId);
     if (!v || !a) return;
     isRunInActive = true;
-    try { if (typeof currentMatchSummary !== 'undefined' && currentMatchSummary) currentMatchSummary.interference = pl.rogue ? `${v.name} (RETURN)` : `${v.name} (STILL INJURED)`; } catch (e) {}
-    strobe(() => pl.rogue ? rogueDischarge(v, a) : cantStayAway(v, a));
+    markInterfered(v.id);
+    try { if (typeof currentMatchSummary !== 'undefined' && currentMatchSummary) currentMatchSummary.interference = `${v.name} (REVENGE)`; } catch (e) {}
+    try { localStorage.setItem(REVEAL_KEY, JSON.stringify({ v: v.id, a: a.id, rogue: !!pl.rogue })); } catch (e) {}
+    badBlood(v, a, 'came back from injury to get revenge');
+    try { if (typeof saveHistoryLog === 'function') saveHistoryLog(`🩼 REVENGE RUN-IN: ${v.name.toUpperCase()} left the Medical Ward to attack ${a.name.toUpperCase()}!`, 'interference'); } catch (e) {}
+    try { if (typeof logShowFalloutEvent === 'function') logShowFalloutEvent('ambush', `🩼 ${v.name.toUpperCase()} came for ${a.name.toUpperCase()}!`); } catch (e) {}
+    // BATCH 16 ITEM 8: no scene and no buttons mid-match: the red strobe, then their music like any run-in
+    strobe(() => {
+      const banner = document.getElementById('ambushBanner');
+      if (banner) {
+        banner.innerHTML = `🚨 OH MY GOD! ${esc(v.name.toUpperCase())} IS HERE... AND HE'S COMING FOR ${esc(a.name.toUpperCase())}! 🚨`;
+        banner.style.background = 'linear-gradient(180deg, #ff0000, #800000)';
+        banner.style.display = 'flex';
+      }
+      try {
+        const modalEl = document.getElementById('videoModal');
+        if (modalEl) modalEl.classList.remove('split-screen-mode');
+        setElDisplay('videoCloseBtn', 'flex');
+        setElDisplay('quickMatchBox', 'none');
+        setElDisplay('player-container', 'block');
+        currentPlayingWrestler = v;
+        isMatchInProgressLooping = false;
+        isRunInActive = true;
+        const back = () => { if (banner) banner.style.display = 'none'; if (isRunInActive) showMatchInProgressWinnerScreen(); };
+        const btn = document.getElementById('nextEntrantBtn');
+        if (btn) { btn.innerText = 'Return to Fight ➔'; btn.style.display = 'block'; btn.onclick = back; }
+        if (typeof loadAndPlayYouTube === 'function') loadAndPlayYouTube(v.youtubeUrl, true, false);
+        try { clearTimeout(runInAutoTimeout); runInAutoTimeout = setTimeout(back, 20000); } catch (e) { setTimeout(back, 20000); }
+      } catch (e) { console.warn('revenge run-in', e); try { showMatchInProgressWinnerScreen(); } catch (e2) {} }
+    });
   }
+
+  // after the match, once the screen is free: did they come back early?
+  function revealPoll() {
+    let r = null;
+    try { r = JSON.parse(localStorage.getItem(REVEAL_KEY) || 'null'); } catch (e) {}
+    if (!r) return;
+    try { if (isMatchInProgressLooping || isRunInActive) return; } catch (e) {}
+    if (screenBusy() || (window.ewfVideoPlaying && window.ewfVideoPlaying())) return;
+    const vis = id => { const el = document.getElementById(id); return el && getComputedStyle(el).display !== 'none'; };
+    if (vis('universalSummaryOverlay') || vis('matchCardOverlay') || document.querySelector('.ewf-tut-bubble, .ewfp-scene')) return;
+    try { localStorage.removeItem(REVEAL_KEY); } catch (e) {}
+    const v = wById(r.v), a = wById(r.a);
+    if (!v || !a) return;
+    const stillHurt = typeof getInjuryRecord === 'function' && !!getInjuryRecord(v.id);
+    if (r.rogue && stillHurt) {
+      window.__ewfRogueInMatch = { v, a, home: true };
+      if (typeof window.openHospitalEscapeModal === 'function') window.openHospitalEscapeModal(v, a); else afterDischarge();
+    }
+    else cantStayAway(v, a);
+  }
+  setInterval(revealPoll, 1500);
 
   function cantStayAway(v, a) {
     const P = window.EWFP;
-    const back = () => { try { P._closeScene(); } catch (e) {} isRunInActive = false; try { if (typeof playRandomMatchCrowd === 'function') playRandomMatchCrowd(0.25); } catch (e) {} };
-    if (!P || !P._scene) return back();
+    if (!P || !P._scene) return;
     P._scene({
-      bg: 'show_bg.png', title: `🩼 ${v.name.toUpperCase()} ISN'T CLEARED... BUT HE'S HERE ANYWAY!`, titleBg: 'linear-gradient(180deg,#d50000,#3d0000)',
+      bg: 'hospital_escape_bg.png', title: `🩼 ${v.name.toUpperCase()} COULDN'T STAY AWAY!`, titleBg: 'linear-gradient(180deg,#d50000,#3d0000)',
       left: v, right: a,
-      text: `<b>${v.name}</b> should be in the Medical Ward, but he's limped all the way to the ring... and he's coming for <b>${a.name}</b>, the superstar who put him there!`,
-      buttons: []
+      text: (typeof getInjuryRecord === 'function' && getInjuryRecord(v.id))
+        ? `<b>Bret:</b> "<b>${v.name}</b> wasn't cleared, but he couldn't stay away from <b>${a.name}</b>! The medics dragged him out. He's <b>still injured</b>... but he's sent a message!"`
+        : `<b>Bret:</b> "<b>${v.name}</b> wasn't cleared, but he couldn't stay away from <b>${a.name}</b>! The medics dragged him out... and now he's <b>fit and back on the roster</b>. ${a.name} had better watch out!"`,
+      buttons: [{ label: 'GOT IT ➔', cls: 'gold', fn: () => { try { P._closeScene(); } catch (e) {} } }]
     });
-    try { P._sfx('ambush_hit.mp3', 0.9); } catch (e) {}
-    setTimeout(() => {
-      try { P._flash(); P._shake(); P._sfx('table_crash.mp3', 0.6); } catch (e) {}
-      const r = document.querySelector('.ewfp-scene .ewfp-pose.right'); if (r) r.classList.add('hurt');
-      P._update(`<b>${v.name}</b> lays into <b>${a.name}</b>! The medics rush out and drag <b>${v.name}</b> back to the Medical Ward. He's still hurt, but he's sent a message!`,
-        [{ label: 'BACK TO THE MATCH ➔', cls: 'gold', fn: back }]);
-    }, 1800);
-    badBlood(v, a, 'came back from injury to get revenge');
-    try { if (typeof saveHistoryLog === 'function') saveHistoryLog(`🩼 CAN'T STAY AWAY: ${v.name.toUpperCase()} left the Medical Ward to attack ${a.name.toUpperCase()}!`, 'interference'); } catch (e) {}
-    try { if (typeof logShowFalloutEvent === 'function') logShowFalloutEvent('ambush', `🩼 ${v.name.toUpperCase()} isn't cleared, but attacked ${a.name.toUpperCase()} anyway!`); } catch (e) {}
+    try { P._sfx('ambush_hit.mp3', 0.6); } catch (e) {}
+    try { if (typeof saveHistoryLog === 'function') saveHistoryLog(`🩼 CAN'T STAY AWAY: ${v.name.toUpperCase()} attacked ${a.name.toUpperCase()} but is still injured!`, 'interference'); } catch (e) {}
   }
 
   function rogueDischarge(v, a) {
@@ -859,6 +929,17 @@
     if (!ctx) return;
     const { v, a } = ctx;
     try { if (typeof clearInjury === 'function') clearInjury(v.id); } catch (e) {}
+    if (ctx.home) {
+      // BATCH 16 ITEM 8: revealed after the match, so no entrance video, just back on the roster
+      const m0 = attackers(); delete m0[v.id]; saveAttackers(m0);
+      try { if (window.EWFP) { const st = EWFP.load(); delete st.injuredBy[v.id]; st.pendingReturn = (st.pendingReturn || []).filter(p => p.id !== v.id); EWFP.save(st); } } catch (e) {}
+      badBlood(v, a, 'came back early to get revenge');
+      try { if (typeof unlockAchievement === 'function') unlockAchievement('back_from_dead'); } catch (e) {}
+      try { if (typeof saveHistoryLog === 'function') saveHistoryLog(`🏥 BACK EARLY: ${v.name.toUpperCase()} is cleared and coming for ${a.name.toUpperCase()}!`, 'interference'); } catch (e) {}
+      try { window.ewfToast && window.ewfToast(`🚨 ${v.name.toUpperCase()} IS BACK ON THE ROSTER... AND HE'S COMING FOR ${a.name.toUpperCase()}!`, 5000); } catch (e) {}
+      try { if (typeof renderGrid === 'function') renderGrid(); } catch (e) {}
+      return;
+    }
     const m = attackers(); delete m[v.id]; saveAttackers(m);
     try { if (window.EWFP) { const st = EWFP.load(); delete st.injuredBy[v.id]; st.pendingReturn = (st.pendingReturn || []).filter(p => p.id !== v.id); EWFP.save(st); } } catch (e) {}
     badBlood(v, a, 'came back early to get revenge');

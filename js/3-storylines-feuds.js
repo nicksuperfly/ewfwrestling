@@ -702,7 +702,7 @@ function promptResetUniverse() {
       'ewf_hof_inductees', 'ewf_gm_profile', 'ewf_unlocked_vault_ids', 'ewf_vault_banished',
       'ewf_ice_overrides', 'ewf_promo_plays', 'ewf_last_career_contract_match',
       'ewf_last_media_scrum_match', 'ewf_last_decree_match', 'ewf_uncrowned_king', 'ewf_acknowledged_levels',
-      'ewf_last_summit_match', 'ewf_tag_loss_streaks', 'ewf_scheduled_story_match',
+      'ewf_last_summit_match', 'ewf_tag_loss_streaks', 'ewf_scheduled_story_match', 'ewf_booked_matches',
       'ewf_contender_title_locks', 'ewf_eight_loss_redemption_seen', 'ewf_last_mitb_stalk_match', 'ewf_tutorial_state', 'ewf_personality', 'ewf_custom_shows', 'ewf_commissioner'
     ];
     keysToRemove.forEach(k => localStorage.removeItem(k));
@@ -911,7 +911,7 @@ const EWF_BACKUP_KEYS = [
   'ewf_hof_inductees', 'ewf_gm_profile', 'ewf_unlocked_vault_ids', 'custom_wrestlers',
   'ewf_ice_overrides', 'ewf_promo_plays', 'ewf_last_career_contract_match',
   'ewf_last_media_scrum_match', 'ewf_last_decree_match', 'ewf_uncrowned_king', 'ewf_vault_banished',
-  'ewf_acknowledged_levels', 'ewf_last_summit_match', 'ewf_tag_loss_streaks', 'ewf_scheduled_story_match',
+  'ewf_acknowledged_levels', 'ewf_last_summit_match', 'ewf_tag_loss_streaks', 'ewf_scheduled_story_match', 'ewf_booked_matches',
   'ewf_contender_title_locks', 'ewf_eight_loss_redemption_seen', 'ewf_last_mitb_stalk_match', 'ewf_tutorial_state', 'ewf_personality', 'ewf_custom_shows', 'ewf_commissioner'
 ];
 
@@ -1474,14 +1474,14 @@ window.executeCareerContractSanction = function() {
   const scheduledMatch = {
     w1: wrestlerA,
     w2: wrestlerB,
-    matchType: "No Disqualification",
+    matchType: (window.ewfSafeMatchType || (t => t))("Hardcore Match"),
     formatKey: "1v1",
     isTitleMatch: false,
     isCareerMatch: true,
     feudStake: "💀 LOSER LEAVES EWF",
     originText: `💀 CAREER TERMINATION: ${wrestlerA.name.toUpperCase()} vs ${wrestlerB.name.toUpperCase()}`
   };
-  localStorage.setItem('ewf_scheduled_story_match', JSON.stringify(scheduledMatch));
+  (window.ewfQueueBooking ? window.ewfQueueBooking(scheduledMatch) : localStorage.setItem('ewf_scheduled_story_match', JSON.stringify(scheduledMatch)));
 
   if (typeof saveHistoryLog === 'function') {
     saveHistoryLog(`📜 CAREER CONTRACT RATIFIED: ${wrestlerA.name.toUpperCase()} vs ${wrestlerB.name.toUpperCase()} booked for the next show!`, 'feud');
@@ -1687,10 +1687,10 @@ window.sanctionBloodFeudForNextBroadcast = function() {
   const { wrestlerA, wrestlerB } = window.activeStagedFeud;
   if (!wrestlerA || !wrestlerB) return;
 
-  const violentStipulations = ['Last Man Standing', 'No Disqualification'];
+  const violentStipulations = ['Last Man Standing', 'Hardcore Match'];
   const gmLevel = typeof getGMLevel === 'function' ? getGMLevel() : 1;
   if (typeof isMatchTypeLocked === 'function' && !isMatchTypeLocked('Ambulance Match').locked) violentStipulations.push('Ambulance Match');
-  const stip = violentStipulations[Math.floor(Math.random() * violentStipulations.length)];
+  const stip = (window.ewfSafeMatchType || (t => t))(violentStipulations[Math.floor(Math.random() * violentStipulations.length)]); // BATCH 16 ITEM 25
 
   const scheduledMatch = {
     w1: wrestlerA,
@@ -1704,7 +1704,7 @@ window.sanctionBloodFeudForNextBroadcast = function() {
     originText: `💀 BLOOD FEUD BLOWOFF: ${wrestlerA.name.toUpperCase()} vs ${wrestlerB.name.toUpperCase()} [${stip.toUpperCase()}]`
   };
 
-  localStorage.setItem('ewf_scheduled_story_match', JSON.stringify(scheduledMatch));
+  (window.ewfQueueBooking ? window.ewfQueueBooking(scheduledMatch) : localStorage.setItem('ewf_scheduled_story_match', JSON.stringify(scheduledMatch)));
 
   if (typeof saveHistoryLog === 'function') {
     saveHistoryLog(`📋 BLOOD FEUD BOOKED: ${wrestlerA.name.toUpperCase()} vs ${wrestlerB.name.toUpperCase()} [${stip.toUpperCase()}] locked in for the Next Broadcast!`, 'feud');
@@ -1811,11 +1811,11 @@ function proceedBloodFeudToMatch() {
   const { wrestlerA, wrestlerB } = window.activeStagedFeud;
   closeBloodFeudOverlay();
 
-  const violentStipulations = ['Last Man Standing', 'No Disqualification'];
+  const violentStipulations = ['Last Man Standing', 'Hardcore Match'];
   const gmLevel = typeof getGMLevel === 'function' ? getGMLevel() : 1;
   if (typeof isMatchTypeLocked === 'function' && !isMatchTypeLocked('Ambulance Match').locked) violentStipulations.push('Ambulance Match');
 
-  const stip = violentStipulations[Math.floor(Math.random() * violentStipulations.length)];
+  const stip = (window.ewfSafeMatchType || (t => t))(violentStipulations[Math.floor(Math.random() * violentStipulations.length)]); // BATCH 16 ITEM 25
 
   // BATCH 7 ITEM 16: during a show, add the blowoff to tonight's card instead of wiping the show
   if (window.activeShowSession && typeof window.queueCutsceneBoutIntoShow === 'function') {
@@ -2782,7 +2782,7 @@ window.resolveCommentaryRedemptionChoice = function(choice) {
       feudStake: `⭐ #1 CONTENDER LOCK (${titlePack.name.toUpperCase()})`,
       originText: `🎙️ GM ELLIS #1 CONTENDER LOCK: ${contender.name.toUpperCase()} vs ${champ.name.toUpperCase()}`
     };
-    localStorage.setItem('ewf_scheduled_story_match', JSON.stringify(scheduledMatch));
+    (window.ewfQueueBooking ? window.ewfQueueBooking(scheduledMatch) : localStorage.setItem('ewf_scheduled_story_match', JSON.stringify(scheduledMatch)));
 
     if (typeof saveHistoryLog === 'function') {
       saveHistoryLog(`📋 #1 CONTENDER LOCK BOOKED: ${contender.name.toUpperCase()} vs ${champ.name.toUpperCase()} (${titlePack.name}) locked onto the Next Broadcast Card!`, 'booking');
@@ -2912,7 +2912,7 @@ window.resolveCommentaryRedemptionChoice = resolveCommentaryRedemptionChoice;
 const storylines = [
   // --- BASELINE INJURY FEUDS (1, 26-30) ---
   { id: 1, image: "story_1.png", text: "EWF CAMERAS CAUGHT {Superstar A} AMBUSHING {Superstar B} IN THE PARKING GARAGE WITH A LEAD PIPE!", type: "injury_feud", matchMatch: "Ambulance Match", formatKey: "1v1", formatCount: 2, logText: "🚨 {Superstar A} ambushed {Superstar B} with a lead pipe!" },
-  { id: 26, image: "story_26.png", text: "CAMERAS CAUGHT {Superstar A} TRAPPING {Superstar B}'S ANKLE INSIDE A STEEL CHAIR AND CRUSHING IT WITH A FLYING STOMP!", type: "injury_feud", matchMatch: "No Disqualification", formatKey: "1v1", formatCount: 2, logText: "🩹 {Superstar A} crushed {Superstar B}'s ankle in a steel chair!" },
+  { id: 26, image: "story_26.png", text: "CAMERAS CAUGHT {Superstar A} TRAPPING {Superstar B}'S ANKLE INSIDE A STEEL CHAIR AND CRUSHING IT WITH A FLYING STOMP!", type: "injury_feud", matchMatch: "Hardcore Match", formatKey: "1v1", formatCount: 2, logText: "🩹 {Superstar A} crushed {Superstar B}'s ankle in a steel chair!" },
   { id: 27, image: "story_27.png", text: "{Superstar A} DRAGGED {Superstar B} TO RINGSIDE, PULLED BACK THE PADDING, AND DROPPED THEM DIRECTLY ONTO THE EXPOSED CONCRETE!", type: "injury_feud", matchMatch: "Last Man Standing", formatKey: "1v1", formatCount: 2, logText: "🩹 {Superstar A} dropped {Superstar B}'s onto raw concrete!" },
   { id: 28, image: "story_28.png", text: "{Superstar A} BETRAYED {Superstar B} DURING A LIVE TALK SHOW SEGMENT AND HURLED THEM FACE-FIRST THROUGH A PLATE-GLASS WINDOW!", type: "injury_feud", matchMatch: "Falls Count Anywhere", formatKey: "1v1", formatCount: 2, logText: "🩹 {Superstar A} threw {Superstar B} through a plate-glass window!" },
   { id: 29, image: "story_29.png", text: "{Superstar A} OPERATED A FORKLIFT IN THE LOADING DOCK AND DROPPED A THREE-TON EQUIPMENT CRATE STRAIGHT ONTO {Superstar B}!", type: "injury_feud", matchMatch: "Ambulance Match", formatKey: "1v1", formatCount: 2, logText: "🚑 {Superstar A} crushed {Superstar B} with an equipment crate!" },
@@ -2929,7 +2929,7 @@ const storylines = [
   { id: 9, image: "story_9.png", text: "{Superstar A} ISSUED A LIVE OPEN CHALLENGE IN THE RING... AND {Superstar B}'S MUSIC HIT THE ARENA!", type: "feud", matchMatch: "Normal Match", formatKey: "1v1", formatCount: 2, logText: "🎤 {Superstar A}'s open challenge was answered by {Superstar B}!" },
   { id: 10, image: "story_10.png", text: "NO ESCAPE! THE ENTIRE ROSTER SURROUNDED THE RING TO PREVENT {Superstar A} AND {Superstar B} FROM RUNNING!", type: "feud", matchMatch: "Lumberjack Match", formatKey: "1v1", formatCount: 2, logText: "🪵 {Superstar A} and {Superstar B} are trapped in a Lumberjack Match!" },
   { id: 31, image: "story_31.png", text: "{Superstar A} SNATCHED THE HEAVY STEEL RING BELL OFF THE TIMEKEEPER'S TABLE AND LEVELLED {Superstar B}!", type: "feud", matchMatch: "Submission Match", formatKey: "1v1", formatCount: 2, logText: "🔔 {Superstar A} struck {Superstar B} with the heavy timekeeper bell!" },
-  { id: 32, image: "story_32.png", text: "{Superstar A} SLICED THROUGH THE RING CANVAS FROM UNDERNEATH AND DRAGGED {Superstar B} INTO THE DARK VOID!", type: "feud", matchMatch: "No Disqualification", formatKey: "1v1", formatCount: 2, logText: "🕳️ {Superstar A} dragged {Superstar B} under the ring canvas!" },
+  { id: 32, image: "story_32.png", text: "{Superstar A} SLICED THROUGH THE RING CANVAS FROM UNDERNEATH AND DRAGGED {Superstar B} INTO THE DARK VOID!", type: "feud", matchMatch: "Hardcore Match", formatKey: "1v1", formatCount: 2, logText: "🕳️ {Superstar A} dragged {Superstar B} under the ring canvas!" },
   { id: 33, image: "story_33.png", text: "{Superstar A} DROVE A MONSTER TRUCK THROUGH THE ARENA PARKING LOT AND COMPLETELY FLATTENED {Superstar B}'S RENTAL CAR!", type: "feud", matchMatch: "Falls Count Anywhere", formatKey: "1v1", formatCount: 2, logText: "🚗 {Superstar A} crushed {Superstar B}'s rental car with a monster truck!" },
   { id: 34, image: "story_34.png", text: "{Superstar A} DISRESPECTFULLY TORE OFF {Superstar B}'S ICONIC RING GEAR AND WAVED IT FROM ATOP THE BROADCAST TABLE!", type: "feud", matchMatch: "2 out of 3 Falls", formatKey: "1v1", formatCount: 2, logText: "🎭 {Superstar A} ripped away and desecrated {Superstar B}'s ring gear!" },
   { id: 35, image: "story_35.png", text: "{Superstar A} AND {Superstar B} BRAWLED TO THE UPPER TIER BEFORE {Superstar A} KNOCKED {Superstar B} OFF THE SCAFFOLDING!", type: "feud", matchMatch: "Ladder Match", formatKey: "1v1", formatCount: 2, logText: "🪜 {Superstar A} hurled {Superstar B} off the arena scaffolding!" },
@@ -2965,14 +2965,14 @@ const storylines = [
 
   // --- NEW FEUDS (46-51) ---
   { id: 46, image: "story_46.png", text: "CLEANUP ON AISLE FOUR! {Superstar A} TRACKED {Superstar B} OUTSIDE THE ARENA INTO A LOCAL SUPERMARKET, TURNING THE GROCERY AISLES INTO A WILD FOOD BRAWL!", type: "feud", matchMatch: "Falls Count Anywhere", formatKey: "1v1", formatCount: 2, logText: "🛒 {Superstar A} brawled with {Superstar B} through a local supermarket!" },
-  { id: 47, image: "story_47.png", text: "{Superstar A} BURGLARIZED {Superstar B}'S LOCKER ROOM, STOLE THEIR SACRED PERSONAL TROPHY, AND THREATENED TO DESTROY IT IN FRONT OF THE WORLD!", type: "feud", matchMatch: "No Disqualification", formatKey: "1v1", formatCount: 2, logText: "⚱️ {Superstar A} stole {Superstar B}'s sacred personal relic!" },
+  { id: 47, image: "story_47.png", text: "{Superstar A} BURGLARIZED {Superstar B}'S LOCKER ROOM, STOLE THEIR SACRED PERSONAL TROPHY, AND THREATENED TO DESTROY IT IN FRONT OF THE WORLD!", type: "feud", matchMatch: "Hardcore Match", formatKey: "1v1", formatCount: 2, logText: "⚱️ {Superstar A} stole {Superstar B}'s sacred personal relic!" },
   { id: 48, image: "story_48.png", text: "EL CABALLERO STRIKES! {Superstar A} BLINDSIDED {Superstar B} DURING A LIVE TALK SHOW AND SHATTERED AN ACOUSTIC GUITAR STRAIGHT OVER THEIR HEAD!", type: "feud", matchMatch: "Tables Match", formatKey: "1v1", formatCount: 2, logText: "🎸 {Superstar A} smashed an acoustic guitar over {Superstar B}!" },
   { id: 49, image: "story_49.png", text: "{Superstar A} CORNERED {Superstar B} IN THE RING, PULLED A SET OF HEAVY BARBER CLIPPERS OUT OF A DUFFEL BAG, AND THREATENED TO SHAVE THEM BALD!", type: "feud", matchMatch: "Submission Match", formatKey: "1v1", formatCount: 2, logText: "✂️ {Superstar A} threatened to shave {Superstar B}'s head bald!" },
   { id: 50, image: "story_50.png", text: "AN OMINOUS CHILL ENGULFED THE ARENA! {Superstar A} ROLLED A FULL-SIZED WOODEN CASKET TO RINGSIDE WITH {Superstar B}'S NAME PAINTED ON THE LID!", type: "feud", matchMatch: "Last Man Standing", formatKey: "1v1", formatCount: 2, logText: "⚰️ {Superstar A} rolled an ominous personalized casket out for {Superstar B}!" },
-  { id: 51, image: "story_51.png", text: "{Superstar A} PULLED A 10-POUND STEEL SLEDGEHAMMER FROM UNDERNEATH THE RING APRON AND DARED {Superstar B} TO STEP INSIDE THE ROPES!", type: "feud", matchMatch: "No Disqualification", formatKey: "1v1", formatCount: 2, logText: "🔨 {Superstar A} pulled out a sledgehammer to threaten {Superstar B}!" },
+  { id: 51, image: "story_51.png", text: "{Superstar A} PULLED A 10-POUND STEEL SLEDGEHAMMER FROM UNDERNEATH THE RING APRON AND DARED {Superstar B} TO STEP INSIDE THE ROPES!", type: "feud", matchMatch: "Hardcore Match", formatKey: "1v1", formatCount: 2, logText: "🔨 {Superstar A} pulled out a sledgehammer to threaten {Superstar B}!" },
 
   // --- NEW INJURY FEUDS (52-57) ---
-  { id: 52, image: "story_52.png", text: "{Superstar A} TRAPPED {Superstar B}'S HEAD FLAT ACROSS THE STEEL RING STEPS AND DELIVERED A DEVASTATING CON-CHAIR-TO WITH A FOLDING CHAIR!", type: "injury_feud", matchMatch: "No Disqualification", formatKey: "1v1", formatCount: 2, logText: "🪑 {Superstar A} delivered a brutal Con-Chair-To on the steel steps to {Superstar B}!" },
+  { id: 52, image: "story_52.png", text: "{Superstar A} TRAPPED {Superstar B}'S HEAD FLAT ACROSS THE STEEL RING STEPS AND DELIVERED A DEVASTATING CON-CHAIR-TO WITH A FOLDING CHAIR!", type: "injury_feud", matchMatch: "Hardcore Match", formatKey: "1v1", formatCount: 2, logText: "🪑 {Superstar A} delivered a brutal Con-Chair-To on the steel steps to {Superstar B}!" },
   { id: 53, image: "story_53.png", text: "{Superstar A} JAMMED A 10-POUND STEEL SLEDGEHAMMER BLUNT-FIRST INTO {Superstar B}'S THROAT, CRUSHING THEIR LARYNX BEFORE OFFICIALS COULD INTERVENE!", type: "injury_feud", matchMatch: "Last Man Standing", formatKey: "1v1", formatCount: 2, logText: "🔨 {Superstar A} crushed {Superstar B}'s trachea with a steel sledgehammer!" },
   { id: 54, image: "story_54.png", text: "TOTAL DISASTER! {Superstar A} BRAWLED WITH {Superstar B} HIGH ONTO THE ARENA PRODUCTION GANTRY AND HURLED THEM 15 FEET DOWN ONTO HARD FLIGHT CASES!", type: "injury_feud", matchMatch: "Falls Count Anywhere", formatKey: "1v1", formatCount: 2, logText: "💥 {Superstar A} threw {Superstar B} off the arena production balcony!" },
   { id: 55, image: "story_55.png", text: "THE SHOCKING BETRAYAL! {Superstar A} LEVELLED {Superstar B} WITH A VICIOUS SUPERKICK AND HURLED THEM HEAD-FIRST THROUGH A HUGE STUDIO MIRROR!", type: "injury_feud", matchMatch: "Tables Match", formatKey: "1v1", formatCount: 2, logText: "🪞 {Superstar A} threw {Superstar B} face-first through a plate-glass window!" },
@@ -2992,7 +2992,7 @@ const storylines = [
   { id: 65, image: "story_65.png", text: "RINGSIDE INCINERATION! {Superstar A} TOSSED {Superstar B}'S RING GEAR INTO A STEEL TRASH CAN IN THE CENTER OF THE RING AND SET IT ON FIRE!", type: "flavor", logText: "🔥 {Superstar A} burned {Superstar B}'s ring gear in a flaming steel trash can!" },
 
   // --- NEW BETRAYALS (66-68) ---
-  { id: 66, image: "story_66.png", text: "THE THUMBS-DOWN BETRAYAL! WHILE HOISTING {Superstar B} IN CELEBRATION, {Superstar A} GAVE A COLD THUMBS-DOWN AND DROPPED THEM VIOLENTLY ON THE CANVAS!", type: "betrayal", matchMatch: "No Disqualification", formatKey: "1v1", formatCount: 2, logText: "💔 BETRAYAL: {Superstar A} turned on partner {Superstar B} with a cold thumbs-down beatdown!" },
+  { id: 66, image: "story_66.png", text: "THE THUMBS-DOWN BETRAYAL! WHILE HOISTING {Superstar B} IN CELEBRATION, {Superstar A} GAVE A COLD THUMBS-DOWN AND DROPPED THEM VIOLENTLY ON THE CANVAS!", type: "betrayal", matchMatch: "Hardcore Match", formatKey: "1v1", formatCount: 2, logText: "💔 BETRAYAL: {Superstar A} turned on partner {Superstar B} with a cold thumbs-down beatdown!" },
   { id: 67, image: "story_67.png", text: "PARTNERS NO MORE! IN THE MIDDLE OF PLAYING TO THE FANS, {Superstar A} SPUN {Superstar B} AROUND AND DROPPED THEM WITH A VICIOUS SUCKER-PUNCH!", type: "betrayal", matchMatch: "2 out of 3 Falls", formatKey: "1v1", formatCount: 2, logText: "💔 BETRAYAL: {Superstar A} blindsided tag partner {Superstar B} during their victory pose!" },
   { id: 68, image: "story_68.png", text: "BACKSTAGE JEALOUSY ERUPTS! {Superstar A} ACCUSED {Superstar B} OF HOGGING THE GLORY AND SMASHED A STEEL FOLDING CHAIR OVER THEIR SPINE!", type: "betrayal", matchMatch: "Falls Count Anywhere", formatKey: "1v1", formatCount: 2, logText: "💔 BETRAYAL: {Superstar A} attacked tag partner {Superstar B} backstage over jealousy!" },
 
@@ -3000,18 +3000,18 @@ const storylines = [
   { id: 69, image: "story_69.png", text: "FRONT OFFICE DECREE! THE GENERAL MANAGER ANNOUNCED TONIGHT'S WINNER BETWEEN {Superstar A} AND {Superstar B} WILL BE CROWNED #1 CONTENDER!", type: "contendership", matchMatch: "Normal Match", formatKey: "1v1", formatCount: 2, logText: "⭐ ELIMINATOR: {Superstar A} and {Superstar B} booked in an official #1 Contender match!" },
   { id: 70, image: "story_70.png", text: "THE ULTIMATE TEST OF ENDURANCE! WITH A TITLE SHOT ON THE LINE, MANAGEMENT MANDATED A BRUTAL 2-OUT-OF-3 FALLS TRIAL BETWEEN {Superstar A} AND {Superstar B}!", type: "contendership", matchMatch: "2 out of 3 Falls", formatKey: "1v1", formatCount: 2, logText: "⭐ ENDURANCE TRIAL: {Superstar A} vs {Superstar B} in a 2-out-of-3 Falls #1 Contender match!" },
   { id: 71, image: "story_71.png", text: "EYES ON THE PRIZE! {Superstar A} AND {Superstar B} MET NOSE-TO-NOSE, BOTH POINTING UP AT THE CHAMPIONSHIP BANNER IN THE RAFTERS!", type: "contendership", matchMatch: "Falls Count Anywhere", formatKey: "1v1", formatCount: 2, logText: "⭐ STAKED CLAIM: {Superstar A} and {Superstar B} clash for the right to challenge for the gold!" },
-  { id: 72, image: "story_72.png", text: "THE HARDCORE PROVING GROUND! TO PROVE THEY DESERVE THE #1 CONTENDER SPOT, {Superstar A} CHALLENGED {Superstar B} TO A BRUTAL NO DISQUALIFICATION WAR!", type: "contendership", matchMatch: "No Disqualification", formatKey: "1v1", formatCount: 2, logText: "⭐ PROVING GROUND: {Superstar A} and {Superstar B} battle in a No DQ #1 Contender war!" },
+  { id: 72, image: "story_72.png", text: "THE HARDCORE PROVING GROUND! TO PROVE THEY DESERVE THE #1 CONTENDER SPOT, {Superstar A} CHALLENGED {Superstar B} TO A BRUTAL NO DISQUALIFICATION WAR!", type: "contendership", matchMatch: "Hardcore Match", formatKey: "1v1", formatCount: 2, logText: "⭐ PROVING GROUND: {Superstar A} and {Superstar B} battle in a No DQ #1 Contender war!" },
   { id: 73, image: "story_73.png", text: "TAP OR SNAP! WITH THE TITLE SHOT ON THE LINE, {Superstar A} AND {Superstar B} AGREED TO A TECHNICAL SHOWDOWN WHERE ONLY A SUBMISSION CAN DECLARE THE TOP CONTENDER!", type: "contendership", matchMatch: "Submission Match", formatKey: "1v1", formatCount: 2, logText: "⭐ TAP OR SNAP: {Superstar A} vs {Superstar B} in a Submission #1 Contender match!" },
 
   // --- NEW TITLE VACATES (74-76) ---
   { id: 74, image: "story_74.png", text: "MEDICAL SURRENDER! {Superstar B} EMOTIONALLY SURRENDERED THE TITLE DUE TO SURGERY. THE GM DECLARED {Superstar A} AND A GRUDGE ENEMY WILL FIGHT TONIGHT FOR THE VACANT GOLD!", type: "title_vacate", matchMatch: "Normal Match", formatKey: "1v1", formatCount: 2, logText: "🩹 VACATED: {Superstar B} surrendered the Championship due to injury! {Superstar A} fights to crown a new king tonight!" },
-  { id: 75, image: "story_75.png", text: "SEIZED BY THE BOARD! FOLLOWING A SCANDALOUS FINISH, {Superstar B} WAS STRIPPED OF THE GOLD. {Superstar A} CLASHES WITH A REBEL ENEMY TONIGHT IN A NO-DQ WAR TO CLAIM THE VACANT TITLE!", type: "title_vacate", matchMatch: "No Disqualification", formatKey: "1v1", formatCount: 2, logText: "📜 VACATED: The Championship is stripped from {Superstar B}! {Superstar A} is booked in a No-DQ clash to crown a new Champion!" },
+  { id: 75, image: "story_75.png", text: "SEIZED BY THE BOARD! FOLLOWING A SCANDALOUS FINISH, {Superstar B} WAS STRIPPED OF THE GOLD. {Superstar A} CLASHES WITH A REBEL ENEMY TONIGHT IN A NO-DQ WAR TO CLAIM THE VACANT TITLE!", type: "title_vacate", matchMatch: "Hardcore Match", formatKey: "1v1", formatCount: 2, logText: "📜 VACATED: The Championship is stripped from {Superstar B}! {Superstar A} is booked in a No-DQ clash to crown a new Champion!" },
   { id: 76, image: "story_76.png", text: "THE PRIZE IS FORFEITED! {Superstar B} WAS STRIPPED OF THE TITLE AFTER REPEATEDLY FLOUTING THE RULES. {Superstar A} STEPPED FORWARD TO FIGHT FOR THE ABANDONED PRIZE IN FALLS COUNT ANYWHERE!", type: "title_vacate", matchMatch: "Falls Count Anywhere", formatKey: "1v1", formatCount: 2, logText: "🏆 VACATED: The Title is stripped! {Superstar A} and a rival fight in Falls Count Anywhere!" },
 
   // --- NEW HEIST DEMANDS (77-79) ---
-  { id: 77, image: "story_77.png", text: "CALLING THEIR SHOT! {Superstar A} HOISTED THE BRIEFCASE HIGH AND DEMANDED REIGNING CHAMPION {Superstar B} MEET THEM TONIGHT IN AN EXTREME RULES TITLE WAR!", type: "heist_demand", matchMatch: "No Disqualification", formatKey: "1v1", formatCount: 2, logText: "💼 HEIST DEMAND: {Superstar A} called their shot and cashed in on {Superstar B}!" },
+  { id: 77, image: "story_77.png", text: "CALLING THEIR SHOT! {Superstar A} HOISTED THE BRIEFCASE HIGH AND DEMANDED REIGNING CHAMPION {Superstar B} MEET THEM TONIGHT IN AN EXTREME RULES TITLE WAR!", type: "heist_demand", matchMatch: "Hardcore Match", formatKey: "1v1", formatCount: 2, logText: "💼 HEIST DEMAND: {Superstar A} called their shot and cashed in on {Superstar B}!" },
   { id: 78, image: "story_78.png", text: "THE ULTIMATE OPPORTUNIST! AS A BATTERED {Superstar B} STRUGGLED TO STAND, {Superstar A} SPRINTED THROUGH THE SMOKE WITH BRIEFCASE IN HAND TO STEAL THE GOLD!", type: "heist_demand", matchMatch: "Normal Match", formatKey: "1v1", formatCount: 2, logText: "💼 HEIST OF THE CENTURY: {Superstar A} ambushed an exhausted {Superstar B} to cash in!" },
-  { id: 79, image: "story_79.png", text: "BLUDGEONED BY THE CONTRACT! {Superstar A} SMASHED THE CORNER OF THE HEAVY STEEL BRIEFCASE STRAIGHT INTO {Superstar B}'S TEMPLE, HANDING OVER THE CONTRACT AS THE BELL RANG!", type: "heist_demand", matchMatch: "No Disqualification", formatKey: "1v1", formatCount: 2, logText: "💼 BRUTAL CASH-IN: {Superstar A} clocked {Superstar B} with the briefcase to trigger a title bout!" }
+  { id: 79, image: "story_79.png", text: "BLUDGEONED BY THE CONTRACT! {Superstar A} SMASHED THE CORNER OF THE HEAVY STEEL BRIEFCASE STRAIGHT INTO {Superstar B}'S TEMPLE, HANDING OVER THE CONTRACT AS THE BELL RANG!", type: "heist_demand", matchMatch: "Hardcore Match", formatKey: "1v1", formatCount: 2, logText: "💼 BRUTAL CASH-IN: {Superstar A} clocked {Superstar B} with the briefcase to trigger a title bout!" }
 ];
 
 // BATCH 15 ITEM 8: storylines about "Superstar B's championship" need B to actually hold a belt,
@@ -3029,6 +3029,23 @@ function ewfStoryTitleFor(wA, wB) {
 }
 window.ewfBeltOf = ewfBeltOf;
 
+// BATCH 16 ITEM 17 (Nicko's call): stories that booked TLC now book a Tables Match, the Ladder story
+// books a Steel Cage Match, each only once unlocked (otherwise the usual locked-match fallbacks)
+function ewfStoryMatchType(story) {
+  let t = story && story.matchMatch;
+  if (!t) return t;
+  if (!story.isTitle && story.type !== 'title_vacate' && story.type !== 'heist_demand') {
+    if (t === 'TLC Match') t = 'Tables Match';
+    else if (t === 'Ladder Match') t = 'Steel Cage Match';
+  }
+  return (window.ewfSafeMatchType || (x => x))(t);
+}
+window.ewfStoryMatchType = ewfStoryMatchType;
+// BATCH 16 ITEM 5: stories where the two superstars clash (allies shouldn't get these)
+function ewfIsConfrontational(story) {
+  return !!story && ['feud', 'injury_feud', 'flavor', 'heist_demand', 'title_vacate'].includes(story.type);
+}
+
 function openStorylineModal(forcedA = null, forcedB = null, isBreakingNews = false) {
   if (!forcedA && typeof ensureRosterReady === 'function' && !ensureRosterReady(2)) return; // BATCH 7 ITEM 14
   if (typeof turnOffOtherModes === 'function') turnOffOtherModes('');
@@ -3043,7 +3060,14 @@ function openStorylineModal(forcedA = null, forcedB = null, isBreakingNews = fal
     return;
   }
 
+  // BATCH 16 ITEM 5: allies don't get fight stories. Alliance-ending stories (the betrayals and story 8)
+  // need an alliance and are rare: about 1 roll in 7.
+  const allowBreakup16 = Math.random() < 1 / 7;
+  const forcedAllies16 = !!(forcedA && forcedB && areInSameAlliance(forcedA.id, forcedB.id));
   const eligibleStorylines = storylines.filter(story => {
+    const breakup16 = story.type === 'betrayal' || !!story.dissolveAlliance;
+    if (breakup16 && (!allowBreakup16 || !activeAlliances || !activeAlliances.length)) return false;
+    if (forcedAllies16 && !breakup16 && ewfIsConfrontational(story)) return false;
     // During an active show session, restrict storyline rolls strictly to flavor/alliance vignettes
     if (window.activeShowSession) {
       if (story.type !== 'flavor' && story.type !== 'alliance_only') return false;
@@ -3054,7 +3078,7 @@ function openStorylineModal(forcedA = null, forcedB = null, isBreakingNews = fal
       if (forcedA && forcedB) { if (!ewfBeltOf(forcedA.id) && !ewfBeltOf(forcedB.id)) return false; }
       else if (!allWrestlers.some(w => ewfBeltOf(w.id))) return false;
     }
-    if (story.matchMatch && typeof isMatchTypeLocked === 'function' && isMatchTypeLocked(story.matchMatch).locked) return false;
+    if (story.matchMatch && typeof isMatchTypeLocked === 'function' && isMatchTypeLocked(ewfStoryMatchType(story)).locked) return false;
     
     if (story.type === 'alliance' || story.type === 'alliance_only') {
       const hasTeamA = activeAlliances.some(a => a.p1 === (forcedA ? forcedA.id : null) || a.p2 === (forcedA ? forcedA.id : null));
@@ -3103,8 +3127,14 @@ function openStorylineModal(forcedA = null, forcedB = null, isBreakingNews = fal
   }
 
   activeStoryline = eligibleStorylines[Math.floor(Math.random() * eligibleStorylines.length)];
+  // BATCH 16 ITEMS 17 & 25: TLC/Ladder are title-only now and Hardcore needs its present, so the
+  // booked match type can differ from the story's (the story text and picture never change)
+  if (activeStoryline && activeStoryline.matchMatch) {
+    const mt16 = ewfStoryMatchType(activeStoryline);
+    if (mt16 !== activeStoryline.matchMatch) activeStoryline = Object.assign({}, activeStoryline, { matchMatch: mt16 });
+  }
 
-  if (activeStoryline.type === 'betrayal' && activeAlliances.length > 0) {
+  if ((activeStoryline.type === 'betrayal' || activeStoryline.dissolveAlliance) && activeAlliances.length > 0) {
     let al = activeAlliances[0];
     if (forcedA && forcedB && areInSameAlliance(forcedA.id, forcedB.id)) {
       al = activeAlliances.find(a => (a.p1 === forcedA.id && a.p2 === forcedB.id) || (a.p1 === forcedB.id && a.p2 === forcedA.id));
@@ -3162,6 +3192,19 @@ function openStorylineModal(forcedA = null, forcedB = null, isBreakingNews = fal
       const champs = allWrestlers.filter(w => ewfBeltOf(w.id) && (!activeStoryWrestlerA || w.id !== activeStoryWrestlerA.id));
       if (champs.length) activeStoryWrestlerB = champs[Math.floor(Math.random() * champs.length)];
     }
+  }
+
+  // BATCH 16 ITEM 5: never cast two allies against each other (unless it's a story that ends the alliance)
+  if (activeStoryWrestlerA && activeStoryWrestlerB && areInSameAlliance(activeStoryWrestlerA.id, activeStoryWrestlerB.id)
+      && activeStoryline.type !== 'betrayal' && !activeStoryline.dissolveAlliance && ewfIsConfrontational(activeStoryline)) {
+    const keepB = EWF_CHAMP_B_STORIES.includes(activeStoryline.id) || ['title_vacate', 'heist_demand'].includes(activeStoryline.type);
+    const pool16 = allWrestlers.filter(w => w.id !== activeStoryWrestlerA.id && w.id !== activeStoryWrestlerB.id).sort(() => Math.random() - 0.5);
+    const newA = pool16.find(w => !areInSameAlliance(w.id, activeStoryWrestlerB.id) && !(activeStoryline.type === 'contendership' && w.id === currentHolders.whc));
+    const newB = !keepB && pool16.find(w => !areInSameAlliance(activeStoryWrestlerA.id, w.id));
+    if (activeStoryline.type === 'heist_demand') return;   // the MITB holder and the champ are mates: no story this time
+    if (newA) activeStoryWrestlerA = newA;
+    else if (newB) activeStoryWrestlerB = newB;
+    else return;                                            // nobody else to use: skip the storyline this time
   }
 
   setElDisplay('storylineModal', 'flex');
@@ -3445,7 +3488,7 @@ function sanctionStorylineForNextBroadcast() {
     originText: story.logText ? story.logText.replace(/{Superstar A}/g, wA.name).replace(/{Superstar B}/g, wB.name) : "Storyline match"
   };
 
-  localStorage.setItem('ewf_scheduled_story_match', JSON.stringify(scheduledMatch));
+  (window.ewfQueueBooking ? window.ewfQueueBooking(scheduledMatch) : localStorage.setItem('ewf_scheduled_story_match', JSON.stringify(scheduledMatch)));
 
   closeStorylineModal();
 

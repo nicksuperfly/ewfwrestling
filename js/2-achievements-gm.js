@@ -45,7 +45,7 @@ const SECRET_ACHIEVEMENTS = [
   // ⚡ ELECTRIC CYAN: PERFORMANCE & CLASSICS
   { id: 'first_bell',          tier: 'tier-cyan',    icon: '⚡', title: "First Bell",         xp: 100, desc: "Book and complete your very first match in EWF." },
   { id: 'five_star_standard',  tier: 'tier-cyan',    icon: '⭐', title: "Five-Star Standard", xp: 75,  desc: "Award any match 5 stars on the official summary screen." },
-  { id: 'five_star_general',   tier: 'tier-cyan',    icon: '🌟', title: "Five-Star General",  xp: 300, desc: "Produce three separate 5-star match classics." },
+  { id: 'five_star_general',   tier: 'tier-cyan',    icon: '🌟', title: "Five-Star General",  xp: 300, desc: "Produce ten 5-star match classics." },
   { id: 'tap_out',             tier: 'tier-cyan',    icon: '🥋', title: "Tap Out!",             xp: 125, desc: "Crown a victor in a Submission Match." },
   { id: 'roulette_gambler',    tier: 'tier-cyan',    icon: '🎰', title: "Roulette Gambler",   xp: 100, desc: "Book and finish a bout created via the Mystery Match slot machine." },
 

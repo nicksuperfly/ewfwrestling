@@ -239,7 +239,8 @@
     bret('createShow', `Now <b>YOU'RE</b> the promoter, GM! Name your show, <b>draw a logo on paper and take a photo of it</b>, pick your colours and book every match yourself. The last match is your <b>MAIN EVENT</b>!`, 900);
   }
   function matchTypesFor(fmt) {
-    const base = fmt === 'tag' ? (typeof tagMatchTypes !== 'undefined' ? tagMatchTypes : ['Normal Match']) : (typeof allMatchTypes !== 'undefined' ? allMatchTypes : ['Normal Match']);
+    let base = fmt === 'tag' ? (typeof tagMatchTypes !== 'undefined' ? tagMatchTypes : ['Normal Match']) : (typeof allMatchTypes !== 'undefined' ? allMatchTypes : ['Normal Match']);
+    if (['tag', 'triple', 'fatal'].includes(fmt)) base = [...base, 'Elimination Match']; // BATCH 16 ITEM 14
     return base.filter(t => !(typeof isMatchTypeLocked === 'function' && isMatchTypeLocked(t).locked));
   }
   function orderName(i, n) { return i === n - 1 ? '⭐ MAIN EVENT' : (i === 0 ? 'OPENER' : (i === n - 2 && n >= 3 ? 'CO-MAIN EVENT' : `MATCH ${i + 1}`)); }
@@ -421,6 +422,8 @@
       const ps = m.participants.slice(0, n);
       if (ps.filter(Boolean).length < n) return `${orderName(i, d.matches.length).replace('⭐ ', '')} needs ${n} superstars. Tap "FILL THE GAPS FOR ME" if you're stuck!`;
       if (new Set(ps).size !== ps.length) return `${orderName(i, d.matches.length).replace('⭐ ', '')} has the same superstar twice!`;
+      // BATCH 16 ITEM 17: something has to hang above the ring
+      if (/(^|\s)(TLC|Ladder) Match$/.test(m.matchType || '') && !m.titleCode) return `🪜 ${orderName(i, d.matches.length).replace('⭐ ', '')}: ${m.matchType}es are only for a title! Put a belt on the line, or pick another match type.`;
       for (const id of ps) {
         if (seen[id] !== undefined) return `${(wById(id) || {}).name || 'A superstar'} is booked in two matches. Each superstar can only wrestle once a night.`;
         seen[id] = i;

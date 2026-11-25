@@ -51,7 +51,7 @@ const RUMBLE_OUT   = sounds("rumble - over top rope", 1);
 const RUMBLE_SAVED = sounds("rumble - saved", 0);         // set to how many you make
 const CAGE_ESCAPE  = sounds("cage - escape", 0);          // set to how many you make
 const CAGE_DRAGGED = sounds("cage - dragged back", 0);    // set to how many you make
-const CAGE_SLAM    = sounds("cage - slam", 0);            // set to how many you make
+const CAGE_SLAM    = sounds("cage - slam", 1);            // BATCH 16: Nicko added "cage - slam 1" (bump if you add more)
 const TABLE_SMASH  = sounds("fx - table smash", 3);
 
 // ---------- PADS ----------

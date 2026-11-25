@@ -681,6 +681,11 @@
   function bookMatch(a, b, cfg, when, done) {
     cfg = cfg || {};
     if (cfg.matchType) cfg.matchType = safeType(cfg.matchType);
+    // BATCH 16 ITEM 20: no title shot for an ICE COLD challenger
+    if (cfg.titleCode && typeof window.ewfIceColdBlocksTitle === 'function' && window.ewfIceColdBlocksTitle([a && a.id, b && b.id], cfg.titleCode)) {
+      try { if (typeof window.ewfToast === 'function') window.ewfToast(`❄️ ${window.ewfIceColdName([a.id, b.id], cfg.titleCode)} is ICE COLD. He hasn't earned a title shot!`); } catch (e) {}
+      cfg = Object.assign({}, cfg, { titleCode: null });
+    }
     const isTitle = !!cfg.titleCode;
     if (when === 'next') {
       const m = {
@@ -689,7 +694,9 @@
         titleName: isTitle ? TITLE_NAMES[cfg.titleCode] : null, titleImg: isTitle ? TITLE_IMGS[cfg.titleCode] : null,
         isCareerMatch: false, storyType: 'callout', originText: cfg.origin || 'Booked by GM Ellis'
       };
-      try { localStorage.setItem('ewf_scheduled_story_match', JSON.stringify(m)); } catch (e) {}
+      let ok16 = true;
+      try { ok16 = (window.ewfQueueBooking ? window.ewfQueueBooking(m) : (localStorage.setItem('ewf_scheduled_story_match', JSON.stringify(m)), true)) !== false; } catch (e) {}
+      if (!ok16) { done && done(); return; }
       log(`📋 BOOKED FOR THE NEXT SHOW: ${NM(a)} vs ${NM(b)}${isTitle ? ' for the ' + TITLE_NAMES[cfg.titleCode] : ''}!`, 'match');
       done && done();
       return;
@@ -869,7 +876,7 @@
         text: `<b>${w.name}</b> has lost too many and they've had enough: <i>"Give me a <b>BIG</b> match, GM. Against <b>${top.name}</b>. Or I'm walking out that door!"</i>`,
         buttons: whenButtons(when => {
           if (when === 'no') return refuse(`<b>${w.name}</b> storms out and <b>SLAMS</b> the door so hard the GM's trophies rattle!`, 'door_slam.mp3', () => { const s2 = load(); s2.lastMatch[w.id] = s2.matchNo - 8; save(s2); });
-          bookFlow(top, { matchType: 'No Disqualification', stake: '❄️ BIG MATCH OR WALK' }, when, `${NM(w)} gets the big match against ${NM(top)}!`);
+          bookFlow(top, { matchType: 'Hardcore Match', stake: '❄️ BIG MATCH OR WALK' }, when, `${NM(w)} gets the big match against ${NM(top)}!`);
         }, Object.assign({ noLabel: '🚪 LET THEM STORM OFF' }, opts))
       });
       bret('callout_walking', `This superstar is <b>❄️ ICE COLD</b>, they keep losing! They want one big match to turn things around. Will you give them the chance?`);
@@ -894,7 +901,7 @@
         text: `<b>${w.name}</b> is back from injury... and they've only got one name on their mind: <b>${c.vs.name}</b>! <i>"You put me in the hospital. Now it's PAYBACK!"</i>`,
         buttons: whenButtons(when => {
           if (when === 'no') return refuse(`Not yet! But <b>${w.name}</b> won't forget...`, null, () => { const s2 = load(); makeFurious(w.id, c.vs.id, `Wants payback on ${c.vs.name}`, s2); save(s2); });
-          bookFlow(c.vs, { matchType: 'No Disqualification', stake: '🌋 PAYBACK MATCH' }, when, `${NM(w)} gets payback on ${NM(c.vs)}!`);
+          bookFlow(c.vs, { matchType: 'Hardcore Match', stake: '🌋 PAYBACK MATCH' }, when, `${NM(w)} gets payback on ${NM(c.vs)}!`);
         }, Object.assign({ noLabel: '⏳ NOT YET' }, opts))
       });
       bret('callout_return', `They're <b>BACK</b> from injury, GM, and they want the superstar who put them there! Revenge matches are the best kind.`);
@@ -1113,6 +1120,9 @@
   function unlockBusy() {
     if (window.activeDebutFinishHandler) return true;
     if (['levelUpOverlay', 'unlockShowcaseOverlay', 'welcomeInductionModal'].some(visible)) return true;
+    // BATCH 16 ITEM 7: the lights-out strobe before a superstar's reveal video, the reveal video itself and gift reveals
+    if (['lightsOutOverlay', 'debutSkipIntroBtn', 'contractSigningModal', 'ewfTrophy16'].some(visible)) return true;
+    if (window.__ewfUnlockSequence) return true;
     const ach = document.getElementById('achievementPopup');
     if (ach && ach.classList.contains('show')) return true;
     const q = window.queuedLevelUps || (typeof queuedLevelUps !== 'undefined' ? queuedLevelUps : []);
@@ -1138,16 +1148,41 @@
     const orig = window.openStorylineModal;
     if (typeof orig !== 'function') return;
     window.openStorylineModal = function (...args) {
-      if (unlockBusy()) { whenFree(() => window.openStorylineModal(...args), 600); return; }
+      // BATCH 16 ITEM 7: wait for unlocks AND their reveal videos, coronations, other cutscenes etc.
+      const busy16 = () => unlockBusy() || (typeof window.ewfScreenBusy === 'function' && window.ewfScreenBusy());
+      if (busy16()) {
+        const started = Date.now();
+        const retry = () => {
+          if (busy16() && Date.now() - started < 180000) return setTimeout(retry, 600);
+          window.openStorylineModal(...args);
+        };
+        if (unlockBusy()) whenFree(retry, 600); else setTimeout(retry, 600);
+        return;
+      }
       return orig.apply(this, args);
     };
     try { openStorylineModal = window.openStorylineModal; } catch (e) {}
   }
 
   /* ---------- Batch 11 items 6 & 7: lock-safe match types and the new shows' themes ---------- */
-  const LOCK_SWAP = { 'TLC Match': 'Ladder Match', 'Ambulance Match': 'Last Man Standing', 'Tables Match': 'No Disqualification' };
+  // BATCH 16 ITEMS 17 & 25: fallbacks chain (Hardcore is a code-card present now) and work for
+  // "Triple Threat X" / "Fatal 4-Way X" too
+  const LOCK_SWAP = {
+    'TLC Match': ['Tables Match', 'Hardcore Match', 'Falls Count Anywhere'],
+    'Ambulance Match': ['Last Man Standing'],
+    'Tables Match': ['Hardcore Match', 'Falls Count Anywhere'],
+    'Hardcore Match': ['Falls Count Anywhere', 'Last Man Standing'],
+    'Steel Cage Match': ['Hardcore Match', 'Last Man Standing', 'Falls Count Anywhere']
+  };
   function safeType(t) {
-    try { if (t && typeof isMatchTypeLocked === 'function' && isMatchTypeLocked(t).locked) return LOCK_SWAP[t] || 'Normal Match'; } catch (e) {}
+    try {
+      if (!t || typeof isMatchTypeLocked !== 'function') return t;
+      const m = String(t).match(/^(Triple Threat |Fatal 4-Way )(.*)$/);
+      const pre = m ? m[1] : '', base = m ? m[2] : t;
+      if (!isMatchTypeLocked(base).locked) return t;
+      const alt = (LOCK_SWAP[base] || []).find(x => !isMatchTypeLocked(x).locked) || 'Normal Match';
+      return pre + alt;
+    } catch (e) {}
     return t;
   }
   window.ewfSafeMatchType = safeType;
@@ -1191,14 +1226,14 @@
     const st = load();
     const ok = (w) => w && activeW.some(x => x.id === w.id);
     if (showKey === 'nomercy') {
-      const solo = ['No Disqualification', 'Falls Count Anywhere', 'Tables Match', 'Last Man Standing', 'Ambulance Match'];
-      const tag = ['No Disqualification', 'Tables Match', 'Ladder Match'];
+      const solo = ['Hardcore Match', 'Falls Count Anywhere', 'Tables Match', 'Last Man Standing', 'Ambulance Match'];
+      const tag = ['Hardcore Match', 'Tables Match', 'Ladder Match'];
       bouts.forEach(b => {
         if (special.includes(b.formatKey) || b.isSanctionedContract) return;
         b.matchType = safeType(pick(b.formatKey === 'tag' ? tag : solo));
       });
       if (canTheme) main.feudStake = '🚫 NO MERCY MAIN EVENT: ANYTHING GOES';
-      bret('show_nomercy', `Welcome to <b>NO MERCY</b>, GM! Tonight there are no rules: <b>No DQ, tables, falls count anywhere</b>. Grab every weapon you've got!`, 1500);
+      bret('show_nomercy', `Welcome to <b>NO MERCY</b>, GM! Tonight there are no rules: <b>Hardcore matches, tables, falls count anywhere</b>. Grab every weapon you've got!`, 1500);
     } else if (showKey === 'badblood' && canTheme) {
       let pair = null;
       try {
@@ -1209,7 +1244,7 @@
         const k = Object.keys(st.rel).filter(k => ['badblood', 'jealous'].includes(st.rel[k].t)).map(k => k.split('|').map(byId)).filter(p => ok(p[0]) && ok(p[1]));
         if (k.length) pair = k[k.length - 1];
       }
-      if (pair) recastMain(bouts, pair[0], pair[1], { matchType: 'No Disqualification', stake: '💢 BAD BLOOD MAIN EVENT: SETTLE THE GRUDGE' }, activeW);
+      if (pair) recastMain(bouts, pair[0], pair[1], { matchType: 'Hardcore Match', stake: '💢 BAD BLOOD MAIN EVENT: SETTLE THE GRUDGE' }, activeW);
       bret('show_badblood', `It's <b>BAD BLOOD</b>, GM! The main event is always the two superstars who hate each other the most. Time to settle the grudge!`, 1500);
     } else if (showKey === 'judgmentday' && canTheme) {
       const bads = activeW.filter(w => isBad(w.id, st)).sort((x, y) => (momentum(y.id).wins || 0) - (momentum(x.id).wins || 0));
@@ -1991,12 +2026,36 @@
     add('fight', SC, ROCK, ['nL0MuSunn30', 'pgyt7ok7Ojg']);
     add('together', TAKER, KANE, ['r9Qo64l6Se0', 'nlIqOxxQPqM', 'sV49FdblNZw']);
     add('together', KANE, ROCK, ['ACFvfIzvmbU']);
+    // BATCH 16 ITEM 11: Nicko's new promos (24 Nov)
+    const SETH = 'default-sethrollins', CENA = 'vault-johncena', MANKIND = 'default-mankind';
+    add('fight', SETH, PUNK, ['m6RSEF5PrJU', 'ju10AIkPSJM']);
+    add('fight', SETH, HHH, ['mwU4bxVOyVI']);
+    add('fight', SETH, ROMAN, ['thpIv9vHdnM', 'f-eKryHjFkI']);
+    add('fight', ROMAN, SETH, ['SRFWb4Ia3r0']);
+    add('fight', PUNK, CENA, ['RkQwM9Zy6uc', 'd0HBbLiMuj4', 'G01jxfxtH1g']);
+    add('fight', PUNK, ROMAN, ['hQeDiGX1iQg']);
+    add('fight', ROMAN, PUNK, ['9GdHfRd1HU8']);
+    add('fight', PUNK, ROCK, ['mr8mfBRsD2s']);
+    add('fight', TAKER, PUNK, ['2BrWgTgnluc']);
+    add('fight', CENA, ROCK, ['E0NwBjrJ3Go', 'rnNue92RSC8']);
+    add('fight', CENA, ROMAN, ['nJPhEq3MqNg', 'NhF7qFn_9Xw', 'wP-d8day9E8']);
+    add('fight', ROMAN, TAKER, ['OSA3-buTMG0']);
+    add('fight', MANKIND, TAKER, ['Cl2N5ULlPE4', 'FaTpGQ5BuY0', 'u7J8p6tHN1k']);
+    add('fight', TAKER, MANKIND, ['1P7sr2LcfAU']);
+    add('fight', MANKIND, ROCK, ['GVAUHXvZ6_I', 'rD2R1SScHc4']);
+    add('fight', ROCK, MANKIND, ['Lrzgmd_gnzE']);
+    add('together', ROCK, MANKIND, ['Sge3h_TbNj0']);
+    add('fight', MANKIND, HHH, ['HrlnVvrGl3M']);
+    add('fight', MANKIND, KANE, ['7oSWGHrK3Z0']);
+    add('fight', TAKER, HHH, ['zntJWuOl95E']);
+    T['dk0lWUR2dBE'] = { kind: 'fight', a: PUNK, b: ROMAN, c: SETH };   // all three in one promo: a Triple Threat
     return T;
   })();
   const NICK = {
     'default-theundertaker': 'THE DEADMAN', 'default-kane': 'THE BIG RED MACHINE', 'default-tripleh': 'THE GAME',
     'default-therock': 'THE PEOPLE\'S CHAMP', 'default-stonecold': 'THE RATTLESNAKE', 'vault-cmpunk': 'THE BEST IN THE WORLD',
-    'vault-romanreigns': 'THE TRIBAL CHIEF', 'default-romanreigns': 'THE TRIBAL CHIEF'
+    'vault-romanreigns': 'THE TRIBAL CHIEF', 'default-romanreigns': 'THE TRIBAL CHIEF',
+    'default-sethrollins': 'THE ARCHITECT', 'vault-johncena': 'THE CHAMP', 'default-mankind': 'MANKIND'
   };
   const onRoster = (id) => {
     const r = roster();
@@ -2004,11 +2063,61 @@
   };
   let pendingPromo = null;
 
+  // BATCH 16 ITEM 11: a promo with three superstars sets up a Triple Threat
+  function runRhrnTriple(tag, p) {
+    let ws = [onRoster(tag.a), onRoster(tag.b), onRoster(tag.c)];
+    if (ws.some(w => !w || injured(w.id))) return;
+    if (p.speakerId) { const i = ws.findIndex(w => w.id === p.speakerId); if (i > 0) ws = [ws[i], ...ws.filter((_, k) => k !== i)]; }
+    const [A, B, C] = ws;
+    const inShow = !!window.activeShowSession;
+    const addHeat = () => { const st = load(); [[A, B], [A, C], [B, C]].forEach(([x, y]) => { const r = getRel(x.id, y.id, st); if (!r || r.t === 'respect') setRel(x.id, y.id, 'badblood', 'traded words in a promo', null, st); }); save(st); };
+    log(`🎤 RIGHT HERE, RIGHT NOW: ${NM(A)}, ${NM(B)} and ${NM(C)} all want each other!`, 'match');
+    scene({
+      bg: 'interview_bg.png', title: `🎤 ${NM(A)}, ${NM(B)} & ${NM(C)}: ALL THREE WANT IT!`, titleBg: 'linear-gradient(180deg,#d32f2f,#3a0000)',
+      left: B, center: A, right: C,
+      text: `<b>${A.name}</b>, <b>${B.name}</b> and <b>${C.name}</b> are all on the mic and nobody's backing down! A <b>TRIPLE THREAT</b>, GM?`,
+      buttons: [
+        { label: inShow ? '⚔️ TRIPLE THREAT TONIGHT!' : '⚔️ TRIPLE THREAT RIGHT NOW!', cls: 'red', fn: () => {
+          addHeat(); closeScene();
+          const ps = [A, B, C];
+          if (inShow && typeof window.queueCutsceneBoutIntoShow === 'function') {
+            window.queueCutsceneBoutIntoShow({ participants: ps, matchType: 'Normal Match', formatKey: 'triple', isTitleMatch: false, storyBypass: true, feudStake: '🎤 RIGHT HERE, RIGHT NOW!' });
+            return;
+          }
+          try {
+            activeStoryline = { id: 0, type: 'feud', matchMatch: 'Normal Match', formatKey: 'triple', isTitle: false, logText: '' };
+            activeStoryWrestlerA = A; activeStoryWrestlerB = B;
+            if (typeof launchStorylineMatch === 'function') launchStorylineMatch();
+            if (activeBookedMatch) {
+              activeBookedMatch.formatKey = 'triple'; activeBookedMatch.formatCount = 3;
+              activeBookedMatch.participants = ps;
+              storyBypassIds = ps.map(w => w.id);
+              quickMatchQueue = [...ps];
+              const list = document.getElementById('qmWrestlersList');
+              if (list) list.innerHTML = ps.map((w, i) => `<div class="vs-wrestler"><img src="${w.image}" alt="${w.name}" onerror="handleImgError(this, '${w.id}')"><div>${w.name}</div></div>${i < 2 ? '<div class="vs-divider">VS</div>' : ''}`).join('');
+            }
+          } catch (e) { console.warn(e); }
+        } },
+        { label: '📋 SAVE IT FOR THE NEXT SHOW', cls: 'gold', fn: () => {
+          addHeat();
+          const ok = window.ewfQueueBooking ? window.ewfQueueBooking({ participants: [A, B, C], matchType: 'Normal Match', formatKey: 'triple', isTitleMatch: false, storyType: 'callout', feudStake: '🎤 RIGHT HERE, RIGHT NOW!', originText: 'Promo call-out' }) : false;
+          if (ok === false) return closeScene();
+          log(`📋 BOOKED FOR THE NEXT SHOW: ${NM(A)} vs ${NM(B)} vs ${NM(C)}!`, 'match');
+          update(`It's booked! <b>${A.name}</b> vs <b>${B.name}</b> vs <b>${C.name}</b> is on the <b>NEXT SHOW</b>!`, cont(() => {}));
+        } },
+        { label: '✋ SQUASH IT', cls: '', fn: () => { closeScene(); } }
+      ]
+    });
+    sfx('crowd.mp3', 0.6);
+    flash();
+  }
+
   function runRightHereRightNow(p) {
     const tag = PROMO_TAGS[p.vid];
     if (!tag) return;
     let A = onRoster(tag.a), B = onRoster(tag.b);
     if (!A || !B || injured(A.id) || injured(B.id)) return; // no spoilers, no hospital call-outs
+    if (tag.c) return runRhrnTriple(tag, p);
     // the superstar Ellis tapped does the talking
     if (p.speakerId && B.id === p.speakerId) { const t = A; A = B; B = t; }
     const st0 = load();

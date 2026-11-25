@@ -133,7 +133,7 @@ const defaultWrestlers = [
     image: "triplehicon.png", 
     poseImage: "tripleh_pose.png", 
     youtubeUrl: "https://www.youtube.com/watch?v=dFzSXbjV054, https://youtu.be/onNEHdWX3qY?si=CYf6hE8yIJd4idA-", 
-    promoUrl: "https://www.youtube.com/watch?v=QtpcMHdOwUE,https://www.youtube.com/watch?v=NzMxsqu78YI,https://www.youtube.com/watch?v=Y0aFlijwmB0,https://www.youtube.com/watch?v=X2grkF7b9l8,https://www.youtube.com/watch?v=b6PcALI682c,https://www.youtube.com/watch?v=Jo4Ku-6TVec,https://www.youtube.com/watch?v=By5R4qdcQZA,https://www.youtube.com/watch?v=PR4CMmENSPw,https://www.youtube.com/watch?v=1_D7Y6SJKek,https://www.youtube.com/watch?v=DABm-CsF6Fc,https://www.youtube.com/watch?v=uRGQugQpjz8,https://www.youtube.com/watch?v=3bwh529rFgk", 
+    promoUrl: "https://www.youtube.com/watch?v=QtpcMHdOwUE,https://www.youtube.com/watch?v=NzMxsqu78YI,https://www.youtube.com/watch?v=Y0aFlijwmB0&t=189,https://www.youtube.com/watch?v=X2grkF7b9l8,https://www.youtube.com/watch?v=b6PcALI682c,https://www.youtube.com/watch?v=Jo4Ku-6TVec,https://www.youtube.com/watch?v=By5R4qdcQZA,https://www.youtube.com/watch?v=PR4CMmENSPw,https://www.youtube.com/watch?v=1_D7Y6SJKek,https://www.youtube.com/watch?v=DABm-CsF6Fc,https://www.youtube.com/watch?v=uRGQugQpjz8,https://www.youtube.com/watch?v=3bwh529rFgk", 
     isDefault: true,
     unlockLevel: 1,
     requiresCode: true, // BATCH 7 ITEM 14: signed on Christmas Day with a contract code
@@ -149,7 +149,7 @@ const defaultWrestlers = [
     image: "therock.png", 
     poseImage: "therock_pose.png", 
     youtubeUrl: "https://www.youtube.com/watch?v=ZcIYOgcCcnM", 
-    promoUrl: "https://youtu.be/jNyerPRUfNo?t=59,https://www.youtube.com/watch?v=I7v7_o2UP10,https://www.youtube.com/watch?v=zdLj_ZOL_YM,https://www.youtube.com/watch?v=WU9yTHjpkJw,https://www.youtube.com/watch?v=nL0MuSunn30,https://youtu.be/OAskS_mdKFU?t=211,https://www.youtube.com/watch?v=e74wxxtlgI8,https://www.youtube.com/watch?v=LY4YcbyDxJw,https://www.youtube.com/watch?v=wAFSBjXoDMA,https://www.youtube.com/watch?v=n_b4y-ObpUo,https://www.youtube.com/watch?v=3bwh529rFgk", 
+    promoUrl: "https://youtu.be/jNyerPRUfNo?t=59,https://www.youtube.com/watch?v=I7v7_o2UP10,https://www.youtube.com/watch?v=zdLj_ZOL_YM,https://www.youtube.com/watch?v=WU9yTHjpkJw,https://www.youtube.com/watch?v=nL0MuSunn30,https://youtu.be/OAskS_mdKFU?t=211,https://www.youtube.com/watch?v=e74wxxtlgI8,https://www.youtube.com/watch?v=LY4YcbyDxJw,https://www.youtube.com/watch?v=wAFSBjXoDMA,https://www.youtube.com/watch?v=n_b4y-ObpUo,https://www.youtube.com/watch?v=3bwh529rFgk,https://www.youtube.com/watch?v=Sge3h_TbNj0,https://www.youtube.com/watch?v=Lrzgmd_gnzE", 
     isDefault: true,
     unlockLevel: 1,
     requiresCode: true, // BATCH 7 ITEM 14: signed on Christmas Day with a contract code
@@ -181,7 +181,7 @@ const defaultWrestlers = [
     image: "mankind.png", 
     poseImage: "mankind_pose.png", 
     youtubeUrl: "https://www.youtube.com/watch?v=wiftmVaf0eA", 
-    promoUrl: "https://www.youtube.com/watch?v=3bwh529rFgk", 
+    promoUrl: "https://www.youtube.com/watch?v=3bwh529rFgk,https://www.youtube.com/watch?v=Cl2N5ULlPE4,https://www.youtube.com/watch?v=GVAUHXvZ6_I,https://www.youtube.com/watch?v=HrlnVvrGl3M,https://www.youtube.com/watch?v=7oSWGHrK3Z0,https://www.youtube.com/watch?v=FaTpGQ5BuY0,https://www.youtube.com/watch?v=u7J8p6tHN1k,https://www.youtube.com/watch?v=rD2R1SScHc4", 
     isDefault: true,
     unlockLevel: 1,
     requiresCode: true, // BATCH 7 ITEM 14: signed on Christmas Day with a contract code
@@ -197,7 +197,7 @@ const defaultWrestlers = [
     image: "theundertaker.png", 
     poseImage: "theundertaker_pose.png", 
     youtubeUrl: "https://www.youtube.com/watch?v=8dcY9LDdRIk", 
-    promoUrl: "https://www.youtube.com/watch?v=By5R4qdcQZA,https://www.youtube.com/watch?v=TQweBUtJVNw,https://www.youtube.com/watch?v=D9ZC8kvatqs,https://www.youtube.com/watch?v=69h-qJZHfvM,https://www.youtube.com/watch?v=ArgqFEqqb-I,https://www.youtube.com/watch?v=r9Qo64l6Se0,https://www.youtube.com/watch?v=iaqhAixiENg,https://www.youtube.com/watch?v=Pc4Ybq5dc-E,https://www.youtube.com/watch?v=nlIqOxxQPqM,https://www.youtube.com/watch?v=HQAcJqsJcfM,https://www.youtube.com/watch?v=sV49FdblNZw,https://www.youtube.com/watch?v=3bwh529rFgk", 
+    promoUrl: "https://www.youtube.com/watch?v=By5R4qdcQZA,https://www.youtube.com/watch?v=TQweBUtJVNw,https://www.youtube.com/watch?v=D9ZC8kvatqs,https://www.youtube.com/watch?v=69h-qJZHfvM,https://www.youtube.com/watch?v=ArgqFEqqb-I,https://www.youtube.com/watch?v=r9Qo64l6Se0,https://www.youtube.com/watch?v=iaqhAixiENg,https://www.youtube.com/watch?v=Pc4Ybq5dc-E,https://www.youtube.com/watch?v=nlIqOxxQPqM,https://www.youtube.com/watch?v=HQAcJqsJcfM,https://www.youtube.com/watch?v=sV49FdblNZw,https://www.youtube.com/watch?v=3bwh529rFgk,https://www.youtube.com/watch?v=2BrWgTgnluc,https://www.youtube.com/watch?v=1P7sr2LcfAU,https://www.youtube.com/watch?v=zntJWuOl95E", 
     isDefault: true,
     unlockLevel: 5 // BATCH 14: Level 5 (was 4)
   },
@@ -208,7 +208,7 @@ const defaultWrestlers = [
     image: "kane.png", 
     poseImage: "kane_pose.png", 
     youtubeUrl: "https://youtu.be/pN0rmWh6nkE", 
-    promoUrl: "https://www.youtube.com/watch?v=iaqhAixiENg,https://www.youtube.com/watch?v=Pc4Ybq5dc-E,https://www.youtube.com/watch?v=ACFvfIzvmbU,https://www.youtube.com/watch?v=nlIqOxxQPqM,https://www.youtube.com/watch?v=jPGL1s0ajCw,https://www.youtube.com/watch?v=HQAcJqsJcfM,https://www.youtube.com/watch?v=sV49FdblNZw,https://www.youtube.com/watch?v=3bwh529rFgk", 
+    promoUrl: "https://www.youtube.com/watch?v=iaqhAixiENg,https://www.youtube.com/watch?v=Pc4Ybq5dc-E,https://www.youtube.com/watch?v=ACFvfIzvmbU,https://www.youtube.com/watch?v=nlIqOxxQPqM,https://www.youtube.com/watch?v=jPGL1s0ajCw,https://www.youtube.com/watch?v=HQAcJqsJcfM,https://www.youtube.com/watch?v=sV49FdblNZw,https://www.youtube.com/watch?v=3bwh529rFgk,https://www.youtube.com/watch?v=7oSWGHrK3Z0", 
     isDefault: true,
     unlockLevel: 9 // BATCH 14: Level 9 (was 8)
   },
@@ -220,7 +220,7 @@ const defaultWrestlers = [
     image: "sethrollins.png", 
     poseImage: "sethrollins_pose.png", 
     youtubeUrl: "https://www.youtube.com/watch?v=2djndgbr33o", 
-    promoUrl: "https://www.youtube.com/watch?v=2djndgbr33o", 
+    promoUrl: "https://www.youtube.com/watch?v=m6RSEF5PrJU,https://www.youtube.com/watch?v=ju10AIkPSJM,https://www.youtube.com/watch?v=mwU4bxVOyVI,https://www.youtube.com/watch?v=thpIv9vHdnM,https://www.youtube.com/watch?v=ZSXtBSSrh60,https://www.youtube.com/watch?v=dk0lWUR2dBE,https://www.youtube.com/watch?v=SRFWb4Ia3r0", 
     isDefault: true,
     unlockLevel: 15,
     debutBanner: "🔥 BURN IT DOWN! THE ARCHITECT SETH ROLLINS HAS ARRIVED! 🔥",
@@ -240,7 +240,7 @@ const SECRET_TALENT_VAULT = [
     image: "cena.png",
     poseImage: "cena_pose.png",
     youtubeUrl: "https://www.youtube.com/watch?v=zu8bEljrolk",
-    promoUrl: "https://www.youtube.com/watch?v=zu8bEljrolk",
+    promoUrl: "https://www.youtube.com/watch?v=d0HBbLiMuj4,https://www.youtube.com/watch?v=E0NwBjrJ3Go,https://www.youtube.com/watch?v=nJPhEq3MqNg,https://www.youtube.com/watch?v=2eAGxiA4p2Q,https://www.youtube.com/watch?v=rnNue92RSC8,https://www.youtube.com/watch?v=NhF7qFn_9Xw,https://www.youtube.com/watch?v=G01jxfxtH1g,https://www.youtube.com/watch?v=wP-d8day9E8",
     debutBanner: "🎺 THE CHAMP IS HERE! JOHN CENA HAS ARRIVED! 🎺",
     bannerBg: "linear-gradient(180deg, #0055ff 0%, #001155 100%)",
     bannerShadow: "0 0 45px #0055ff, 0 0 25px #00ffff"
@@ -253,7 +253,7 @@ const SECRET_TALENT_VAULT = [
     image: "roman.png",
     poseImage: "romanreigns_pose.png",
     youtubeUrl: "https://www.youtube.com/watch?v=tDZX7pxAMCA",
-    promoUrl: "https://www.youtube.com/watch?v=tDZX7pxAMCA",
+    promoUrl: "https://www.youtube.com/watch?v=thpIv9vHdnM,https://www.youtube.com/watch?v=dk0lWUR2dBE,https://www.youtube.com/watch?v=WZZVlNafYAc,https://www.youtube.com/watch?v=9GdHfRd1HU8,https://www.youtube.com/watch?v=OSA3-buTMG0,https://www.youtube.com/watch?v=f-eKryHjFkI,https://www.youtube.com/watch?v=SRFWb4Ia3r0",
     debutBanner: "☝️ ACKNOWLEDGE HIM! THE TRIBAL CHIEF ROMAN REIGNS HAS ARRIVED! ☝️",
     bannerBg: "linear-gradient(180deg, #d32f2f 0%, #7f0000 100%)",
     bannerShadow: "0 0 45px #d32f2f, 0 0 25px #ff0000"
@@ -267,7 +267,7 @@ const SECRET_TALENT_VAULT = [
     image: "cmpunk.png",
     poseImage: "cmpunk_pose.png",
     youtubeUrl: "https://www.youtube.com/watch?v=u5HwSRo36Kg",
-    promoUrl: "https://www.youtube.com/watch?v=u5HwSRo36Kg",
+    promoUrl: "https://www.youtube.com/watch?v=m6RSEF5PrJU,https://www.youtube.com/watch?v=ju10AIkPSJM,https://www.youtube.com/watch?v=dk0lWUR2dBE,https://www.youtube.com/watch?v=RkQwM9Zy6uc,https://www.youtube.com/watch?v=hQeDiGX1iQg,https://www.youtube.com/watch?v=Y0aFlijwmB0&t=189,https://www.youtube.com/watch?v=d0HBbLiMuj4,https://www.youtube.com/watch?v=mr8mfBRsD2s,https://www.youtube.com/watch?v=G01jxfxtH1g",
     debutBanner: "⚡ LOOK IN MY EYES! CM PUNK HAS SHOCKED THE WORLD! ⚡",
     bannerBg: "linear-gradient(180deg, #990000 0%, #111111 100%)",
     bannerShadow: "0 0 45px #ff0000, 0 0 25px #ff4444"
@@ -295,7 +295,10 @@ window.EWF_GIFT_CODES = {
   CASHIN: { id: 'gift-mitb', name: 'Money in the Bank', from: 'Nanny & Grandad', unlockType: 'show', unlockKey: 'mitb', img: 'mitb_briefcase.png',
     blurb: 'The MONEY IN THE BANK show and the briefcase ladder match are now open!' },
   NEENAW: { id: 'gift-slambulance', name: 'The Slambulance', from: 'Granny & Grandad', unlockType: 'match', unlockKey: 'Ambulance Match', img: 'ambulance.png',
-    blurb: 'SLAMBULANCE MATCHES are now open. Load your opponent in the back to win!' }
+    blurb: 'SLAMBULANCE MATCHES are now open. Load your opponent in the back to win!' },
+  // BATCH 16 ITEM 25: the Hardcore Match is a present too
+  XTREME: { id: 'gift-hardcore', name: 'Hardcore Match', from: 'Charlie, Jess, Rory & Riley', unlockType: 'match', unlockKey: 'Hardcore Match', img: 'hardcorematch.png',
+    blurb: 'HARDCORE MATCHES are now open. No rules, weapons everywhere, anything goes!' }
 };
 
 function getUnlockedVaultIds() {
@@ -422,18 +425,18 @@ const mysteryFormatLogos = ["1v1.png", "triple_threat.png", "fatal_4way.png", "h
 var currentFormatIdx = 0;
 
 const allMatchTypes = [
-  "Normal Match", "Ambulance Match", "Tables Match", "TLC Match", "Ladder Match", "No Disqualification", 
+  "Normal Match", "Ambulance Match", "Tables Match", "TLC Match", "Ladder Match", "Hardcore Match", 
   "Submission Match", "Last Man Standing", "Falls Count Anywhere", "2 out of 3 Falls", 
   "Special Guest Referee", "Lumberjack Match", "Steel Cage Match"
 ];
 
-const tagMatchTypes = ["Normal Match", "TLC Match", "Tables Match", "Ladder Match", "No Disqualification"];
+const tagMatchTypes = ["Normal Match", "TLC Match", "Tables Match", "Ladder Match", "Hardcore Match"];
 var activeMatchTypesList = [...allMatchTypes];
 var currentTypeIdx = 0;
 
 const matchTypeLogos = {
   "Normal Match": "normal_match.png", "Ambulance Match": "ambulance.png", "Tables Match": "tables.png",
-  "TLC Match": "tlc.png", "Ladder Match": "ladder.png", "No Disqualification": "no_dq.png",
+  "TLC Match": "tlc.png", "Ladder Match": "ladder.png", "Hardcore Match": "hardcorematch.png",
   "Submission Match": "submission.png", "Last Man Standing": "last_man.png", "Falls Count Anywhere": "falls_anywhere.png",
   "2 out of 3 Falls": "two_out_of_three.png", "Special Guest Referee": "special_referee.png",
   "Lumberjack Match": "lumberjack.png", "Steel Cage Match": "cagematch.png", "Money in the Bank": "mitb_logo.png", "MITB Cash-In Match": "mitb_logo.png",

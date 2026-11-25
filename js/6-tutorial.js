@@ -540,15 +540,8 @@
     mitbStalk: `The <b>MONEY IN THE BANK</b> holder is lurking around the champion! Rattle the champ to knock their confidence, or call your shot for a title match?`
   };
   function cutOnce(key) {
-    const st = getState();
-    if (!st.tourDone) return;
-    st.cutSeen = st.cutSeen || {};
-    if (st.cutSeen[key]) return;
-    st.cutSeen[key] = true; saveState(st);
-    setTimeout(() => {
-      if (document.querySelector('.ewf-tut-bubble')) return;
-      showBubble({ text: CUT[key], nextLabel: 'GOT IT ➔', tipMode: true });
-    }, 1400);
+    // BATCH 16 ITEM 6: same queue as the other tips, so one never covers another or gets lost
+    if (typeof window.ewfBretCut === 'function') window.ewfBretCut(key, CUT[key], 1400);
   }
   function wrapCut(name, key, cond) {
     const orig = window[name];
@@ -573,16 +566,75 @@
   wrapCut('openMitbStalkingModal', 'mitbStalk');
 
   /* ---------- 8. Batch 10: Bret cuts in the first time each new thing happens ---------- */
+  // BATCH 16 ITEM 6: Bret's one-off tips wait their turn and show one at a time.
+  // Tips about the home screen (HOME_TIPS) wait until Ellis is back on the roster grid with nothing on top.
+  // Tips about something happening right now give up after 25 seconds and try again next time,
+  // so a tip is never "used up" without being seen.
+  const HOME_TIPS = { moodBadge: 1 };
+  const tipQueue = [];
+  let tipTimer = null;
+  function videoOrUnlockUp() {
+    try {
+      if (typeof window.ewfUnlockBusy === 'function' && window.ewfUnlockBusy()) return true;
+      if (window.ewfVideoPlaying && window.ewfVideoPlaying()) return true;
+      const ach = document.getElementById('achievementPopup');
+      if (ach && ach.classList.contains('show')) return true;
+      if (document.querySelector('#ewfCrownOverlay, #ewfPopup, #ewfWalkDown, #ewfLegendOverlay, #ewfTease16, #ewfStephMic16, #ewfTrophy16')) return true;
+      const vis = id => { const el = document.getElementById(id); return el && getComputedStyle(el).display !== 'none'; };
+      if (['hofCeremonyOverlay', 'kotrCoronationOverlay', 'mitbCoronationOverlay', 'rumbleCoronationOverlay', 'lightsOutOverlay'].some(vis)) return true;
+    } catch (e) {}
+    return false;
+  }
+  function homeScreenClear() {
+    if (videoOrUnlockUp()) return false;
+    if (typeof window.ewfScreenBusy === 'function' && window.ewfScreenBusy()) return false;
+    const card = document.querySelector('#wrestler-grid .card');
+    if (!card) return false;
+    const r = card.getBoundingClientRect();
+    if (r.width < 10 || r.height < 10 || r.bottom < 0 || r.top > window.innerHeight) return false;
+    const hit = document.elementFromPoint(r.left + r.width / 2, Math.min(r.top + r.height / 2, window.innerHeight - 2));
+    return !!(hit && card.contains(hit));
+  }
+  function pumpTips() {
+    tipTimer = null;
+    if (!tipQueue.length) return;
+    const now = Date.now();
+    // drop context tips that waited too long (they'll show next time it happens)
+    for (let i = tipQueue.length - 1; i >= 0; i--) {
+      const t = tipQueue[i];
+      if (!t.home && now - t.at > 25000) tipQueue.splice(i, 1);
+    }
+    if (!tipQueue.length) return;
+    const t = tipQueue[0];
+    const ready = now >= t.readyAt && !document.querySelector('.ewf-tut-bubble') && (t.home ? homeScreenClear() : !videoOrUnlockUp());
+    if (ready) {
+      tipQueue.shift();
+      const st = getState();
+      st.cutSeen = st.cutSeen || {};
+      if (!st.cutSeen[t.key]) {
+        st.cutSeen[t.key] = true; saveState(st);
+        showBubble({ text: t.html, nextLabel: 'GOT IT ➔', tipMode: true });
+      }
+    }
+    if (tipQueue.length) tipTimer = setTimeout(pumpTips, 700);
+  }
   window.ewfBretCut = function (key, html, delay) {
     const st = getState();
     if (!st.tourDone) return;
     st.cutSeen = st.cutSeen || {};
     if (st.cutSeen[key]) return;
-    st.cutSeen[key] = true; saveState(st);
-    setTimeout(() => {
-      if (document.querySelector('.ewf-tut-bubble')) return;
-      showBubble({ text: html, nextLabel: 'GOT IT ➔', tipMode: true });
-    }, delay === undefined ? 1400 : delay);
+    if (tipQueue.some(t => t.key === key)) return;
+    const d = delay === undefined ? 1400 : delay;
+    tipQueue.push({ key, html, at: Date.now(), readyAt: Date.now() + d, home: !!HOME_TIPS[key] });
+    if (!tipTimer) tipTimer = setTimeout(pumpTips, Math.min(d, 700));
+  };
+  window.ewfBretTipQueue = () => tipQueue.map(t => t.key);
+
+  // BATCH 16 ITEM 4: a plain Bret tip that can be shown any number of times (first-champion tour)
+  window.ewfShowTip = function (html, label) {
+    if (document.querySelector('.ewf-tut-bubble')) return false;
+    showBubble({ text: html, nextLabel: label || 'GOT IT ➔', tipMode: true });
+    return true;
   };
 
   /* ---------- 5. Replay ---------- */
