@@ -4721,13 +4721,18 @@ window.declareMatchWinner = function(resultData) {
     }
   }
 
-  profile.stats = profile.stats || { matches: 0, furnitureMatches: 0 };
-  profile.stats.matches = (profile.stats.matches || 0) + 1;
+  // BATCH 17 FIX: re-read the profile here. The copy read at the top of this function is out of date
+  // if an achievement above (e.g. a new title) gave XP, and saving it put Ellis back a level
+  // (seen 26 Nov: Undertaker unlocked at Level 5, then the app dropped back to Level 4).
+  const freshProfile = typeof getGMProfile === 'function' ? getGMProfile() : profile;
+  freshProfile.stats = freshProfile.stats || { matches: 0, furnitureMatches: 0 };
+  freshProfile.stats.matches = (freshProfile.stats.matches || 0) + 1;
   const furnitureTypes = ['Tables Match', 'Ladder Match', 'TLC Match'];
   if (furnitureTypes.includes(activeBookedMatch.matchType)) {
-    profile.stats.furnitureMatches = (profile.stats.furnitureMatches || 0) + 1;
+    freshProfile.stats.furnitureMatches = (freshProfile.stats.furnitureMatches || 0) + 1;
   }
-  if (typeof saveGMProfile === 'function') saveGMProfile(profile);
+  profile.stats = freshProfile.stats;
+  if (typeof saveGMProfile === 'function') saveGMProfile(freshProfile);
 
   enqueuePostMatchEvent(() => {
     if (typeof addXP === 'function') addXP(35, "Match Completed");

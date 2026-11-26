@@ -275,6 +275,8 @@
     ov.querySelector('#ewfXmasGo').onclick = () => {
       ov.remove();
       patchState({ xmasDone: true });
+      // BATCH 17: Nicko's intro video plays straight after GET STARTED (js/12), then Bret carries on
+      if (typeof window.ewfPlayIntroVideo === 'function') { window.ewfPlayIntroVideo(() => setTimeout(after || bretCodeMessage, 350)); return; }
       try { if (typeof resumeBGM === 'function') resumeBGM(); } catch (e) {}
       setTimeout(after || bretCodeMessage, 350);
     };
@@ -286,7 +288,7 @@
     const addCard = document.querySelector('#wrestler-grid .add-card');
     if (addCard) addCard.scrollIntoView({ block: 'center' });
     showBubble({
-      text: `Merry Christmas Ellis. I'm Bret. But enough about me, let's get this show on the road. Enter the codes of your <b>2 favourite wrestlers</b> you got for Christmas and I'll show you how this all works.<br><br>There's a lot to it, so <b>buckle in!</b>`,
+      text: `Merry Christmas Ellis. Welcome to the <b>Ellis Wrestling Federation</b>! I'm Bret and I'm here to talk you through it all, so let's get this show on the road! Enter the codes of your <b>2 favourite wrestlers</b> you got for Christmas and I'll show you how this all works.<br><br>There's a lot to it, so <b>buckle in!</b>`,
       target: addCard,
       nextLabel: `LET'S DO IT ➔`
     });
@@ -346,7 +348,7 @@
   const GUIDE = [
     { key: 'show',    test: () => vis('qmStepShow'),    text: `First, pick the <b>SHOW</b>. Use the arrows to choose Raw, SmackDown or another brand, then tap <b>SELECT SHOW</b>. Or tap SKIP INTRO to jump straight in.` },
     { key: 'format',  test: () => vis('qmStepFormat'),  text: `Now the <b>FORMAT</b>. 1 vs 1 is a classic singles match. Want more chaos? Try a Triple Threat or Fatal 4-Way!` },
-    { key: 'type',    test: () => vis('qmStepPicker'),  text: `Pick the <b>MATCH TYPE</b>. A Normal Match is a great start. Tables, Ladders and more unlock as you level up!` },
+    { key: 'type',    test: () => vis('qmStepPicker'),  text: `Pick the <b>MATCH TYPE</b>. A Normal Match is a great start, or try a <b>Submission Match</b> or <b>Last Man Standing</b>! More match types unlock as you level up.` },
     { key: 'pick',    test: () => vis('qmStepHandPick'), text: `Choose your <b>SUPERSTARS</b>! Tap each slot to pick who's fighting, or hit AUTO-FILL. Grab those figures and get them ready!` },
     { key: 'preview', test: () => vis('qmStepResult'),  text: `Here's your <b>MATCH CARD</b>. Happy? Tap <b>START ENTRANCES</b> and get your superstars walking to the ring!` },
     { key: 'entrance', test: () => { const b = document.getElementById('nextEntrantBtn'); return b && b.offsetParent !== null && !/BELL/i.test(b.innerText || ''); },

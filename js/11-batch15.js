@@ -292,8 +292,11 @@
     return bits.join(', ');
   }
   function dramaStars(st) {
-    const score = st.kickout + st.ropes + st.miss + st.dragged + st.saved + 0.5 * (st.table + st.chair + st.cage + st.omg);
-    return Math.max(1, Math.min(4, 1 + Math.round(score * 0.75)));
+    // BATCH 17: big spots (tables, chairs, cage, "oh my god") count as much as near falls now,
+    // and any match with pad action starts at 3 stars. Still max 4: the 5th star is Ellis's to give.
+    const score = st.kickout + st.ropes + st.miss + st.dragged + st.saved + st.table + st.chair + st.cage + st.omg;
+    if (!score) return 2;
+    return score >= 3 ? 4 : 3;
   }
 
   // after the winner is crowned: how it ended, MATCH DRAMA and a pre-set star rating

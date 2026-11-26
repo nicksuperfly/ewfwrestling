@@ -123,6 +123,11 @@ function saveGMProfile(profile) {
       const merged = Array.from(new Set([...(existing.unlockedAchievements || []), ...(profile.unlockedAchievements || [])]));
       profile.unlockedAchievements = merged;
     }
+    // BATCH 17 FIX: XP and level never go backwards from an out-of-date save (Reset Universe clears the key instead)
+    if (existing && (existing.xp || 0) > (profile.xp || 0)) {
+      profile.xp = existing.xp;
+      profile.level = Math.max(parseInt(profile.level, 10) || 1, parseInt(existing.level, 10) || 1);
+    }
     localStorage.setItem('ewf_gm_profile', JSON.stringify(profile));
   } catch(e){}
 }
@@ -148,6 +153,8 @@ function addXP(amount, reason = "") {
   saveGMProfile(profile);
 
   updateGMHeaderWidget();
+  // BATCH 17: new superstars appear on the roster as soon as the level changes
+  if (currentLevel !== oldLevel && typeof renderGrid === 'function') { try { renderGrid(); } catch (e) {} }
 
   if (currentLevel > oldLevel) {
     let acknowledged = JSON.parse(localStorage.getItem('ewf_acknowledged_levels') || '[]');

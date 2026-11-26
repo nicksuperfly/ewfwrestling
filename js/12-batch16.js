@@ -47,7 +47,7 @@
           align-content: center; align-items: center; column-gap: 26px; row-gap: 4px; text-align: left; max-height: 92vh; box-sizing: border-box; padding: 18px 26px !important; }
         #welcomeInductionModal .welcome-modal-card > :first-child { grid-area: label; }
         #welcomeInductionTitle { grid-area: title; margin: 2px 0 6px !important; font-size: clamp(1.3rem, 3.2vw, 2.3rem) !important; line-height: 1.12; }
-        #welcomeInductionImg { grid-area: img; max-height: min(78vh, 560px) !important; max-width: 100% !important; margin: 0 !important; justify-self: center; align-self: center; }
+        #welcomeInductionImg { grid-area: img; max-height: min(82vh, 600px) !important; max-width: 100% !important; margin: 0 0 -18px 0 !important; justify-self: center; align-self: end; display: block; } /* sits on the card's bottom line */
         #welcomeInductionName { grid-area: name; margin-bottom: 6px !important; }
         #welcomeInductionSubtext { grid-area: sub; margin-bottom: 14px !important; }
         #welcomeInductionConfirmBtn { grid-area: btn; justify-self: start; }
@@ -681,8 +681,13 @@
     const lvl = gmLevel(), toNext = xpToNext();
     const UL = window.EWF_UNLOCK_LEVELS || {};
     // item 22 / 24a: the last match or two before the unlock (no name, no text)
-    if (lvl === (UL.undertaker || 5) - 1 && !have.includes(TAKER) && toNext <= 260 && Math.random() < 0.7) return { kind: 'gong' };
-    if (lvl === (UL.kane || 9) - 1 && !have.includes(KANE) && toNext <= 260 && Math.random() < 0.7) return { kind: 'kane' };
+    // Dad's TEST TEASES button arms one for the next match
+    try {
+      const armed = localStorage.getItem('ewf_test_tease');
+      if (armed) { localStorage.removeItem('ewf_test_tease'); return { kind: armed, test: true }; }
+    } catch (e) {}
+    if (lvl === (UL.undertaker || 5) - 1 && !have.includes(TAKER) && toNext <= 260 && Math.random() < 0.85) return { kind: 'gong' };
+    if (lvl === (UL.kane || 9) - 1 && !have.includes(KANE) && toNext <= 260 && Math.random() < 0.85) return { kind: 'kane' };
     // item 23 / 24b: torment the superstar who hurt them (only when the revenge run-in isn't coming this match)
     try {
       if (typeof window.ewfInjuryPlan === 'function' && window.ewfInjuryPlan()) return null;
@@ -695,6 +700,15 @@
     } catch (e) {}
     return null;
   }
+  // Nicko 26 Nov: the crowd reacts under the gong / Kane teases
+  function teaseCrowd() {
+    try { const c = new Audio('crowd.mp3'); c.volume = 0.6; c.loop = true; c.play().catch(() => {}); return c; } catch (e) { return null; }
+  }
+  function stopCrowd(c) {
+    if (!c) return;
+    let v = c.volume;
+    const iv = setInterval(() => { v -= 0.08; if (v <= 0) { clearInterval(iv); try { c.pause(); } catch (e) {} } else { try { c.volume = v; } catch (e) {} } }, 80);
+  }
   function blackOverlay() {
     let ov = document.getElementById('ewfTease16');
     if (!ov) { ov = document.createElement('div'); ov.id = 'ewfTease16'; }
@@ -705,29 +719,34 @@
   function gongTease(done) {
     const ov = blackOverlay();
     try { if (typeof stopMatchCrowd === 'function') stopMatchCrowd(); } catch (e) {}
+    const crowd = teaseCrowd();
     const gong = () => {
       try { const a = new Audio('gong.mp3'); a.volume = 1; a.play().catch(() => {}); } catch (e) {}
       ov.style.background = '#7b1fa2';
       setTimeout(() => { ov.style.background = '#2a0040'; }, 160);
       setTimeout(() => { ov.style.background = '#000'; }, 650);
     };
-    setTimeout(gong, 500);
-    setTimeout(gong, 3300);
+    // Batch 17: a long pause between the gongs for drama (Nicko: at least 5 seconds)
+    setTimeout(gong, 800);
+    setTimeout(gong, 7300);
     setTimeout(() => {
       ov.remove();
+      stopCrowd(crowd);
       try { if (typeof playRandomMatchCrowd === 'function') playRandomMatchCrowd(0.25); } catch (e) {}
       done();
-    }, 6600);
+    }, 11300);
   }
   function kaneTease(done) {
     const ov = blackOverlay();
     try { if (typeof stopMatchCrowd === 'function') stopMatchCrowd(); } catch (e) {}
+    const crowd = teaseCrowd();
     setTimeout(() => { ov.style.background = '#d50000'; }, 350);
     setTimeout(() => {
       ov.remove();
       let finished = false;
       const back = () => {
         if (finished) return; finished = true;
+        stopCrowd(crowd);
         window.removeEventListener('message', onMsg);
         clearInterval(listen); clearTimeout(cap);
         try { isRunInActive = false; } catch (e) {}
@@ -788,7 +807,7 @@
         const r = orig.apply(this, a);
         try {
           const t = teaseFor(m);
-          tease = t ? Object.assign(t, { at: 20 + Math.floor(Math.random() * 26), match: m }) : null;
+          tease = t ? Object.assign(t, { at: t.test ? 8 : 20 + Math.floor(Math.random() * 26), match: m }) : null;
         } catch (e) { tease = null; }
         return r;
       }
@@ -921,13 +940,31 @@
     if (!w || !P || !P._scene) return;
     const [belt, img] = BELTS[code];
     P._scene({
-      bg: 'title_pedestal.png', title: '👑 YOUR FIRST EVER EWF CHAMPION!', titleBg: 'linear-gradient(180deg,#ffd700,#7a5a00)',
+      bg: 'show_bg.png', title: '👑 YOUR FIRST EVER EWF CHAMPION!', titleBg: 'linear-gradient(180deg,#ffd700,#7a5a00)',
       center: w,
-      objects: [{ src: img, style: 'right: 6%; bottom: 10%; height: 34%;', cls: 'still' }],
+      // the belt held up proudly in front of the new champ (Batch 17: the pedestal background looked odd)
+      objects: [{ src: img, style: 'left: 50%; bottom: 6%; height: 30%; transform: translateX(-50%); z-index: 6; filter: drop-shadow(0 0 26px rgba(255,215,0,.85));', cls: 'still' }],
       text: `<b>Bret:</b> "History, GM! <b>${w.name}</b> is the first ever <b>${belt.replace(/ship$/, '').toUpperCase()}</b>! Remember this day... and get that belt on the figure!" <b style="color:#00e676;">+200 XP</b>`,
       buttons: [{ label: 'WHAT A MOMENT! ➔', cls: 'gold', fn: () => { try { P._closeScene(); } catch (e) {} } }]
     });
     try { P._sfx('victory.mp3', 0.8); P._flash(); } catch (e) {}
+    // gold spotlight and confetti
+    try {
+      const stage = document.querySelector('.ewfp-scene .ewfp-stage');
+      if (stage) {
+        const glow = document.createElement('div');
+        glow.style.cssText = 'position:absolute; inset:0; pointer-events:none; z-index:1; background: radial-gradient(ellipse at 50% 45%, rgba(255,215,0,.35), rgba(0,0,0,0) 55%);';
+        stage.appendChild(glow);
+        for (let i = 0; i < 40; i++) {
+          const c = document.createElement('div');
+          const size = 6 + Math.random() * 8;
+          c.style.cssText = `position:absolute; top:-5%; left:${Math.random() * 100}%; width:${size}px; height:${size * 1.6}px; background:${['#ffd700', '#fff3b0', '#ffb300', '#ffffff'][i % 4]}; z-index:7; pointer-events:none; opacity:.9; border-radius:2px;`;
+          stage.appendChild(c);
+          c.animate([{ transform: 'translateY(0) rotate(0deg)' }, { transform: `translateY(${110 + Math.random() * 20}vh) rotate(${720 * (Math.random() < .5 ? -1 : 1)}deg)` }],
+            { duration: 3500 + Math.random() * 3000, delay: Math.random() * 2500, iterations: Infinity, easing: 'linear' });
+        }
+      }
+    } catch (e) {}
     try { if (typeof addXP === 'function') addXP(200, 'First ever champion'); } catch (e) {}
     histLog(`👑 FIRST EVER CHAMPION: ${w.name.toUpperCase()} won the ${belt.toUpperCase()}!`, 'title-change');
   }
@@ -941,7 +978,15 @@
           if (tier && tier.unlockType === 'titles' && !fcLoad()) {
             const h = holders();
             fcSave({ state: 'offered', before: { whc: h.whc || null, ic: h.ic || null, hardcore: h.hardcore || null, tag1: h.tag1 || null } });
-            (window.ewfWhenScreenFree || (f => f()))(() => setTimeout(() => fcOffer(false), 500));
+            // wait until nothing else is up, and check again right before showing (a storyline
+            // waiting for the unlock to finish could slip in during the short delay)
+            const started = Date.now();
+            const go = () => {
+              const busy = (window.ewfScreenBusy && window.ewfScreenBusy()) || (window.ewfUnlockBusy && window.ewfUnlockBusy()) || (window.ewfVideoPlaying && window.ewfVideoPlaying());
+              if (busy && Date.now() - started < 300000) return setTimeout(go, 700);
+              fcOffer(false);
+            };
+            setTimeout(go, 1200);
           }
         } catch (e) {}
         return r;
@@ -970,6 +1015,7 @@
     setInterval(() => { try { fcPoll(); } catch (e) {} }, 900);
   }
   window.ewfFirstChampOffer = fcOffer;
+  window.ewfFirstChampCelebrateTest = (code, id) => fcCelebrate(code, id);
 
   /* ==========================================================================
      6. NEW TROPHY FOR THE CABINET (item 19)
@@ -1037,6 +1083,276 @@
   window.ewfTrophyTest = n => showTrophy(TROPHIES.find(t => t.n === n), byIdW('default-therock'));
 
   /* ==========================================================================
+     7. DAD TOOLS: TEST TEASES (Batch 17) - arms the Undertaker gong or Kane video for the next match
+     ========================================================================== */
+  function addTeaseButton() {
+    const row = document.getElementById('ewfDadToolsRow');
+    if (!row || row.querySelector('#ewfDadTease')) return;
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.id = 'ewfDadTease'; btn.textContent = '🔔 TEST TEASES';
+    btn.onclick = () => {
+      const go = () => {
+        const P = window.EWFP;
+        if (!P || !P._scene) return;
+        if (typeof window.closeGMOffice === 'function') window.closeGMOffice();
+        const arm = (kind, label) => { try { localStorage.setItem('ewf_test_tease', kind); } catch (e) {} try { P._closeScene(); } catch (e) {}
+          try { window.ewfToast && window.ewfToast(`${label} is ready! Start any match: it happens about 8 seconds after the bell.`, 5000); } catch (e) {} };
+        P._scene({
+          bg: 'gm_office_bg.png', title: '🔔 TEST TEASES', titleBg: 'linear-gradient(180deg,#4a148c,#120024)', comm: false,
+          text: `Pick one and it plays in the <b>next match</b>, about 8 seconds after the bell. (Ellis gets these on his own just before Undertaker and Kane unlock, and when they're injured.)`,
+          buttons: [
+            { label: '🔔 UNDERTAKER GONG', cls: 'blue', fn: () => arm('gong', '🔔 The Undertaker gong') },
+            { label: '🔥 KANE VIDEO', cls: 'red', fn: () => arm('kane', '🔥 The Kane tease') },
+            { label: '✋ CANCEL', cls: '', fn: () => { try { localStorage.removeItem('ewf_test_tease'); P._closeScene(); } catch (e) {} } }
+          ]
+        });
+      };
+      if (window.EWFP && typeof EWFP.pinPad === 'function') EWFP.pinPad({ title: '🔔 TEST TEASES', text: 'Set up the Undertaker gong or Kane tease for the next match.', cancelLabel: '✋ CANCEL' }, go);
+      else go();
+    };
+    row.appendChild(btn);
+  }
+  function wrapOfficeTease() {
+    const orig = window.openGMOffice;
+    if (typeof orig !== 'function' || orig.__b17) return;
+    const w = function (...a) { const r = orig.apply(this, a); try { addTeaseButton(); } catch (e) {} try { addIntroReplayButton(); } catch (e) {} return r; };
+    w.__b17 = true;
+    window.openGMOffice = w;
+    try { openGMOffice = w; } catch (e) {}
+  }
+
+  /* ==========================================================================
+     8. CUTSCENE TIDY (Batch 17 design review): in the older full-screen cutscenes the superstar
+        poses are cut off at the legs. The name plate now sits directly under each pose, the same
+        width, like a floor, so the cut-off edge looks deliberate, and the poses are a bit bigger.
+     ========================================================================== */
+  const OLD_CUTSCENES = ['hospitalEscapeCutsceneModal', 'boardroomDecreeCutsceneModal', 'careerContractCutsceneModal', 'limoSummitCutsceneModal',
+    'mediaScrumCutsceneModal', 'feudSettlementModal'];
+  function groundPoses() {
+    OLD_CUTSCENES.forEach(id => {
+      const modal = document.getElementById(id);
+      if (!modal || getComputedStyle(modal).display === 'none') return;
+      modal.querySelectorAll('img').forEach(img => {
+        if (!/_pose|pose\.png/i.test(img.getAttribute('src') || '') || !img.complete || !img.naturalHeight) return;
+        const plate = img.nextElementSibling;
+        if (!plate || plate.tagName !== 'DIV') return;
+        // Nicko's idea: the name plate sits right under the pose like a floor, hiding where the legs are cut off
+        if (img.dataset.ewfFramed !== '1') {
+          img.dataset.ewfFramed = '1';
+          img.style.maxHeight = '92%';
+          img.style.marginBottom = '0';
+          img.style.display = 'block';
+          img.style.position = 'relative';
+          img.style.zIndex = '4';
+          plate.style.marginTop = '0';
+          plate.style.position = 'relative';
+          plate.style.zIndex = '5';
+          plate.style.boxSizing = 'border-box';
+          plate.style.textAlign = 'center';
+          plate.style.borderTopWidth = '4px';
+          plate.style.boxShadow = '0 -6px 18px rgba(0,0,0,.65), 0 6px 18px rgba(0,0,0,.8)';
+          plate.style.whiteSpace = 'nowrap';
+        }
+        const w = Math.round(img.getBoundingClientRect().width);
+        if (w > 40 && plate.style.width !== w + 'px') plate.style.width = w + 'px';
+      });
+    });
+  }
+  window.ewfGroundPoses = groundPoses;
+
+  /* ==========================================================================
+     9. SCENE POLISH (Batch 17): name plates as a "floor" under poses on the
+        Blood Feud, coronations and Slambulance screens
+     ========================================================================== */
+  function scenePolishStyles() {
+    if (document.getElementById('ewf17SceneStyles')) return;
+    const st = document.createElement('style');
+    st.id = 'ewf17SceneStyles';
+    st.textContent = `
+      .ewf17-podium { display: inline-block; vertical-align: bottom; position: relative; }
+      .ewf17-podium > img { display: block; height: clamp(170px, 36vh, 330px); width: auto; max-width: 42vw; object-fit: contain; margin: 0 auto; position: relative; z-index: 2; }
+      .ewf17-podium > img.ewf17-head { height: clamp(120px, 24vh, 190px); border: 3px solid currentColor; object-fit: cover; }
+      .ewf17-plate { display: block; width: 0; min-width: 100%; box-sizing: border-box; position: relative; z-index: 3; font-family: 'Russo One', sans-serif; text-transform: uppercase; text-align: center; color: #fff; font-size: clamp(.85rem, 2vw, 1.15rem); line-height: 1.15; padding: 7px 8px; border: 2px solid currentColor; border-top-width: 4px; background: linear-gradient(180deg, rgba(40,30,10,.95), rgba(8,6,2,.98)); box-shadow: 0 -6px 18px rgba(0,0,0,.65), 0 6px 18px rgba(0,0,0,.8); }
+      .ewf17-plate.red { background: linear-gradient(180deg, rgba(60,0,8,.95), rgba(12,0,2,.98)); }
+      .ewf17-plate small { display: block; font-size: .62em; letter-spacing: 1px; opacity: .85; margin-top: 2px; }
+      .coronation-overlay.ewf17-polished > img:first-child { max-height: clamp(70px, 13vh, 120px) !important; margin: 0 0 6px 0 !important; }
+      .coronation-overlay.ewf17-polished > h1 { margin: 2px 0 4px 0 !important; line-height: 1.05; font-size: clamp(1.8rem, 4.4vw, 3.2rem) !important; text-shadow: 0 0 24px currentColor, 0 4px 10px #000 !important; }
+      .coronation-overlay.ewf17-polished .vs-container { margin: 6px 0 14px 0 !important; }
+      #bloodFeudOverlay .feud-combatant-img { max-height: clamp(190px, 40vh, 340px) !important; max-width: 30vw !important; display: block; }
+      #bloodFeudOverlay .feud-combatant-name { margin-top: 0 !important; box-sizing: border-box; text-align: center; padding: 7px 10px; border: 2px solid #ff1a35; border-top-width: 4px; background: linear-gradient(180deg, rgba(60,0,8,.95), rgba(12,0,2,.98)); box-shadow: 0 -6px 18px rgba(0,0,0,.65), 0 6px 18px rgba(0,0,0,.8); white-space: nowrap; position: relative; z-index: 3; }
+      #slambulanceEvacModal .ewf17-evac-row { display: flex; align-items: flex-end; justify-content: center; gap: 18px; margin: 8px 0 14px; flex-wrap: wrap; }
+      #slambulanceEvacModal .ewf17-evac-row > * { flex: 0 0 auto; width: auto !important; }
+      #slambulanceEvacModal .ewf17-evac-row > img { max-height: clamp(150px, 30vh, 240px) !important; margin: 0 !important; }
+      #slambulanceEvacModal .ewf17-podium > img { height: clamp(150px, 30vh, 240px); filter: grayscale(.7) brightness(.65) drop-shadow(0 0 16px rgba(255,0,0,.6)); }
+    `;
+    document.head.appendChild(st);
+  }
+
+  function poseFor(w) {
+    let p = null;
+    try { p = (typeof getWrestlerPosePath === 'function') ? getWrestlerPosePath(w) : null; } catch (e) {}
+    return p || (w && w.image) || 'logo_notext.png';
+  }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+  // Pose with a plate under it. Falls back to the square headshot if there's no pose art.
+  function podiumHTML(w, colour, opts) {
+    opts = opts || {};
+    const head = esc(w.image || 'logo_notext.png');
+    return `<div class="ewf17-podium" style="color:${colour};">
+      <img src="${esc(poseFor(w))}" alt="${esc(w.name)}" style="filter: drop-shadow(0 0 22px ${colour}) drop-shadow(0 10px 14px #000);"
+        onerror="if(!this.dataset.f){this.dataset.f=1;this.classList.add('ewf17-head');this.src='${head}';}">
+      <div class="ewf17-plate${opts.red ? ' red' : ''}">${esc(w.name)}${opts.sub ? `<small>${esc(opts.sub)}</small>` : ''}</div>
+    </div>`;
+  }
+
+  function wrapCoronation(fnName, cardId, overlayId, colour, sub, bg) {
+    const orig = window[fnName];
+    if (typeof orig !== 'function' || orig.__b17) return;
+    const w = function (winner) {
+      const r = orig.apply(this, arguments);
+      try {
+        const ov = document.getElementById(overlayId);
+        const card = document.getElementById(cardId);
+        if (ov) {
+          // don't let it get parked inside a hidden video modal (KOTR did this)
+          const par = ov.parentElement;
+          if (par && par !== document.body && par.id === 'videoModal' && getComputedStyle(par).display === 'none' && !document.fullscreenElement) document.body.appendChild(ov);
+          ov.classList.add('ewf17-polished');
+          if (bg) ov.style.setProperty('background', `linear-gradient(rgba(8,2,15,.55), rgba(8,2,15,.8)), url('${bg}') center/cover no-repeat`, 'important');
+        }
+        if (card && winner) card.innerHTML = podiumHTML(winner, colour, { sub });
+      } catch (e) {}
+      return r;
+    };
+    w.__b17 = true;
+    window[fnName] = w;
+    try { eval(fnName + ' = w'); } catch (e) {}
+  }
+
+  function wrapSlambulance() {
+    const orig = window.triggerSlambulanceEvacuation;
+    if (typeof orig !== 'function' || orig.__b17) return;
+    const w = function (loser, isMajor) {
+      const r = orig.apply(this, arguments);
+      try {
+        const modal = document.getElementById('slambulanceEvacModal');
+        const card = document.getElementById('slambulanceVictimCard');
+        if (modal && card && loser) {
+          const mc = modal.querySelector('.modal-content');
+          if (mc) mc.style.setProperty('max-width', '780px', 'important');
+          let row = modal.querySelector('.ewf17-evac-row');
+          if (!row) {
+            row = document.createElement('div');
+            row.className = 'ewf17-evac-row';
+            const amb = modal.querySelector('img[src*="slambulance_win"]');
+            card.parentNode.insertBefore(row, card);
+            if (amb) row.appendChild(amb);
+            row.appendChild(card);
+            card.style.margin = '0';
+          }
+          card.innerHTML = podiumHTML(loser, '#ff2a2a', { red: true, sub: isMajor ? 'CRITICAL TRAUMA' : 'MINOR INJURY' });
+        }
+      } catch (e) {}
+      return r;
+    };
+    w.__b17 = true;
+    window.triggerSlambulanceEvacuation = w;
+  }
+
+  // Blood Feud: name sits directly under the pose as a red plate, same width as the pose
+  const PLATE_PAIRS = [
+    ['bloodFeudOverlay', 'feudLeftImg', 'feudLeftName'], ['bloodFeudOverlay', 'feudRightImg', 'feudRightName'],
+    ['contractSigningModal', 'contractChampImg', 'contractChampName'], ['contractSigningModal', 'contractChallengerImg', 'contractChallengerName']
+  ];
+  function feudPlates() {
+    PLATE_PAIRS.forEach(([ovId, imgId, plateId]) => {
+      const ov = document.getElementById(ovId);
+      if (!ov || getComputedStyle(ov).display === 'none') return;
+      const img = document.getElementById(imgId);
+      const plate = document.getElementById(plateId);
+      if (!img || !plate || !img.complete || !img.naturalHeight) return;
+      const wd = Math.round(img.getBoundingClientRect().width);
+      if (wd > 40 && plate.style.width !== wd + 'px') {
+        plate.style.width = wd + 'px';
+        plate.style.boxSizing = 'border-box';
+        plate.style.textAlign = 'center';
+      }
+    });
+  }
+
+  function scenePolish() {
+    scenePolishStyles();
+    wrapCoronation('showMitbCoronationOverlay', 'mitbCoronationWrestlerCard', 'mitbCoronationOverlay', '#ffd700', 'MONEY IN THE BANK WINNER', 'mitb_bg.png');
+    wrapCoronation('showRumbleCoronationOverlay', 'rumbleCoronationWrestlerCard', 'rumbleCoronationOverlay', '#ff3333', 'ROYAL RUMBLE WINNER', null);
+    wrapCoronation('showKotrCoronationOverlay', 'kotrCoronationWrestlerCard', 'kotrCoronationOverlay', '#ffd700', 'KING OF THE RING', 'kotr_bg.png');
+    wrapSlambulance();
+    setInterval(() => { try { feudPlates(); } catch (e) {} }, 400);
+  }
+
+  /* ==========================================================================
+     10. INTRO VIDEO (Batch 17): plays full screen straight after Ellis taps GET STARTED on the
+         Christmas welcome, then Bret carries on. Also replayable from DAD TOOLS.
+     ========================================================================== */
+  const INTRO_SRC = 'intro_video.mp4';
+  function playIntroVideo(done) {
+    let finished = false;
+    const finish = () => {
+      if (finished) return; finished = true;
+      try { v.pause(); } catch (e) {}
+      ov.style.transition = 'opacity .5s'; ov.style.opacity = '0';
+      setTimeout(() => { ov.remove(); try { if (typeof resumeBGM === 'function') resumeBGM(); } catch (e) {} if (typeof done === 'function') done(); }, 500);
+    };
+    try { if (typeof stopBGMForAction === 'function') stopBGMForAction(); } catch (e) {}
+    const old = document.getElementById('ewfIntroVideo'); if (old) old.remove();
+    const ov = document.createElement('div');
+    ov.id = 'ewfIntroVideo';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:2147483600;background:#000;display:flex;align-items:center;justify-content:center;';
+    ov.innerHTML = `
+      <video playsinline preload="auto" style="width:100%;height:100%;object-fit:contain;background:#000;"></video>
+      <button type="button" class="ewf17-skip" style="position:absolute;right:22px;bottom:22px;font-family:'Russo One',sans-serif;font-size:1rem;padding:10px 22px;background:rgba(0,0,0,.6);color:#fff;border:2px solid #fff;cursor:pointer;opacity:0;transition:opacity .4s;z-index:2;">SKIP ⏭</button>
+      <button type="button" class="ewf17-tap" style="display:none;position:absolute;font-family:'Russo One',sans-serif;font-size:1.6rem;padding:18px 40px;background:linear-gradient(180deg,#ffe066,#d4af37 55%,#b8860b);color:#000;border:3px solid #fff;cursor:pointer;z-index:2;">▶ PLAY</button>`;
+    (document.fullscreenElement || document.webkitFullscreenElement || document.body).appendChild(ov);
+    const v = ov.querySelector('video');
+    const skip = ov.querySelector('.ewf17-skip');
+    const tap = ov.querySelector('.ewf17-tap');
+    v.src = INTRO_SRC;
+    v.volume = 1;
+    v.addEventListener('ended', finish);
+    v.addEventListener('error', finish);
+    skip.onclick = finish;
+    setTimeout(() => { skip.style.opacity = '1'; }, 1500);
+    const start = () => {
+      const pr = v.play();
+      if (pr && pr.catch) pr.catch(() => { tap.style.display = 'block'; });
+    };
+    tap.onclick = () => { tap.style.display = 'none'; start(); };
+    start();
+    // if it never gets going (no file / very slow connection) don't leave Ellis on a black screen
+    setTimeout(() => { if (!finished && v.currentTime === 0 && v.readyState < 2 && tap.style.display === 'none') finish(); }, 12000);
+  }
+  window.ewfPlayIntroVideo = playIntroVideo;
+
+  function addIntroReplayButton() {
+    const row = document.getElementById('ewfDadToolsRow');
+    if (!row || row.querySelector('#ewfDadIntro')) return;
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.id = 'ewfDadIntro'; btn.textContent = '🎬 INTRO VIDEO';
+    btn.onclick = () => {
+      if (typeof window.closeGMOffice === 'function') window.closeGMOffice();
+      playIntroVideo(null);
+    };
+    row.appendChild(btn);
+  }
+  function introBusyHook() {
+    const orig = window.ewfVideoPlaying;
+    if (typeof orig !== 'function' || orig.__b17) return;
+    const w = function () { return !!document.getElementById('ewfIntroVideo') || orig.apply(this, arguments); };
+    w.__b17 = true;
+    window.ewfVideoPlaying = w;
+  }
+
+  /* ==========================================================================
      INIT
      ========================================================================== */
   function init() {
@@ -1058,11 +1374,15 @@
     watchBanners();
     wrapGridIcons();
     wrapFirstChamp();
+    wrapOfficeTease();
+    setInterval(() => { try { groundPoses(); } catch (e) {} }, 400);
     setInterval(() => { try { trophyPoll(); } catch (e) {} }, 2000);
     try { tidyCardIcons(); } catch (e) {}
     wrapStopwatch();
     wrapLive();
     wrapTick16();
+    try { scenePolish(); } catch (e) {}
+    try { introBusyHook(); } catch (e) {}
     if (typeof window.ewf16Init === 'function') window.ewf16Init();
   }
   window.EWF16 = { load, save, priority, BK_CAP };

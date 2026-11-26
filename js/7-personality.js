@@ -587,11 +587,11 @@
         img.style.transform = 'scaleX(-1)';
         img.style.zIndex = '6';
       } else if (a.kind === 'bin') {
-        // a real-size bin at their feet
-        const h = b.h * 0.42;
+        // a real-size bin at their feet (Batch 17: bigger, Nicko 26 Nov)
+        const h = b.h * 0.6;
         img.style.height = h + 'px';
-        img.style.bottom = '2%';
-        img.style.left = (b.x + b.w * 0.78) + 'px';
+        img.style.bottom = '0px';
+        img.style.left = (b.x + b.w * 0.72) + 'px';
         img.style.zIndex = '3';
       }
       img.classList.add('still');
@@ -1507,7 +1507,8 @@
       const att = pick(attPool);
       if (!att) return done();
       scene({ bg: 'crime_scene_bg.png', title: `🕵️ WHO DID THIS?!`, titleBg: 'linear-gradient(180deg,#263238,#000)', right: vic, rightHurt: true, skip,
-        objects: [{ src: 'briefcase_shadow.png', style: 'left: 10%; bottom: 0; height: 80%; opacity: 0.9; filter: brightness(0) drop-shadow(0 0 14px rgba(255,255,255,0.75));', cls: 'slideL', delay: 300 }],
+        // Batch 17: the mystery figure lurks far away by the door, faint and subtle
+        objects: [{ src: 'briefcase_shadow.png', style: 'left: 48%; bottom: 13%; height: 46%; transform: translateX(-50%); z-index: 2; filter: brightness(0) opacity(0.45) drop-shadow(0 0 6px rgba(255,255,255,0.25));', cls: 'still', delay: 600 }],
         text: `<b>${vic.name}</b> has been found laid out backstage! Nobody saw who did it... but there's a camera in the corner.`,
         buttons: [{ label: '📹 CHECK THE CCTV', cls: 'blue', fn: () => {
           closeScene();

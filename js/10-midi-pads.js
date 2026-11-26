@@ -50,7 +50,7 @@ const MITB_WINS    = sounds("mitb - win", 1);
 const RUMBLE_OUT   = sounds("rumble - over top rope", 1);
 const RUMBLE_SAVED = sounds("rumble - saved", 0);         // set to how many you make
 const CAGE_ESCAPE  = sounds("cage - escape", 0);          // set to how many you make
-const CAGE_DRAGGED = sounds("cage - dragged back", 0);    // set to how many you make
+const CAGE_DRAGGED = sounds("cage - dragged back", 1);    // BATCH 17: Nicko added "cage - dragged back 1" (bump if you add more)
 const CAGE_SLAM    = sounds("cage - slam", 1);            // BATCH 16: Nicko added "cage - slam 1" (bump if you add more)
 const TABLE_SMASH  = sounds("fx - table smash", 3);
 
@@ -91,7 +91,7 @@ const PADS = {
 
   // Row 4: effects and the steel cage
   13: { type: "sound", fx: "table", files: TABLE_SMASH },
-  14: { type: "sound", fx: "chair", files: ["fx - chair shot.mp3", "fx - steel steps.mp3"] },
+  14: { type: "sound", fx: "chair", files: ["fx - chair shot.mp3", "fx - chair shot 2.mp3", "fx - steel steps.mp3"] },
   15: { type: "outcome", name: "cage", outcomes: [
         { result: "dragged", weight: CAGE_CHANCES.dragged, files: CAGE_DRAGGED },
         { result: "escape",  weight: CAGE_CHANCES.escape,  files: CAGE_ESCAPE },
